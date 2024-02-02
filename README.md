@@ -16,7 +16,7 @@ We recommend that you install the package inside a [virtual environment](https:/
 ### Running a specific conversion
 Once you have installed the package with pip, you can run any of the conversion scripts in a notebook or a python file:
 
-https://github.com/catalystneuro/higley-lab-to-nwb//tree/main/src/hadas_benisty_2022/hadas_benisty_2022_conversion_script.py
+https://github.com/catalystneuro/higley-lab-to-nwb//tree/main/src/benisty_2022/benisty_2022_conversion_script.py
 
 
 
@@ -49,12 +49,12 @@ both of the methods above install the repository in [editable mode](https://pip.
 ### Running a specific conversion
 To run a specific conversion, you might need to install first some conversion specific dependencies that are located in each conversion directory:
 ```
-pip install -r src/higley_lab_to_nwb/hadas_benisty_2022/hadas_benisty_2022_requirements.txt
+pip install -r src/higley_lab_to_nwb/benisty_2022/benisty_2022_requirements.txt
 ```
 
 You can run a specific conversion with the following command:
 ```
-python src/higley_lab_to_nwb/hadas_benisty_2022/hadas_benisty_2022_conversion_script.py
+python src/higley_lab_to_nwb/benisty_2022/benisty_2022_conversion_script.py
 ```
 
 ## Repository structure
@@ -70,26 +70,26 @@ Each conversion is organized in a directory of its own in the `src` directory:
     └── src
         ├── higley_lab_to_nwb
         │   ├── conversion_directory_1
-        │   └── hadas_benisty_2022
-        │       ├── hadas_benisty_2022behaviorinterface.py
-        │       ├── hadas_benisty_2022_convert_session.py
-        │       ├── hadas_benisty_2022_metadata.yml
-        │       ├── hadas_benisty_2022nwbconverter.py
-        │       ├── hadas_benisty_2022_requirements.txt
-        │       ├── hadas_benisty_2022_notes.md
+        │   └── benisty_2022
+        │       ├── benisty_2022behaviorinterface.py
+        │       ├── benisty_2022_convert_session.py
+        │       ├── benisty_2022_metadata.yml
+        │       ├── benisty_2022nwbconverter.py
+        │       ├── benisty_2022_requirements.txt
+        │       ├── benisty_2022_notes.md
 
         │       └── __init__.py
         │   ├── conversion_directory_b
 
         └── __init__.py
 
- For example, for the conversion `hadas_benisty_2022` you can find a directory located in `src/higley-lab-to-nwb/hadas_benisty_2022`. Inside each conversion directory you can find the following files:
+ For example, for the conversion `benisty_2022` you can find a directory located in `src/higley-lab-to-nwb/benisty_2022`. Inside each conversion directory you can find the following files:
 
-* `hadas_benisty_2022_convert_sesion.py`: this script defines the function to convert one full session of the conversion.
-* `hadas_benisty_2022_requirements.txt`: dependencies specific to this conversion.
-* `hadas_benisty_2022_metadata.yml`: metadata in yaml format for this specific conversion.
-* `hadas_benisty_2022behaviorinterface.py`: the behavior interface. Usually ad-hoc for each conversion.
-* `hadas_benisty_2022nwbconverter.py`: the place where the `NWBConverter` class is defined.
-* `hadas_benisty_2022_notes.md`: notes and comments concerning this specific conversion.
+* `benisty_2022_convert_sesion.py`: this script defines the function to convert one full session of the conversion.
+* `benisty_2022_requirements.txt`: dependencies specific to this conversion.
+* `benisty_2022_metadata.yml`: metadata in yaml format for this specific conversion.
+* `benisty_2022behaviorinterface.py`: the behavior interface. Usually ad-hoc for each conversion.
+* `benisty_2022nwbconverter.py`: the place where the `NWBConverter` class is defined.
+* `benisty_2022_notes.md`: notes and comments concerning this specific conversion.
 
 The directory might contain other files that are necessary for the conversion but those are the central ones.

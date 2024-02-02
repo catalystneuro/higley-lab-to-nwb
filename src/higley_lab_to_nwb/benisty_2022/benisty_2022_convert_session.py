@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 
 from neuroconv.utils import load_dict_from_file, dict_deep_update
 
-from higley_lab_to_nwb.hadas_benisty_2022 import HadasBenisty2022NWBConverter
+from higley_lab_to_nwb.benisty_2022 import Benisty2022NWBConverter
 
 
 def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, Path], stub_test: bool = False):
@@ -39,7 +39,7 @@ def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, 
     source_data.update(dict(Behavior=dict()))
     conversion_options.update(dict(Behavior=dict()))
 
-    converter = HadasBenisty2022NWBConverter(source_data=source_data)
+    converter = Benisty2022NWBConverter(source_data=source_data)
 
     # Add datetime to conversion
     metadata = converter.get_metadata()
@@ -50,7 +50,7 @@ def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, 
     metadata["NWBFile"]["session_start_time"] = date
 
     # Update default metadata with the editable in the corresponding yaml file
-    editable_metadata_path = Path(__file__).parent / "hadas_benisty_2022_metadata.yaml"
+    editable_metadata_path = Path(__file__).parent / "benisty_2022_metadata.yaml"
     editable_metadata = load_dict_from_file(editable_metadata_path)
     metadata = dict_deep_update(metadata, editable_metadata)
 

@@ -4,8 +4,8 @@ from pynwb.file import NWBFile
 from neuroconv.basedatainterface import BaseDataInterface
 from neuroconv.utils import DeepDict
 
-class HadasBenisty2022BehaviorInterface(BaseDataInterface):
-    """Behavior interface for hadas_benisty_2022 conversion"""
+class Benisty2022BehaviorInterface(BaseDataInterface):
+    """Behavior interface for benisty_2022 conversion"""
 
     keywords = ["behavior"]
     
