@@ -11,15 +11,13 @@ Two-photon imaging was performed using a MOM microscope (Sutter Instruments) cou
 **Dual mesoscopic and two-photon imaging**
 Dual imaging was carried out using a custom microscope combining a Zeiss Axiozoom (as above) and a Sutter MOM (as above), as described previously 25. To image through the implanted prism, a long-working distance objective (20×, 0.4 NA, Mitutoyo) was used. Frame acquisitions were interleaved with an overall rate of 9.15 Hz, with each cycle alternating sequentially between a 920nm two-photon acquisition (512×512 resolution), a 395/25nm widefield excitation acquisition, and a 470/20nm widefield excitation acquisition. Widefield data were collected through a 525/50nm filter into a sCMOS camera (Orca Fusion, Hamamatsu) at 576×576 resolution after 45× pixel binning with 20ms exposure.
 
-### Preliminary observations:
+### Data structure:
 - **Each .tif is a single frame of [512,1024], 3 consecutive frames look like this:**
 ![alt text](frame1.png)
 ![alt text](frame2.png)
 ![alt text](frame3.png)
 
-- **No regular sampling frequency**
-
-- **Don't have the same structure of metadata extracted from extract_extra_metadata and parse_metadata**
+- **Don't have the same structure of metadata extracted with `scanimagetiff_utils.extract_extra_metadata()` and parsed with `scanimagetiff_utils.parse_metadata()`**
 ```python
 with ScanImageTiffReader(tif_file) as reader:
     print(reader.metadata)
@@ -62,3 +60,30 @@ scale_len = 100.000000
  Time_From_Start = 00:05:33.3022
  Time_From_Last = 00:00:00.0360
  ```
+
+ - **.smrx files contain TTL syn signals:**
+    ```
+    neo_reader.header["signal_channels"]
+    
+    ('BL_LED', '0', 5000., 'int16', 'Volts', 0.00015259, 0., '0'),
+    ('UV_LED', '1', 5000., 'int16', 'Volt', 0.00015259, 0., '1'),
+    ('MesoCam', '2', 5000., 'int16', ' Volt', 0.00015259, 0., '2'),
+    ('Vis', '3', 5000., 'int16', ' Volt', 0.00015259, 0., '3'),
+    ('wheel', '4', 5000., 'int16', ' Volt', 0.00015259, 0., '4'),
+    ('airpuff', '5', 5000., 'int16', ' Volt', 0.00015259, 0., '5'),
+    ('pupilcam', '6', 5000., 'int16', ' Volt', 0.00015259, 0., '6'),
+    ('R_mesocam', '7', 5000., 'int16', 'Volt', 0.00015259, 0., '7'),
+    ('Green LED', '8', 5000., 'int16', ' Volt', 0.00015259, 0., '8'),
+    ('LFP', '9', 5000., 'int16', '', 0.00015259, 0., '9'),
+    ```
+    sometimes: 'Volts', ' Volt' or 'Volt'
+
+    Using CedRecordingExtractor we can get the TTL traces
+    ![alt text](ttl_signals.png)
+
+    With 'MesoCam' channel we can alligned the raw imaging frames to the Spike2 output.
+
+    Then using the 'BL_LED', 'UV_LED' and 'Green LED' we can separate the thre imaging streams.
+
+### Imaging metadata 
+...
