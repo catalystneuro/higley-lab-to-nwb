@@ -83,7 +83,7 @@ scale_len = 100.000000
 
     With 'MesoCam' channel we can alligned the raw imaging frames to the Spike2 output.
 
-    Then using the 'BL_LED', 'UV_LED' and 'Green LED' we can separate the thre imaging streams.
+    Then using the 'BL_LED', 'UV_LED' and 'Green LED' we can separate the three imaging streams.
 
 ### Imaging metadata 
 ...
