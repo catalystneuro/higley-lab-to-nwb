@@ -17,27 +17,16 @@ def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, 
         output_dir_path = output_dir_path / "nwb_stub"
     output_dir_path.mkdir(parents=True, exist_ok=True)
 
-    session_id = "subject_identifier_usually"
+    session_id = "11222019_grabAM05_spont"
     nwbfile_path = output_dir_path / f"{session_id}.nwb"
 
     source_data = dict()
     conversion_options = dict()
 
-    # Add Recording
-    source_data.update(dict(Recording=dict()))
-    conversion_options.update(dict(Recording=dict()))
-
-    # Add LFP
-    source_data.update(dict(LFP=dict()))
-    conversion_options.update(dict(LFP=dict()))
-
-    # Add Sorting
-    source_data.update(dict(Sorting=dict()))
-    conversion_options.update(dict(Sorting=dict()))
-
-    # Add Behavior
-    source_data.update(dict(Behavior=dict()))
-    conversion_options.update(dict(Behavior=dict()))
+    # Add Behavioral Video Recording
+    video_file_path = data_dir_path / session_id / f"{session_id}.avi"
+    source_data.update(dict(Video=dict(file_paths=[video_file_path], verbose=False)))
+    conversion_options.update(dict(Video=dict(stub_test=stub_test)))
 
     converter = Benisty2022NWBConverter(source_data=source_data)
 
@@ -48,6 +37,9 @@ def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, 
     )
     date = datetime.datetime.today()  # TO-DO: Get this from author
     metadata["NWBFile"]["session_start_time"] = date
+    metadata["NWBFile"].update(session_id=session_id)
+    subject_id = session_id.split("_")[1]
+    metadata["Subject"].update(subject_id=subject_id)
 
     # Update default metadata with the editable in the corresponding yaml file
     editable_metadata_path = Path(__file__).parent / "benisty_2022_metadata.yaml"
@@ -61,9 +53,10 @@ def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, 
 if __name__ == "__main__":
 
     # Parameters for conversion
-    data_dir_path = Path("/Directory/With/Raw/Formats/")
-    output_dir_path = Path("~/conversion_nwb/")
-    stub_test = False
+    root_path = Path("/media/amtra/Samsung_T5/CN_data")
+    data_dir_path = root_path / "Higley-CN-data-share"
+    output_dir_path = root_path / "Higley-conversion_nwb/"
+    stub_test = True
 
     session_to_nwb(data_dir_path=data_dir_path,
                     output_dir_path=output_dir_path,
