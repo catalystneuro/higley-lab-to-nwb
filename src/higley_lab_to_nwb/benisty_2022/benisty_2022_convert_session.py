@@ -23,11 +23,11 @@ def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, 
     source_data = dict()
     conversion_options = dict()
 
-    # Add TTL synch signals
+    # Add Wheel signal
     file_path = str(data_dir_path / session_id / f"{session_id}_spike2.smrx")
-    stream_id = '0'
-    source_data.update(dict(TTLSynch=dict(file_path=file_path, stream_id=stream_id)))
-    conversion_options.update(dict(TTLSynch=dict(stub_test=stub_test)))
+    stream_id = '4'
+    source_data.update(dict(Wheel=dict(file_path=file_path, stream_id=stream_id, es_key="Wheel")))
+    conversion_options.update(dict(Wheel=dict(stub_test=stub_test)))
 
     converter = Benisty2022NWBConverter(source_data=source_data)
 

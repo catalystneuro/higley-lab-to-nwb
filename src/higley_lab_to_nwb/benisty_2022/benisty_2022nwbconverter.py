@@ -8,5 +8,5 @@ class Benisty2022NWBConverter(NWBConverter):
     """Primary conversion class for my extracellular electrophysiology dataset."""
 
     data_interface_classes = dict(
-        TTLSynch=Benisty2022Spike2TTLInterface,
+        Wheel=Benisty2022Spike2TTLInterface,
     )
