@@ -1,7 +1,7 @@
 # Notes concerning the benisty_2022 conversion
 
 ## Raw Imaging
-### Method description:
+### Method description from [Benisty 2024](https://www.nature.com/articles/s41593-023-01498-y):
 **Mesoscopic imaging**
 Widefield mesoscopic calcium imaging was performed using a Zeiss Axiozoom with a 1×, 0.25 NA objective with a 56 mm working distance (Zeiss). Epifluorescent excitation was provided by an LED bank (Spectra X Light Engine, Lumencor) using two output wavelengths: 395/25 (isosbestic for GRABACh3.0) and 575/25 nm (jRCaMP1b). Emitted light passed through a dual camera image splitter (TwinCam, Cairn Research) then through either a 525/50 (GRABACh3.0) or 630/75 (jRCaMP1b) emission filter (Chroma) before it reached two sCMOS cameras (Orca-Flash V3, Hamamatsu). Images were acquired at 512×512 resolution after 4× pixel binning, and each channel was acquired at 10 Hz with 20 ms exposure using HCImage software (Hamamatsu).
 
@@ -10,6 +10,10 @@ Two-photon imaging was performed using a MOM microscope (Sutter Instruments) cou
 
 **Dual mesoscopic and two-photon imaging**
 Dual imaging was carried out using a custom microscope combining a Zeiss Axiozoom (as above) and a Sutter MOM (as above), as described previously 25. To image through the implanted prism, a long-working distance objective (20×, 0.4 NA, Mitutoyo) was used. Frame acquisitions were interleaved with an overall rate of 9.15 Hz, with each cycle alternating sequentially between a 920nm two-photon acquisition (512×512 resolution), a 395/25nm widefield excitation acquisition, and a 470/20nm widefield excitation acquisition. Widefield data were collected through a 525/50nm filter into a sCMOS camera (Orca Fusion, Hamamatsu) at 576×576 resolution after 45× pixel binning with 20ms exposure.
+
+### Method description from [Lohani 2022](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10661869/):
+**Widefield imaging**
+Widefield calcium and cholinergic imaging was performed using a Zeiss Axiozoom with a PlanNeoFluar Z 1x, 0.25 numerical aperture objective with a 56 mm working distance. Epifluorescent excitation was provided by an LED bank (Spectra X Light Engine, Lumencor) using three output wavelengths: 395/25, 470/24, and 575/25 nm. Emitted light passed through a dual camera image splitter (TwinCam, Cairn Research) then through either a 525/50 or 630/75 emission filter (Chroma) before it reached two sCMOS cameras (Orca-Flash V3, Hamamatsu). Images were acquired at 512×512 resolution after 4x pixel binning, and each channel was acquired at 10 Hz with 20 ms exposure. Images were saved to a solid-state drive using HCImage software (Hamamatsu).
 
 ### Data structure:
 - **Each .tif is a single frame of [512,1024], 3 consecutive frames look like this:**
