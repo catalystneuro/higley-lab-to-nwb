@@ -7,6 +7,8 @@ from zoneinfo import ZoneInfo
 from neuroconv.utils import load_dict_from_file, dict_deep_update
 
 from higley_lab_to_nwb.benisty_2022 import Benisty2022NWBConverter
+from higley_lab_to_nwb.benisty_2022.benisty_2022_spike2ttlinterface import get_stream_ids_and_names
+
 
 
 def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, Path], stub_test: bool = False):
@@ -18,15 +20,15 @@ def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, 
     output_dir_path.mkdir(parents=True, exist_ok=True)
 
     session_id = "11222019_grabAM05_spont"
-    nwbfile_path = output_dir_path / f"{session_id}.nwb"
+    nwbfile_path = output_dir_path / f"{session_id}_onlyWheelMotion.nwb"
 
     source_data = dict()
     conversion_options = dict()
 
     # Add Wheel signal
     file_path = str(data_dir_path / session_id / f"{session_id}_spike2.smrx")
-    stream_id = '4'
-    source_data.update(dict(Wheel=dict(file_path=file_path, stream_id=stream_id, es_key="ElectricalSeriesWheel")))
+    stream_ids, stream_names = get_stream_ids_and_names(file_path=file_path)
+    source_data.update(dict(Wheel=dict(file_path=file_path, stream_id=stream_ids[stream_names=="wheel"][0], es_key="ElectricalSeriesWheelMotion")))
     conversion_options.update(dict(Wheel=dict(stub_test=stub_test)))
 
     converter = Benisty2022NWBConverter(source_data=source_data)
