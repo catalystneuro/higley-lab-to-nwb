@@ -13,7 +13,7 @@ def _test_sonpy_installation() -> None:
         excluded_python_versions=["3.10", "3.11"],
         excluded_platforms_and_python_versions=dict(darwin=dict(arm=["3.8", "3.9", "3.10", "3.11"])),
     )
-def get_stream_ids_and_names(file_path: FilePathType) -> List[str]:
+def get_streams(file_path: FilePathType) -> List[str]:
     """Return a list of channel names as set in the recording extractor."""
     r = io.CedIO(filename=file_path)
     signal_channels = r.header["signal_channels"]
