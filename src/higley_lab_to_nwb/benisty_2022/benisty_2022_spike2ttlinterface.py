@@ -13,21 +13,16 @@ def _test_sonpy_installation() -> None:
         excluded_python_versions=["3.10", "3.11"],
         excluded_platforms_and_python_versions=dict(darwin=dict(arm=["3.8", "3.9", "3.10", "3.11"])),
     )
-def get_stream_ids(file_path: FilePathType) -> List[str]:
+def get_stream_ids_and_names(file_path: FilePathType) -> List[str]:
     """Return a list of channel names as set in the recording extractor."""
     r = io.CedIO(filename=file_path)
-    signal_streams = r.header["signal_streams"]
-    stream_ids = list(signal_streams["id"])
-    return stream_ids
-
-def get_stream_names(file_path: FilePathType) -> List[str]:
-    """Return a list of channel ids as set in the recording extractor."""
-    r = io.CedIO(filename=file_path)
     signal_channels = r.header["signal_channels"]
-    channel_names = signal_channels["name"]
-    return channel_names
+    stream_ids = signal_channels["id"]
+    stream_names = signal_channels["name"]
+    return stream_ids, stream_names
 
 class Benisty2022Spike2TTLInterface(BaseRecordingExtractorInterface):
+    #TODO find a better name for the interface. It needs to be general for all type of signals not only TTL (e.g Wheel Motion) 
     """
     Data interface class for converting Spike2 synchronization signals from CED (Cambridge Electronic
     Design) using the :py:class:`~spikeinterface.extractors.CedRecordingExtractor`."""
@@ -55,6 +50,25 @@ class Benisty2022Spike2TTLInterface(BaseRecordingExtractorInterface):
         _test_sonpy_installation()
 
         super().__init__(file_path=file_path, stream_id=stream_id, stream_name=stream_name, all_annotations=True, verbose=verbose, es_key=es_key)
+        self.stream_ids, self.stream_names = get_stream_ids_and_names(file_path=file_path)
+    def get_metadata(self) -> dict:
+        metadata = super().get_metadata()
+
+        # Device metadata
+        # TODO store the correct metadata
+        device = dict(name="AcuisitionBoard", description="Spike2 recording signals from CED (Cambridge Electronic Design)", manufacturer="Cambridge Electronic Design")
+
+        # Add groups metadata
+        metadata["Ecephys"]["Device"] = [device]
+
+        metadata["Ecephys"]["ElectrodeGroup"][0].update(
+            name="Spike2ChannelGroup", description="A group representing the Spike2 channels.", device=device["name"]
+        )
+        metadata["Ecephys"]["Electrodes"] = [
+            dict(name="group_name", description="Name of the ElectrodeGroup this electrode is a part of."),
+        ]
+
+        return metadata
     
     def get_event_times_from_ttl(self) -> np.ndarray:
         """
