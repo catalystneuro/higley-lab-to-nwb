@@ -1,12 +1,15 @@
 """Primary script to run to convert an entire session for of data using the NWBConverter."""
+
 from pathlib import Path
 from typing import Union
 import datetime
 from zoneinfo import ZoneInfo
+from neo import io
 
 from neuroconv.utils import load_dict_from_file, dict_deep_update
 
 from higley_lab_to_nwb.benisty_2022 import Benisty2022NWBConverter
+from higley_lab_to_nwb.benisty_2022.benisty_2022_spike2ttlinterface import get_stream_ids_and_names
 
 
 def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, Path], stub_test: bool = False):
@@ -25,17 +28,28 @@ def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, 
 
     # Add TTL synch signals
     file_path = str(data_dir_path / session_id / f"{session_id}_spike2.smrx")
-    stream_id = '0'
-    source_data.update(dict(TTLSynch=dict(file_path=file_path, stream_id=stream_id)))
-    conversion_options.update(dict(TTLSynch=dict(stub_test=stub_test)))
+    stream_ids, stream_names = get_stream_ids_and_names(file_path=file_path)
+    TTLsignals_name_map = {
+            "TTLSignalBlueLED":stream_ids[stream_names=="BL_LED"][0],
+            "TTLSignalVioletLED":stream_ids[stream_names=="UV_LED"][0],
+            "TTLSignalGreenLED":stream_ids[stream_names=="Green LED"][0],
+            "TTLSignalMesoscopicCamera":stream_ids[stream_names=="MesoCam"][0],
+            "TTLSignalRedMesoscopicCamera":stream_ids[stream_names=="R_mesocam"][0],
+            "TTLSignalPupilCamera":stream_ids[stream_names=="pupilcam"][0],
+    }
+    for interface_name in TTLsignals_name_map:
+        source_data[interface_name] = {
+            "file_path": file_path,
+            "stream_id": TTLsignals_name_map[interface_name] ,
+            "es_key": interface_name,
+        }
+        conversion_options[interface_name] = {"stub_test": stub_test}
 
     converter = Benisty2022NWBConverter(source_data=source_data)
 
     # Add datetime to conversion
     metadata = converter.get_metadata()
-    datetime.datetime(
-        year=2020, month=1, day=1, tzinfo=ZoneInfo("US/Eastern")
-    )
+    datetime.datetime(year=2020, month=1, day=1, tzinfo=ZoneInfo("US/Eastern"))
     date = datetime.datetime.today()  # TO-DO: Get this from author
     metadata["NWBFile"]["session_start_time"] = date
     subject_id = session_id.split("_")[1]
@@ -58,7 +72,8 @@ if __name__ == "__main__":
     output_dir_path = root_path / "Higley-conversion_nwb/"
     stub_test = True
 
-    session_to_nwb(data_dir_path=data_dir_path,
-                    output_dir_path=output_dir_path,
-                    stub_test=stub_test,
-                    )
+    session_to_nwb(
+        data_dir_path=data_dir_path,
+        output_dir_path=output_dir_path,
+        stub_test=stub_test,
+    )
