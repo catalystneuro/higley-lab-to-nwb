@@ -7,13 +7,15 @@ from neuroconv.tools import get_package
 from neuroconv.utils import FilePathType
 from neuroconv.tools.signal_processing import get_rising_frames_from_ttl
 from spikeinterface.extractors import CedRecordingExtractor
+
+
 def _test_sonpy_installation() -> None:
     get_package(
         package_name="sonpy",
         excluded_python_versions=["3.10", "3.11"],
         excluded_platforms_and_python_versions=dict(darwin=dict(arm=["3.8", "3.9", "3.10", "3.11"])),
     )
-def get_stream_ids_and_names(file_path: FilePathType) -> List[str]:
+def get_streams(file_path: FilePathType) -> List[str]:
     """Return a list of channel names as set in the recording extractor."""
     r = io.CedIO(filename=file_path)
     signal_channels = r.header["signal_channels"]
@@ -21,8 +23,9 @@ def get_stream_ids_and_names(file_path: FilePathType) -> List[str]:
     stream_names = signal_channels["name"]
     return stream_ids, stream_names
 
+
 class Benisty2022Spike2TTLInterface(BaseRecordingExtractorInterface):
-    #TODO find a better name for the interface. It needs to be general for all type of signals not only TTL (e.g Wheel Motion) 
+    # TODO find a better name for the interface. It needs to be general for all type of signals not only TTL (e.g Wheel Motion)
     """
     Data interface class for converting Spike2 synchronization signals from CED (Cambridge Electronic
     Design) using the :py:class:`~spikeinterface.extractors.CedRecordingExtractor`."""
@@ -34,7 +37,14 @@ class Benisty2022Spike2TTLInterface(BaseRecordingExtractorInterface):
 
     ExtractorName = "CedRecordingExtractor"
 
-    def __init__(self, file_path: FilePathType, stream_id: str = None, stream_name: str = None , verbose: bool = True, es_key: str = "ElectricalSeries"):
+    def __init__(
+        self,
+        file_path: FilePathType,
+        stream_id: str = None,
+        stream_name: str = None,
+        verbose: bool = True,
+        es_key: str = "ElectricalSeries",
+    ):
         """
          Parameters
         ----------
@@ -49,27 +59,35 @@ class Benisty2022Spike2TTLInterface(BaseRecordingExtractorInterface):
         """
         _test_sonpy_installation()
 
-        super().__init__(file_path=file_path, stream_id=stream_id, stream_name=stream_name, all_annotations=True, verbose=verbose, es_key=es_key)
-        self.stream_ids, self.stream_names = get_stream_ids_and_names(file_path=file_path)
+        super().__init__(
+            file_path=file_path,
+            stream_id=stream_id,
+            stream_name=stream_name,
+            all_annotations=True,
+            verbose=verbose,
+            es_key=es_key,
+        )
+        self.stream_ids, self.stream_names = get_streams(file_path=file_path)
+
     def get_metadata(self) -> dict:
         metadata = super().get_metadata()
 
         # Device metadata
         # TODO store the correct metadata
-        device = dict(name="AcuisitionBoard", description="Spike2 recording signals from CED (Cambridge Electronic Design)", manufacturer="Cambridge Electronic Design")
-
-        # Add groups metadata
-        metadata["Ecephys"]["Device"] = [device]
+        metadata["Ecephys"]["Device"][0].update(
+            description="Spike2 recording signals from CED (Cambridge Electronic Design)",
+            manufacturer="Cambridge Electronic Design",
+        )
 
         metadata["Ecephys"]["ElectrodeGroup"][0].update(
-            name="Spike2ChannelGroup", description="A group representing the Spike2 channels.", device=device["name"]
+            name="Spike2ChannelGroup", description="A group representing the Spike2 channels.", device=metadata["Ecephys"]["Device"][0]["name"]
         )
         metadata["Ecephys"]["Electrodes"] = [
             dict(name="group_name", description="Name of the ElectrodeGroup this electrode is a part of."),
         ]
 
         return metadata
-    
+
     def get_event_times_from_ttl(self) -> np.ndarray:
         """
         Return the start of event times from the rising part of TTL pulses on one of the channels.
@@ -84,8 +102,7 @@ class Benisty2022Spike2TTLInterface(BaseRecordingExtractorInterface):
             The times of the rising TTL pulses.
         """
 
-        rising_frames = get_rising_frames_from_ttl(
-            trace=self.recording_extractor.get_traces())
+        rising_frames = get_rising_frames_from_ttl(trace=self.recording_extractor.get_traces())
 
         ttl_timestamps = self.recording_extractor.get_times()
         rising_times = ttl_timestamps[rising_frames]

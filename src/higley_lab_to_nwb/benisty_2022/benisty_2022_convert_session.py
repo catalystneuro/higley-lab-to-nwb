@@ -9,7 +9,7 @@ from neo import io
 from neuroconv.utils import load_dict_from_file, dict_deep_update
 
 from higley_lab_to_nwb.benisty_2022 import Benisty2022NWBConverter
-from higley_lab_to_nwb.benisty_2022.benisty_2022_spike2ttlinterface import get_stream_ids_and_names
+from higley_lab_to_nwb.benisty_2022.benisty_2022_spike2ttlinterface import get_streams
 
 
 def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, Path], stub_test: bool = False):
@@ -28,7 +28,7 @@ def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, 
 
     # Add TTL synch signals
     file_path = str(data_dir_path / session_id / f"{session_id}_spike2.smrx")
-    stream_ids, stream_names = get_stream_ids_and_names(file_path=file_path)
+    stream_ids, stream_names = get_streams(file_path=file_path)
     TTLsignals_name_map = {
             "TTLSignalBlueLED":stream_ids[stream_names=="BL_LED"][0],
             "TTLSignalVioletLED":stream_ids[stream_names=="UV_LED"][0],
