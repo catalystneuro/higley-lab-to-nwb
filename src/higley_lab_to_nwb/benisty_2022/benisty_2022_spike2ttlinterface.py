@@ -66,7 +66,7 @@ class Benisty2022Spike2TTLInterface(BaseRecordingExtractorInterface):
             es_key=es_key,
         )
         self.stream_ids, self.stream_names = get_streams(file_path=file_path)
-        # TODO see if check on stram_name is useful
+
         r = io.CedIO(filename=file_path)
         signal_channels = r.header["signal_channels"]
         unit = signal_channels["units"][signal_channels["id"] == stream_id][0]
