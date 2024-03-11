@@ -101,6 +101,10 @@ class Benisty2022Spike2TTLInterface(BaseRecordingExtractorInterface):
         )
         metadata["Ecephys"]["Electrodes"] = [
             dict(name="group_name", description="Name of the ElectrodeGroup this electrode is a part of."),
+            dict(name="channel_names", description="Channel names as stored in Spike2 output."),
+            dict(name="channel_ids", description="Channel ids as stored in Spike2 output."),
+            dict(name="gain_to_uV", description="Gain value for each channel: from Volt to microVolt"),
+            dict(name="offset_to_uV", description="Offset value for each channel: from Volt to microVolt"),
         ]
 
         return metadata
