@@ -12,6 +12,7 @@ from higley_lab_to_nwb.benisty_2022 import Benisty2022NWBConverter
 from higley_lab_to_nwb.benisty_2022.benisty_2022_spike2ttlinterface import get_streams
 
 
+
 def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, Path], stub_test: bool = False):
 
     data_dir_path = Path(data_dir_path)
@@ -21,14 +22,18 @@ def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, 
     output_dir_path.mkdir(parents=True, exist_ok=True)
 
     session_id = "11222019_grabAM05_spont"
-    nwbfile_path = output_dir_path / f"{session_id}.nwb"
+    nwbfile_path = output_dir_path / f"{session_id}_onlyWheelMotion.nwb"
 
     source_data = dict()
     conversion_options = dict()
 
-    # Add TTL synch signals
+    # Add Wheel signal
     file_path = str(data_dir_path / session_id / f"{session_id}_spike2.smrx")
     stream_ids, stream_names = get_streams(file_path=file_path)
+    source_data.update(dict(Wheel=dict(file_path=file_path, stream_id=stream_ids[stream_names=="wheel"][0], es_key="WheelMotionSeries")))
+    conversion_options.update(dict(Wheel=dict(stub_test=stub_test)))
+    
+    # Add TTL synch signals
     TTLsignals_name_map = {
             "TTLSignalBlueLED":stream_ids[stream_names=="BL_LED"][0],
             "TTLSignalVioletLED":stream_ids[stream_names=="UV_LED"][0],

@@ -14,4 +14,5 @@ class Benisty2022NWBConverter(NWBConverter):
         TTLSignalMesoscopicCamera=Benisty2022Spike2TTLInterface,
         TTLSignalRedMesoscopicCamera=Benisty2022Spike2TTLInterface,
         TTLSignalPupilCamera=Benisty2022Spike2TTLInterface,
+        Wheel=Benisty2022Spike2TTLInterface,
     )

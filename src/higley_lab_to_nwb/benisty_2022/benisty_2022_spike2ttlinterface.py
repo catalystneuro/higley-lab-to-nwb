@@ -8,14 +8,12 @@ from neuroconv.utils import FilePathType
 from neuroconv.tools.signal_processing import get_rising_frames_from_ttl
 from spikeinterface.extractors import CedRecordingExtractor
 
-
 def _test_sonpy_installation() -> None:
     get_package(
         package_name="sonpy",
         excluded_python_versions=["3.10", "3.11"],
         excluded_platforms_and_python_versions=dict(darwin=dict(arm=["3.8", "3.9", "3.10", "3.11"])),
     )
-
 
 def get_streams(file_path: FilePathType) -> List[str]:
     """Return a list of channel names as set in the recording extractor."""
@@ -24,7 +22,6 @@ def get_streams(file_path: FilePathType) -> List[str]:
     stream_ids = signal_channels["id"]
     stream_names = signal_channels["name"]
     return stream_ids, stream_names
-
 
 class Benisty2022Spike2TTLInterface(BaseRecordingExtractorInterface):
     # TODO find a better name for the interface. It needs to be general for all type of signals not only TTL (e.g Wheel Motion)
@@ -66,7 +63,7 @@ class Benisty2022Spike2TTLInterface(BaseRecordingExtractorInterface):
             es_key=es_key,
         )
         self.stream_ids, self.stream_names = get_streams(file_path=file_path)
-
+        
         r = io.CedIO(filename=file_path)
         signal_channels = r.header["signal_channels"]
         unit = signal_channels["units"][signal_channels["id"] == stream_id][0]
