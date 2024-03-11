@@ -28,7 +28,7 @@ def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, 
     # Add Wheel signal
     file_path = str(data_dir_path / session_id / f"{session_id}_spike2.smrx")
     stream_ids, stream_names = get_streams(file_path=file_path)
-    source_data.update(dict(Wheel=dict(file_path=file_path, stream_id=stream_ids[stream_names=="wheel"][0], es_key="ElectricalSeriesWheelMotion")))
+    source_data.update(dict(Wheel=dict(file_path=file_path, stream_id=stream_ids[stream_names=="wheel"][0], es_key="WheelMotionSeries")))
     conversion_options.update(dict(Wheel=dict(stub_test=stub_test)))
 
     converter = Benisty2022NWBConverter(source_data=source_data)

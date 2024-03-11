@@ -15,6 +15,8 @@ def _test_sonpy_installation() -> None:
         excluded_python_versions=["3.10", "3.11"],
         excluded_platforms_and_python_versions=dict(darwin=dict(arm=["3.8", "3.9", "3.10", "3.11"])),
     )
+
+
 def get_streams(file_path: FilePathType) -> List[str]:
     """Return a list of channel names as set in the recording extractor."""
     r = io.CedIO(filename=file_path)
@@ -41,7 +43,6 @@ class Benisty2022Spike2TTLInterface(BaseRecordingExtractorInterface):
         self,
         file_path: FilePathType,
         stream_id: str = None,
-        stream_name: str = None,
         verbose: bool = True,
         es_key: str = "ElectricalSeries",
     ):
@@ -52,8 +53,6 @@ class Benisty2022Spike2TTLInterface(BaseRecordingExtractorInterface):
             Path to .smr or .smrx file.
         stream_id: str, default: None
             If there are several streams, specify the stream id you want to load.
-        stream_name: str, default: None
-            If there are several streams, specify the stream name you want to load.
         verbose : bool, default: True
         es_key : str, default: "ElectricalSeries"
         """
@@ -62,12 +61,28 @@ class Benisty2022Spike2TTLInterface(BaseRecordingExtractorInterface):
         super().__init__(
             file_path=file_path,
             stream_id=stream_id,
-            stream_name=stream_name,
             all_annotations=True,
             verbose=verbose,
             es_key=es_key,
         )
         self.stream_ids, self.stream_names = get_streams(file_path=file_path)
+        # TODO see if check on stram_name is useful
+        r = io.CedIO(filename=file_path)
+        signal_channels = r.header["signal_channels"]
+        unit = signal_channels["units"][signal_channels["id"] == stream_id][0]
+
+        if unit in [" Volt", "Volts"]:
+            gain_to_uV = self.recording_extractor.get_property("gain_to_uV")
+            offset_to_uV = self.recording_extractor.get_property("offset_to_uV")
+            additional_gain = 1e6
+            final_gain = gain_to_uV * additional_gain
+            final_offset = offset_to_uV * additional_gain
+            self.recording_extractor.set_property("gain_to_uV", final_gain)
+            self.recording_extractor.set_property("offset_to_uV", final_offset)
+
+        channel_ids = self.recording_extractor.get_channel_ids()
+        group_names = ["Spike2ChannelGroup"]*len(channel_ids)
+        self.recording_extractor.set_property(key="group_name", ids=channel_ids, values=group_names)
 
     def get_metadata(self) -> dict:
         metadata = super().get_metadata()
@@ -80,10 +95,16 @@ class Benisty2022Spike2TTLInterface(BaseRecordingExtractorInterface):
         )
 
         metadata["Ecephys"]["ElectrodeGroup"][0].update(
-            name="Spike2ChannelGroup", description="A group representing the Spike2 channels.", device=metadata["Ecephys"]["Device"][0]["name"]
+            name="Spike2ChannelGroup",
+            description="A group representing the Spike2 channels.",
+            device=metadata["Ecephys"]["Device"][0]["name"],
         )
         metadata["Ecephys"]["Electrodes"] = [
             dict(name="group_name", description="Name of the ElectrodeGroup this electrode is a part of."),
+            dict(name="channel_names", description="Channel names as stored in Spike2 output."),
+            dict(name="channel_ids", description="Channel ids as stored in Spike2 output."),
+            dict(name="gain_to_uV", description="Gain value for each channel: from Volt to microVolt"),
+            dict(name="offset_to_uV", description="Offset value for each channel: from Volt to microVolt"),
         ]
 
         return metadata
