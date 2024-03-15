@@ -38,8 +38,12 @@ class Benisty2022ImagingInterface(BaseImagingExtractorInterface):
         self.excitation_type = excitation_type
         super().__init__(file_path=file_path, sampling_frequency=sampling_frequency, verbose=verbose)
 
+    def get_metadata_schema(self):
+        metadata_schema=super().get_metadata_schema(photon_series_type="OnePhotonSeries")
+        return metadata_schema
+    
     def get_metadata(self) -> DeepDict:
-        metadata = super().get_metadata()
+        metadata = super().get_metadata(photon_series_type="OnePhotonSeries")
 
         indicators = dict(Red="ACh3.0", Green="jRCaMP1b")
 
@@ -85,8 +89,8 @@ class Benisty2022ImagingInterface(BaseImagingExtractorInterface):
             # grid_spacing_unit="meters",
         )
 
-        two_photon_series_metadata = metadata["Ophys"]["OnePhotonSeries"][0]
-        two_photon_series_metadata.update(
+        one_photon_series_metadata = metadata["Ophys"]["OnePhotonSeries"][0]
+        one_photon_series_metadata.update(
             name=f"OnePhotonSeries{suffix}",
             imaging_plane=imaging_plane_name,
             description=f"imaging data acuired through the {self.channel} upon {self.excitation_type} light excitation",
