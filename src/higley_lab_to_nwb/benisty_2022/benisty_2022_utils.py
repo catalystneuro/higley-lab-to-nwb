@@ -41,6 +41,6 @@ def create_tiff_stack(folder_path: str, output_file_path: str, start_frame_index
     else:
         raise ValueError("frame_side must be either 'right' or 'left'")
 
-    tifffile.imwrite(output_file_path, stack, photometric="minisblack")
+    tifffile.imwrite(output_file_path, stack)
 
     return 
