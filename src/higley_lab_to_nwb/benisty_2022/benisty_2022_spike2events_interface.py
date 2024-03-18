@@ -7,8 +7,8 @@ from neuroconv.tools import get_package
 from neuroconv.utils import FilePathType
 from neuroconv.tools.signal_processing import get_rising_frames_from_ttl
 from spikeinterface.extractors import CedRecordingExtractor
-from spikeinterface import AppendSegmentRecording, ChannelSliceRecording
 from pynwb import NWBFile
+from ndx_events import TtlsTable, TtlTypesTable
 
 def _test_sonpy_installation() -> None:
     get_package(
@@ -28,7 +28,6 @@ def get_streams(file_path: FilePathType) -> List[str]:
 
 
 class Benisty2022Spike2EventsInterface(BaseDataInterface):
-    # TODO find a better name for the interface. It needs to be general for all type of signals not only TTL (e.g Wheel Motion)
     """
     Data interface class for converting Spike2 synchronization signals from CED (Cambridge Electronic
     Design) using the :py:class:`~spikeinterface.extractors.CedRecordingExtractor`."""
@@ -64,35 +63,46 @@ class Benisty2022Spike2EventsInterface(BaseDataInterface):
     def get_metadata(self) -> dict:
         metadata = super().get_metadata()
         metadata["Events"] = dict(
-            name="Spike2TTLSignals",
-            description="Contains the onset times of binary signals from the Spike2 output.",
+            TTLTypesTable=dict(
+                name="TTLTypesTable",
+                description="Contains the type of TTL signals from Spike2 output.",
+            ),
+            TTLsTable=dict(
+                name="TTLsTable",
+                description="Contains the TTL signals onset times.",
+            ),
         )
 
         return metadata
 
     def add_to_nwbfile(self, nwbfile: NWBFile, metadata: dict) -> None:
-        from ndx_events import AnnotatedEventsTable
 
         events_metadata = metadata["Events"]
-        events_table_name = events_metadata["name"]
-        assert events_table_name not in nwbfile.acquisition, f"The {events_metadata['name']} is already in nwbfile."
+        
+        ttl_types_table = TtlTypesTable(**events_metadata["TTLTypesTable"])
 
-        events = AnnotatedEventsTable(
-            name=events_table_name,
-            description=events_metadata["description"],
-        )
+        ttls_table = TtlsTable(**events_metadata["TTLsTable"], target_tables={"ttl_type": ttl_types_table})
 
-        for stream_id,stream_name in self.stream_ids_to_names_map.items():
+        ttl_type = 0
+        for stream_id, stream_name in self.stream_ids_to_names_map.items():
             extractor =  CedRecordingExtractor(file_path=str(self.source_data["file_path"]), stream_id=stream_id)
             times = extractor.get_times()
             traces = extractor.get_traces()
             event_times = get_rising_frames_from_ttl(traces)
 
-            if len(event_times):
-                events.add_event_type(
-                    label=stream_name,
-                    event_description=f"The onset times of the {stream_name} event.",
-                    event_times=times[event_times],
-                )
+            ttl_types_table.add_row(
+                event_name=stream_name,
+                event_type_description=f"The onset times of the {stream_name} event.",
+                pulse_value=1,
+            )
 
-        nwbfile.add_acquisition(events)
+            if len(event_times):
+                for timestamp in times[event_times]:
+                    ttls_table.add_row(
+                        ttl_type=ttl_type,
+                        timestamp=timestamp,
+                    )
+            ttl_type+=1
+
+        nwbfile.add_acquisition(ttl_types_table)
+        nwbfile.add_acquisition(ttls_table)
