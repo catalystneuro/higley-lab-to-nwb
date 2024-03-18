@@ -23,7 +23,7 @@ def get_streams(file_path: FilePathType) -> List[str]:
     stream_names = signal_channels["name"]
     return stream_ids, stream_names
 
-class Benisty2022Spike2TTLInterface(BaseRecordingExtractorInterface):
+class Benisty2022Spike2RecordingInterface(BaseRecordingExtractorInterface):
     # TODO find a better name for the interface. It needs to be general for all type of signals not only TTL (e.g Wheel Motion)
     """
     Data interface class for converting Spike2 synchronization signals from CED (Cambridge Electronic
@@ -105,24 +105,3 @@ class Benisty2022Spike2TTLInterface(BaseRecordingExtractorInterface):
         ]
 
         return metadata
-
-    def get_event_times_from_ttl(self) -> np.ndarray:
-        """
-        Return the start of event times from the rising part of TTL pulses on one of the channels.
-
-        Parameters
-        ----------
-        stream_id : str
-            If there are several streams, specify the stream id you want to load.
-        Returns
-        -------
-        rising_times : numpy.ndarray
-            The times of the rising TTL pulses.
-        """
-
-        rising_frames = get_rising_frames_from_ttl(trace=self.recording_extractor.get_traces())
-
-        ttl_timestamps = self.recording_extractor.get_times()
-        rising_times = ttl_timestamps[rising_frames]
-
-        return rising_times

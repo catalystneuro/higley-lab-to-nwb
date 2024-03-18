@@ -9,7 +9,7 @@ from neo import io
 from neuroconv.utils import load_dict_from_file, dict_deep_update
 
 from higley_lab_to_nwb.benisty_2022 import Benisty2022NWBConverter
-from higley_lab_to_nwb.benisty_2022.benisty_2022_spike2ttlinterface import get_streams
+from higley_lab_to_nwb.benisty_2022.benisty_2022_spike2events_interface import get_streams
 
 
 
@@ -37,20 +37,14 @@ def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, 
 
     # Add TTL synch signals
     TTLsignals_name_map = {
-            "TTLSignalBlueLED":stream_ids[stream_names=="BL_LED"][0],
-            "TTLSignalVioletLED":stream_ids[stream_names=="UV_LED"][0],
-            "TTLSignalGreenLED":stream_ids[stream_names=="Green LED"][0],
-            "TTLSignalMesoscopicCamera":stream_ids[stream_names=="MesoCam"][0],
-            "TTLSignalRedMesoscopicCamera":stream_ids[stream_names=="R_mesocam"][0],
-            "TTLSignalPupilCamera":stream_ids[stream_names=="pupilcam"][0],
+        stream_ids[stream_names=="BL_LED"][0]:"TTLSignalBlueLED",
+        stream_ids[stream_names=="UV_LED"][0]:"TTLSignalVioletLED",
+        stream_ids[stream_names=="Green LED"][0]:"TTLSignalGreenLED",
+        stream_ids[stream_names=="MesoCam"][0]:"TTLSignalMesoscopicCamera",
+        stream_ids[stream_names=="R_mesocam"][0]:"TTLSignalRedMesoscopicCamera",
+        stream_ids[stream_names=="pupilcam"][0]:"TTLSignalPupilCamera",
     }
-    for interface_name in TTLsignals_name_map:
-        source_data[interface_name] = {
-            "file_path": file_path,
-            "stream_id": TTLsignals_name_map[interface_name] ,
-            "es_key": interface_name,
-        }
-        conversion_options[interface_name] = {"stub_test": stub_test}
+    source_data.update(dict(TTLSignals=dict(file_path=file_path, stream_ids_to_names_map=TTLsignals_name_map)))
 
     converter = Benisty2022NWBConverter(source_data=source_data)
 
