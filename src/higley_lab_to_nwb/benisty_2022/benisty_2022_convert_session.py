@@ -8,8 +8,8 @@ from zoneinfo import ZoneInfo
 from neuroconv.utils import load_dict_from_file, dict_deep_update
 
 from higley_lab_to_nwb.benisty_2022 import Benisty2022NWBConverter
-from higley_lab_to_nwb.benisty_2022.imaging_utils import create_tiff_stack
-
+from higley_lab_to_nwb.benisty_2022.benisty_2022_utils import create_tiff_stack, read_session_start_time
+import os
 
 def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, Path], stub_test: bool = False):
 
@@ -37,15 +37,20 @@ def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, 
         for channel in channel_to_frame_side_mapping:
             start_frame_index = excitation_type_to_start_frame_index_mapping[excitation_type]
             frame_side = channel_to_frame_side_mapping[channel]
-
-            file_path = create_tiff_stack(
-            folder_path=folder_path, start_frame_index=start_frame_index, frame_side=frame_side
-            )
+            tif_file_path = str(folder_path) + f"_channel{start_frame_index}_{frame_side}.tiff"
+            if not os.path.exists(tif_file_path):
+                create_tiff_stack(
+                    folder_path=folder_path,
+                    output_file_path=tif_file_path,
+                    start_frame_index=start_frame_index,
+                    frame_side=frame_side,
+                    stub_test=stub_test,
+                )
 
             suffix = f"{excitation_type}Excitation{channel}Channel"
             interface_name = f"Imaging{suffix}"
             source_data[interface_name] = {
-                "file_path": file_path,
+                "file_path": tif_file_path,
                 "sampling_frequency": sampling_frequency,
                 "channel": channel,
                 "excitation_type": excitation_type,
@@ -61,8 +66,7 @@ def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, 
 
     # Add datetime to conversion
     metadata = converter.get_metadata()
-    datetime.datetime(year=2020, month=1, day=1, tzinfo=ZoneInfo("US/Eastern"))
-    date = datetime.datetime.today()  # TO-DO: Get this from author
+    date = read_session_start_time(folder_path=folder_path)
     metadata["NWBFile"]["session_start_time"] = date
     subject_id = session_id.split("_")[1]
     metadata["Subject"].update(subject_id=subject_id)
