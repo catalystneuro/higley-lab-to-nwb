@@ -35,9 +35,9 @@ def create_tiff_stack(folder_path: str, output_file_path: str, start_frame_index
     frames = [tifffile.imread(file_path) for file_path in selected_tiff_file_paths]
 
     if frame_side == "left":
-        stack = np.stack([frame[:, :512] for frame in frames], axis=0)
+        stack = np.stack([frame[:, :512].transpose(1,0) for frame in frames], axis=0)
     elif frame_side == "right":
-        stack = np.stack([frame[:, 512:] for frame in frames], axis=0)
+        stack = np.stack([frame[:, 512:].transpose(1,0)  for frame in frames], axis=0)
     else:
         raise ValueError("frame_side must be either 'right' or 'left'")
 
