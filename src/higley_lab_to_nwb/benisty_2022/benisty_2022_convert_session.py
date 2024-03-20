@@ -49,7 +49,7 @@ def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, 
     # Add Behavioral Video Recording
     video_file_path = data_dir_path / session_id / f"{session_id}.avi"
     source_data.update(dict(Video=dict(file_paths=[video_file_path], verbose=False)))
-    conversion_options.update(dict(Video=dict(stub_test=stub_test)))
+    conversion_options.update(dict(Video=dict(stub_test=stub_test, external_mode=False)))
 
     converter = Benisty2022NWBConverter(source_data=source_data)
 
@@ -76,7 +76,7 @@ if __name__ == "__main__":
     root_path = Path("/media/amtra/Samsung_T5/CN_data")
     data_dir_path = root_path / "Higley-CN-data-share"
     output_dir_path = root_path / "Higley-conversion_nwb/"
-    stub_test = True
+    stub_test = False
 
     session_to_nwb(
         data_dir_path=data_dir_path,

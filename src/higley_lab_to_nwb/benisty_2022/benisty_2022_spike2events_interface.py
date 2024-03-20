@@ -75,6 +75,13 @@ class Benisty2022Spike2EventsInterface(BaseDataInterface):
 
         return metadata
 
+    def get_event_times_from_ttl(self, stream_id):
+        extractor =  CedRecordingExtractor(file_path=str(self.source_data["file_path"]), stream_id=stream_id)
+        times = extractor.get_times()
+        traces = extractor.get_traces()
+        event_times = get_rising_frames_from_ttl(traces)
+        return times[event_times]
+    
     def add_to_nwbfile(self, nwbfile: NWBFile, metadata: dict) -> None:
 
         events_metadata = metadata["Events"]
@@ -85,10 +92,8 @@ class Benisty2022Spike2EventsInterface(BaseDataInterface):
 
         ttl_type = 0
         for stream_id, stream_name in self.stream_ids_to_names_map.items():
-            extractor =  CedRecordingExtractor(file_path=str(self.source_data["file_path"]), stream_id=stream_id)
-            times = extractor.get_times()
-            traces = extractor.get_traces()
-            event_times = get_rising_frames_from_ttl(traces)
+
+            timestamps = self.get_event_times_from_ttl(stream_id=stream_id)
 
             ttl_types_table.add_row(
                 event_name=stream_name,
@@ -96,8 +101,8 @@ class Benisty2022Spike2EventsInterface(BaseDataInterface):
                 pulse_value=1,
             )
 
-            if len(event_times):
-                for timestamp in times[event_times]:
+            if len(timestamps):
+                for timestamp in timestamps:
                     ttls_table.add_row(
                         ttl_type=ttl_type,
                         timestamp=timestamp,
