@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Literal
 import numpy as np
 from neo import io
 
@@ -7,8 +7,9 @@ from neuroconv.tools import get_package
 from neuroconv.utils import FilePathType
 from neuroconv.tools.signal_processing import get_rising_frames_from_ttl
 from spikeinterface.extractors import CedRecordingExtractor
-from pynwb import NWBFile
-from ndx_events import TtlsTable, TtlTypesTable
+from pynwb import NWBFile, TimeSeries
+from ndx_events import TtlsTable, TtlTypesTable, EventsTable, EventTypesTable
+
 
 def _test_sonpy_installation() -> None:
     get_package(
@@ -27,6 +28,15 @@ def get_streams(file_path: FilePathType) -> List[str]:
     return stream_ids, stream_names
 
 
+def _get_stream_gain_offset(file_path: FilePathType, stream_id: str) -> List[str]:
+    """Return a list of channel names as set in the recording extractor."""
+    r = io.CedIO(filename=file_path)
+    signal_channels = r.header["signal_channels"]
+    gain = signal_channels["gain"][signal_channels["id"] == stream_id][0]
+    offset = signal_channels["offset"][signal_channels["id"] == stream_id][0]
+    return gain, offset
+
+
 class Benisty2022Spike2EventsInterface(BaseDataInterface):
     """
     Data interface class for converting Spike2 synchronization signals from CED (Cambridge Electronic
@@ -39,7 +49,8 @@ class Benisty2022Spike2EventsInterface(BaseDataInterface):
     def __init__(
         self,
         file_path: FilePathType,
-        stream_ids_to_names_map: dict,
+        ttl_stream_ids_to_names_map: dict,
+        behavioral_stream_ids_to_names_map: dict,
         verbose: bool = True,
     ):
         """
@@ -58,7 +69,8 @@ class Benisty2022Spike2EventsInterface(BaseDataInterface):
             verbose=verbose,
         )
 
-        self.stream_ids_to_names_map = stream_ids_to_names_map
+        self.ttl_stream_ids_to_names_map = ttl_stream_ids_to_names_map
+        self.behavioral_stream_ids_to_names_map = behavioral_stream_ids_to_names_map
 
     def get_metadata(self) -> dict:
         metadata = super().get_metadata()
@@ -76,38 +88,45 @@ class Benisty2022Spike2EventsInterface(BaseDataInterface):
         return metadata
 
     def get_event_times_from_ttl(self, stream_id):
-        extractor =  CedRecordingExtractor(file_path=str(self.source_data["file_path"]), stream_id=stream_id)
+        extractor = CedRecordingExtractor(file_path=str(self.source_data["file_path"]), stream_id=stream_id)
         times = extractor.get_times()
         traces = extractor.get_traces()
         event_times = get_rising_frames_from_ttl(traces)
         return times[event_times]
-    
+
     def add_to_nwbfile(self, nwbfile: NWBFile, metadata: dict) -> None:
-
         events_metadata = metadata["Events"]
-        
         ttl_types_table = TtlTypesTable(**events_metadata["TTLTypesTable"])
-
         ttls_table = TtlsTable(**events_metadata["TTLsTable"], target_tables={"ttl_type": ttl_types_table})
 
-        ttl_type = 0
-        for stream_id, stream_name in self.stream_ids_to_names_map.items():
-
+        for ttl_type, (stream_id, stream_name) in enumerate(self.ttl_stream_ids_to_names_map.items()):
             timestamps = self.get_event_times_from_ttl(stream_id=stream_id)
-
             ttl_types_table.add_row(
                 event_name=stream_name,
                 event_type_description=f"The onset times of the {stream_name} event.",
                 pulse_value=1,
             )
-
             if len(timestamps):
                 for timestamp in timestamps:
                     ttls_table.add_row(
                         ttl_type=ttl_type,
                         timestamp=timestamp,
                     )
-            ttl_type+=1
 
         nwbfile.add_acquisition(ttl_types_table)
         nwbfile.add_acquisition(ttls_table)
+
+        for stream_id, stream_name in self.behavioral_stream_ids_to_names_map.items():
+            extractor = CedRecordingExtractor(file_path=str(self.source_data["file_path"]), stream_id=stream_id)
+            gain, offset = _get_stream_gain_offset(file_path=str(self.source_data["file_path"]), stream_id=stream_id)
+            behavioral_time_series = TimeSeries(
+                name=stream_name,
+                data=extractor.get_traces(),
+                rate=extractor.get_sampling_frequency(),
+                description=f"The {stream_name} measured over time.",
+                unit="volts",
+                conversion=gain,
+                offset=offset,
+            )
+
+            nwbfile.add_acquisition(behavioral_time_series)

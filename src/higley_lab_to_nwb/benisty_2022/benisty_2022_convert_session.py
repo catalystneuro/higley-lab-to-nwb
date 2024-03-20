@@ -23,21 +23,12 @@ def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, 
     source_data = dict()
     conversion_options = dict()
 
+    folder_path = data_dir_path / session_id
+
     # Add Analog signals from Spike2
-    file_path = str(data_dir_path / session_id / f"{session_id}_spike2.smrx")
+    file_path = str(folder_path / f"{session_id}_spike2.smrx")
     stream_ids, stream_names = get_streams(file_path=file_path)
 
-    # Add Wheel signal
-    source_data.update(
-        dict(
-            Wheel=dict(
-                file_path=file_path, stream_id=stream_ids[stream_names == "wheel"][0], es_key="WheelMotionSeries"
-            )
-        )
-    )
-    conversion_options.update(dict(Wheel=dict(stub_test=stub_test)))
-
-    # Add TTL synch signals
     TTLsignals_name_map = {
         stream_ids[stream_names == "BL_LED"][0]: "TTLSignalBlueLED",
         stream_ids[stream_names == "UV_LED"][0]: "TTLSignalVioletLED",
@@ -46,8 +37,22 @@ def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, 
         stream_ids[stream_names == "R_mesocam"][0]: "TTLSignalRedMesoscopicCamera",
         stream_ids[stream_names == "pupilcam"][0]: "TTLSignalPupilCamera",
     }
-    source_data.update(dict(TTLSignals=dict(file_path=file_path, stream_ids_to_names_map=TTLsignals_name_map)))
-    
+    behavioral_name_map = {
+        stream_ids[stream_names == "wheel"][0]: "WheelSignal",
+        stream_ids[stream_names == "Vis"][0]: "VisualStimulus",
+        stream_ids[stream_names == "airpuff"][0]: "AirpuffStimulus",
+    }
+
+    source_data.update(
+        dict(
+            Spike2Signals=dict(
+                file_path=file_path,
+                ttl_stream_ids_to_names_map=TTLsignals_name_map,
+                behavioral_stream_ids_to_names_map=behavioral_name_map,
+            )
+        )
+    )
+
     # Add Imaging
     folder_path = data_dir_path / session_id
     sampling_frequency = 10.0
@@ -115,7 +120,7 @@ if __name__ == "__main__":
     root_path = Path("/media/amtra/Samsung_T5/CN_data")
     data_dir_path = root_path / "Higley-CN-data-share"
     output_dir_path = root_path / "Higley-conversion_nwb/"
-    stub_test = False
+    stub_test = True
 
     session_to_nwb(
         data_dir_path=data_dir_path,
