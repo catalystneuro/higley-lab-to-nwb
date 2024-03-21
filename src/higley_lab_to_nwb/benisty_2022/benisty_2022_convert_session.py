@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Union
 from neuroconv.utils import load_dict_from_file, dict_deep_update
 from higley_lab_to_nwb.benisty_2022 import Benisty2022NWBConverter
-from higley_lab_to_nwb.benisty_2022.benisty_2022_spike2events_interface import get_streams
+from higley_lab_to_nwb.benisty_2022.benisty_2022_spike2signals_interface import get_streams
 from higley_lab_to_nwb.benisty_2022.benisty_2022_utils import create_tiff_stack, read_session_start_time
 import os
 
@@ -23,21 +23,12 @@ def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, 
     source_data = dict()
     conversion_options = dict()
 
+    folder_path = data_dir_path / session_id
+
     # Add Analog signals from Spike2
-    file_path = str(data_dir_path / session_id / f"{session_id}_spike2.smrx")
+    file_path = str(folder_path / f"{session_id}_spike2.smrx")
     stream_ids, stream_names = get_streams(file_path=file_path)
 
-    # Add Wheel signal
-    source_data.update(
-        dict(
-            Wheel=dict(
-                file_path=file_path, stream_id=stream_ids[stream_names == "wheel"][0], es_key="WheelMotionSeries"
-            )
-        )
-    )
-    conversion_options.update(dict(Wheel=dict(stub_test=stub_test)))
-
-    # Add TTL synch signals
     TTLsignals_name_map = {
         stream_ids[stream_names == "BL_LED"][0]: "TTLSignalBlueLED",
         stream_ids[stream_names == "UV_LED"][0]: "TTLSignalVioletLED",
@@ -46,10 +37,38 @@ def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, 
         stream_ids[stream_names == "R_mesocam"][0]: "TTLSignalRedMesoscopicCamera",
         stream_ids[stream_names == "pupilcam"][0]: "TTLSignalPupilCamera",
     }
-    source_data.update(dict(TTLSignals=dict(file_path=file_path, stream_ids_to_names_map=TTLsignals_name_map)))
+    behavioral_name_map = {
+        stream_ids[stream_names == "wheel"][0]: "WheelSignal",
+    }
+    stimulus_name_map = {
+        stream_ids[stream_names == "Vis"][0]: "VisualStimulus",
+        # stream_ids[stream_names == "airpuff"][0]: "AirpuffStimulus",
+    }
+    if "vis_stim" in session_id:
+        source_data.update(
+            dict(
+                Spike2Signals=dict(
+                    file_path=file_path,
+                    ttl_stream_ids_to_names_map=TTLsignals_name_map,
+                    behavioral_stream_ids_to_names_map=behavioral_name_map,
+                    stimulus_stream_ids_to_names_map=stimulus_name_map,
+                )
+            )
+        )
+    else:
+        source_data.update(
+            dict(
+                Spike2Signals=dict(
+                    file_path=file_path,
+                    ttl_stream_ids_to_names_map=TTLsignals_name_map,
+                    behavioral_stream_ids_to_names_map=behavioral_name_map,
+                )
+            )
+        )
+
+    conversion_options.update(dict(Spike2Signals=dict(stub_test=stub_test)))
     
-    # Add Imaging
-    folder_path = data_dir_path / session_id
+    # Add Imaging    
     sampling_frequency = 10.0
     photon_series_index = 0
 
@@ -85,6 +104,11 @@ def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, 
             }
             photon_series_index += 1
 
+    # Add Behavioral Video Recording
+    video_file_path = data_dir_path / session_id / f"{session_id}.avi"
+    source_data.update(dict(Video=dict(file_paths=[video_file_path], verbose=False)))
+    conversion_options.update(dict(Video=dict(stub_test=stub_test, external_mode=False)))
+    
     converter = Benisty2022NWBConverter(source_data=source_data)
 
     # Add datetime to conversion
