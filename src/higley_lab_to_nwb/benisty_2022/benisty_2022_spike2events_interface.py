@@ -127,7 +127,7 @@ class Benisty2022Spike2EventsInterface(BaseDataInterface):
                 data=extractor.get_traces(end_frame=end_frame),
                 rate=extractor.get_sampling_frequency(),
                 description=f"The {stream_name} measured over time.",
-                unit="volts",
+                unit="Volts",
                 conversion=gain,
                 offset=offset,
             )
