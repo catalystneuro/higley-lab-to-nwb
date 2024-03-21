@@ -39,22 +39,35 @@ def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, 
     }
     behavioral_name_map = {
         stream_ids[stream_names == "wheel"][0]: "WheelSignal",
-        stream_ids[stream_names == "Vis"][0]: "VisualStimulus",
-        stream_ids[stream_names == "airpuff"][0]: "AirpuffStimulus",
     }
-
-    source_data.update(
-        dict(
-            Spike2Signals=dict(
-                file_path=file_path,
-                ttl_stream_ids_to_names_map=TTLsignals_name_map,
-                behavioral_stream_ids_to_names_map=behavioral_name_map,
+    stimulus_name_map = {
+        stream_ids[stream_names == "Vis"][0]: "VisualStimulus",
+        # stream_ids[stream_names == "airpuff"][0]: "AirpuffStimulus",
+    }
+    if "vis_stim" in session_id:
+        source_data.update(
+            dict(
+                Spike2Signals=dict(
+                    file_path=file_path,
+                    ttl_stream_ids_to_names_map=TTLsignals_name_map,
+                    behavioral_stream_ids_to_names_map=behavioral_name_map,
+                    stimulus_stream_ids_to_names_map=stimulus_name_map,
+                )
             )
         )
-    )
+    else:
+        source_data.update(
+            dict(
+                Spike2Signals=dict(
+                    file_path=file_path,
+                    ttl_stream_ids_to_names_map=TTLsignals_name_map,
+                    behavioral_stream_ids_to_names_map=behavioral_name_map,
+                )
+            )
+        )
 
     conversion_options.update(dict(Spike2Signals=dict(stub_test=stub_test)))
-
+    
     # Add Imaging    
     sampling_frequency = 10.0
     photon_series_index = 0
@@ -95,7 +108,7 @@ def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, 
     video_file_path = data_dir_path / session_id / f"{session_id}.avi"
     source_data.update(dict(Video=dict(file_paths=[video_file_path], verbose=False)))
     conversion_options.update(dict(Video=dict(stub_test=stub_test, external_mode=False)))
-
+    
     converter = Benisty2022NWBConverter(source_data=source_data)
 
     # Add datetime to conversion

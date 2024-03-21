@@ -1,4 +1,4 @@
-from typing import List, Literal
+from typing import List
 import numpy as np
 from neo import io
 
@@ -39,18 +39,19 @@ def _get_stream_gain_offset(file_path: FilePathType, stream_id: str) -> List[str
 
 class Benisty2022Spike2SignalsInterface(BaseDataInterface):
     """
-    Data interface class for converting Spike2 synchronization signals from CED (Cambridge Electronic
+    Data interface class for converting Spike2 analogue signals from CED (Cambridge Electronic
     Design) using the :py:class:`~spikeinterface.extractors.CedRecordingExtractor`."""
 
     display_name = "Spike2 Recording"
     associated_suffixes = (".smr", ".smrx")
-    info = "Interface for Spike2 recording synchronization signals from CED (Cambridge Electronic Design)."
+    info = "Interface for Spike2 analogue signals from CED (Cambridge Electronic Design)."
 
     def __init__(
         self,
         file_path: FilePathType,
         ttl_stream_ids_to_names_map: dict,
         behavioral_stream_ids_to_names_map: dict,
+        stimulus_stream_ids_to_names_map: dict = None,
         verbose: bool = True,
     ):
         """
@@ -58,8 +59,12 @@ class Benisty2022Spike2SignalsInterface(BaseDataInterface):
         ----------
         file_path : FilePathType
             Path to .smr or .smrx file.
-        stream_ids_to_names_map: dict
-            If there are several streams, specify the stream id and associated name.
+        ttl_stream_ids_to_names_map: dict
+            If there are several streams for ttl signals, specify the stream id and associated name.
+        behavioral_stream_ids_to_names_map: dict
+            If there are several streams for behavioural signals, specify the stream id and associated name.
+        stimulus_stream_ids_to_names_map: dict
+            If there are several streams for external stimuli, specify the stream id and associated name.
         verbose : bool, default: True
         """
         _test_sonpy_installation()
@@ -71,6 +76,7 @@ class Benisty2022Spike2SignalsInterface(BaseDataInterface):
 
         self.ttl_stream_ids_to_names_map = ttl_stream_ids_to_names_map
         self.behavioral_stream_ids_to_names_map = behavioral_stream_ids_to_names_map
+        self.stimulus_stream_ids_to_names_map = stimulus_stream_ids_to_names_map
 
     def get_metadata(self) -> dict:
         metadata = super().get_metadata()
@@ -118,7 +124,34 @@ class Benisty2022Spike2SignalsInterface(BaseDataInterface):
         nwbfile.add_acquisition(ttl_types_table)
         nwbfile.add_acquisition(ttls_table)
 
-        
+        if self.stimulus_stream_ids_to_names_map is not None:
+
+            stimulus_types_table = EventTypesTable(
+                name="StimulusTypesTable",
+                description="Contains the type of stimulus signals from Spike2 output.",
+            )
+            stimuli_table = EventsTable(
+                name="StimuliTable",
+                description="Contains the stimulus signals onset times.",
+                target_tables={"event_type": stimulus_types_table},
+            )
+
+            for stimulus_type, (stream_id, stream_name) in enumerate(self.stimulus_stream_ids_to_names_map.items()):
+                timestamps = self.get_event_times_from_ttl(stream_id=stream_id)
+                stimulus_types_table.add_row(
+                    event_name=stream_name,
+                    event_type_description=f"The onset times of the {stream_name} event.",
+                )
+                if len(timestamps):
+                    for timestamp in timestamps[:end_frame]:
+                        stimuli_table.add_row(
+                            event_type=stimulus_type,
+                            timestamp=timestamp,
+                        )
+
+            nwbfile.add_acquisition(stimulus_types_table)
+            nwbfile.add_acquisition(stimuli_table)
+
         for stream_id, stream_name in self.behavioral_stream_ids_to_names_map.items():
             extractor = CedRecordingExtractor(file_path=str(self.source_data["file_path"]), stream_id=stream_id)
             gain, offset = _get_stream_gain_offset(file_path=str(self.source_data["file_path"]), stream_id=stream_id)
