@@ -53,8 +53,9 @@ def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, 
         )
     )
 
-    # Add Imaging
-    folder_path = data_dir_path / session_id
+    conversion_options.update(dict(Spike2Signals=dict(stub_test=stub_test)))
+
+    # Add Imaging    
     sampling_frequency = 10.0
     photon_series_index = 0
 

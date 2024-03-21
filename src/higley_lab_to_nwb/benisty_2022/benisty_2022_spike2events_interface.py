@@ -94,7 +94,9 @@ class Benisty2022Spike2EventsInterface(BaseDataInterface):
         event_times = get_rising_frames_from_ttl(traces)
         return times[event_times]
 
-    def add_to_nwbfile(self, nwbfile: NWBFile, metadata: dict) -> None:
+    def add_to_nwbfile(self, nwbfile: NWBFile, metadata: dict, stub_test: bool = False) -> None:
+        end_frame = 100 if stub_test else None
+
         events_metadata = metadata["Events"]
         ttl_types_table = TtlTypesTable(**events_metadata["TTLTypesTable"])
         ttls_table = TtlsTable(**events_metadata["TTLsTable"], target_tables={"ttl_type": ttl_types_table})
@@ -107,7 +109,7 @@ class Benisty2022Spike2EventsInterface(BaseDataInterface):
                 pulse_value=1,
             )
             if len(timestamps):
-                for timestamp in timestamps:
+                for timestamp in timestamps[:end_frame]:
                     ttls_table.add_row(
                         ttl_type=ttl_type,
                         timestamp=timestamp,
@@ -116,12 +118,13 @@ class Benisty2022Spike2EventsInterface(BaseDataInterface):
         nwbfile.add_acquisition(ttl_types_table)
         nwbfile.add_acquisition(ttls_table)
 
+        
         for stream_id, stream_name in self.behavioral_stream_ids_to_names_map.items():
             extractor = CedRecordingExtractor(file_path=str(self.source_data["file_path"]), stream_id=stream_id)
             gain, offset = _get_stream_gain_offset(file_path=str(self.source_data["file_path"]), stream_id=stream_id)
             behavioral_time_series = TimeSeries(
                 name=stream_name,
-                data=extractor.get_traces(),
+                data=extractor.get_traces(end_frame=end_frame),
                 rate=extractor.get_sampling_frequency(),
                 description=f"The {stream_name} measured over time.",
                 unit="volts",

@@ -22,7 +22,7 @@ class Benisty2022NWBConverter(NWBConverter):
     )
 
     def temporally_align_data_interfaces(self):
-        ttlsignal_interface = self.data_interface_objects["TTLSignals"]
+        ttlsignal_interface = self.data_interface_objects["Spike2Signals"]
         video_interface = self.data_interface_objects["Video"]
         video_interface._timestamps = video_interface.get_timestamps()
         stream_id = next(
