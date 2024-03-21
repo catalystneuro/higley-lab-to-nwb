@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Union
 from neuroconv.utils import load_dict_from_file, dict_deep_update
 from higley_lab_to_nwb.benisty_2022 import Benisty2022NWBConverter
-from higley_lab_to_nwb.benisty_2022.benisty_2022_spike2events_interface import get_streams
+from higley_lab_to_nwb.benisty_2022.benisty_2022_spike2signals_interface import get_streams
 from higley_lab_to_nwb.benisty_2022.benisty_2022_utils import create_tiff_stack, read_session_start_time
 import os
 

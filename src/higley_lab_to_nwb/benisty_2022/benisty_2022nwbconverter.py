@@ -1,7 +1,7 @@
 """Primary NWBConverter class for this dataset."""
 
 from neuroconv import NWBConverter
-from higley_lab_to_nwb.benisty_2022.benisty_2022_spike2events_interface import Benisty2022Spike2EventsInterface
+from higley_lab_to_nwb.benisty_2022.benisty_2022_spike2signals_interface import Benisty2022Spike2SignalsInterface
 from higley_lab_to_nwb.benisty_2022.benisty_2022_imaginginterface import Benisty2022ImagingInterface
 
 from neuroconv.datainterfaces import VideoInterface
@@ -11,7 +11,7 @@ class Benisty2022NWBConverter(NWBConverter):
     """Primary conversion class."""
 
     data_interface_classes = dict(
-        Spike2Signals=Benisty2022Spike2EventsInterface, 
+        Spike2Signals=Benisty2022Spike2SignalsInterface, 
         Video=VideoInterface,
         ImagingBlueExcitationGreenChannel=Benisty2022ImagingInterface,
         ImagingBlueExcitationRedChannel=Benisty2022ImagingInterface,

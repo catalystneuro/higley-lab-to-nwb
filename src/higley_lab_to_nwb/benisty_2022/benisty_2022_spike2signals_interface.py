@@ -37,7 +37,7 @@ def _get_stream_gain_offset(file_path: FilePathType, stream_id: str) -> List[str
     return gain, offset
 
 
-class Benisty2022Spike2EventsInterface(BaseDataInterface):
+class Benisty2022Spike2SignalsInterface(BaseDataInterface):
     """
     Data interface class for converting Spike2 synchronization signals from CED (Cambridge Electronic
     Design) using the :py:class:`~spikeinterface.extractors.CedRecordingExtractor`."""
