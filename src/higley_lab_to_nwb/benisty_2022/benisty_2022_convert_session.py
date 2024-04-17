@@ -108,7 +108,16 @@ def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, 
     video_file_path = data_dir_path / session_id / f"{session_id}.avi"
     source_data.update(dict(Video=dict(file_paths=[video_file_path], verbose=False)))
     conversion_options.update(dict(Video=dict(stub_test=stub_test, external_mode=False)))
-    
+
+    # Add Facemap outpt
+    video_file_path = data_dir_path / session_id / f"{session_id}.avi"
+    mat_file_path = data_dir_path / session_id / f"{session_id}_proc.mat"
+    source_data.update(
+        dict(
+            FacemapInterface=dict(mat_file_path=str(mat_file_path), video_file_path=str(video_file_path), verbose=False)
+        )
+    )
+
     converter = Benisty2022NWBConverter(source_data=source_data)
 
     # Add datetime to conversion
@@ -125,7 +134,9 @@ def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, 
     metadata = dict_deep_update(metadata, editable_metadata)
 
     # Run conversion
-    converter.run_conversion(metadata=metadata, nwbfile_path=nwbfile_path, conversion_options=conversion_options)
+    converter.run_conversion(
+        metadata=metadata, nwbfile_path=nwbfile_path, conversion_options=conversion_options, overwrite=True
+    )
 
 
 if __name__ == "__main__":
