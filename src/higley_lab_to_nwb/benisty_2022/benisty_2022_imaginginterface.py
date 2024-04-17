@@ -47,7 +47,7 @@ class Benisty2022ImagingInterface(BaseImagingExtractorInterface):
 
         indicators = dict(Red="ACh3.0", Green="jRCaMP1b")
 
-        excitation_lambdas = dict(Blue=470.0, UV=395.0, Green=575.0)
+        excitation_lambdas = dict(Blue=470.0, Violet=395.0, Green=575.0)
 
         channel_metadata = {
             "Green": {

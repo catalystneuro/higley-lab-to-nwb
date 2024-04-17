@@ -72,7 +72,7 @@ def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, 
     sampling_frequency = 10.0
     photon_series_index = 0
 
-    excitation_type_to_start_frame_index_mapping = dict(Blue=0, UV=1, Green=2)
+    excitation_type_to_start_frame_index_mapping = dict(Blue=0, Violet=1, Green=2)
     channel_to_frame_side_mapping = dict(Green="left", Red="right")
 
     for excitation_type in excitation_type_to_start_frame_index_mapping:
