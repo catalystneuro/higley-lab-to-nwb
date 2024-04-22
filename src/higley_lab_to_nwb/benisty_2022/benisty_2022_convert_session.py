@@ -150,7 +150,7 @@ if __name__ == "__main__":
     output_dir_path = root_path / "Higley-conversion_nwb/"
     stub_test = True
     session_ids = os.listdir(data_dir_path)
-    session_id = session_ids[2]
+    session_id = '11222019_grabAM06_vis_stim'
     folder_path = data_dir_path / Path(session_id)
     session_to_nwb(
         folder_path= folder_path,

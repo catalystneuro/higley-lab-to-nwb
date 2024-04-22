@@ -14,8 +14,6 @@ output_dir_path = root_path / "Higley-conversion_nwb/"
 
 session_ids = os.listdir(data_dir_path)
 stub_test = True
-
-session_ids = ['11222019_grabAM06_vis_stim', '11232019_grabAM07_vis_stim', '11232019_grabAM08_vis_stim']
 for session_id in session_ids:
     session_folder = data_dir_path / Path(session_id)
     if os.path.isdir(session_folder):
