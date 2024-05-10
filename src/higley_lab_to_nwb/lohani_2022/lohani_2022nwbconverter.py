@@ -6,9 +6,7 @@ from higley_lab_to_nwb.lohani_2022.interfaces.lohani_2022_spike2signals_interfac
     Lohani2022Spike2SignalsInterface,
 )
 from higley_lab_to_nwb.lohani_2022.interfaces.lohani_2022_imaginginterface import Lohani2022MesoscopicImagingInterface
-
 from neuroconv.datainterfaces import VideoInterface, FacemapInterface
-from neuroconv.datainterfaces.ophys.tiff.tiffdatainterface import TiffImagingInterface
 
 
 class Lohani2022NWBConverter(NWBConverter):

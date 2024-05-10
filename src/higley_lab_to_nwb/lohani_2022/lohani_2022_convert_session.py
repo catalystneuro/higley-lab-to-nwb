@@ -31,6 +31,7 @@ def session_to_nwb(
     file_path = smrx_files[0]
     stream_ids, stream_names = get_streams(file_path=file_path)
 
+    # Define each smrx signal name
     TTLsignals_name_map = {
         stream_ids[stream_names == "BL_LED"][0]: "TTLSignalBlueLED",
         stream_ids[stream_names == "UV_LED"][0]: "TTLSignalVioletLED",
@@ -74,7 +75,9 @@ def session_to_nwb(
     sampling_frequency = 10.0
     photon_series_index = 0
 
+    # Define a dictonary that for each excitation type associate the starting frame index
     excitation_type_to_start_frame_index_mapping = dict(Blue=0, Violet=1, Green=2)
+    # Define a dictonary that for each optical channel/filter associate the frame side
     channel_to_frame_side_mapping = dict(Green="right", Red="left")
 
     for excitation_type in excitation_type_to_start_frame_index_mapping:
@@ -96,8 +99,6 @@ def session_to_nwb(
             source_data[interface_name] = {
                 "file_path": tif_file_path,
                 "sampling_frequency": sampling_frequency,
-                "channel": channel,
-                "excitation_type": excitation_type,
             }
             conversion_options[interface_name] = {
                 "stub_test": stub_test,
@@ -139,6 +140,11 @@ def session_to_nwb(
     editable_metadata_path = Path(__file__).parent / "lohani_2022_metadata.yaml"
     editable_metadata = load_dict_from_file(editable_metadata_path)
     metadata = dict_deep_update(metadata, editable_metadata)
+
+    # Add ophys metadata
+    ophys_metadata_path = Path(__file__).parent / "metadata" / "lohani_2022_ophys_metadata.yaml"
+    ophys_metadata = load_dict_from_file(ophys_metadata_path)
+    metadata = dict_deep_update(metadata, ophys_metadata)
 
     # Run conversion
     converter.run_conversion(
