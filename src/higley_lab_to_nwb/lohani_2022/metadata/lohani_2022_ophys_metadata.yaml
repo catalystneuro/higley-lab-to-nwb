@@ -1,0 +1,20 @@
+Ophys:
+  Device:
+    - name: CustomMicroscope
+      description: "Camera Type: DUAL_DCAM, Camera Name: C13440-20C S/N: 301751 S/N: 300073"
+      manufacturer: Hamamatsu Inc.
+  ImagingPlane:
+    - name: ImagingPlaneChannel1
+      excitation_lambda: 920.0  # in nm
+      location: STR
+      optical_channel:
+        - name: Channel 1
+          description: The optical channel used to record cell bodies located in the striatum.
+      indicator: unknown # TODO collect from Shiva
+    - name: ImagingPlaneChannel2
+      excitation_lambda: 1070.0 # in nm
+      location: STR
+      indicator: unknown # TODO collect from Shiva
+      optical_channel:
+        - name: Channel 2
+          description: The optical channel used to record axons located in the striatum.

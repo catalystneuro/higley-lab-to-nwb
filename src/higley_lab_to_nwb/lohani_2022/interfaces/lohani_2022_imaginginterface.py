@@ -11,8 +11,7 @@ from neuroconv.utils import FolderPathType, FilePathType
 from neuroconv.utils.dict import DeepDict
 from neuroconv.datainterfaces.ophys.baseimagingextractorinterface import BaseImagingExtractorInterface
 from roiextractors.extractors.tiffimagingextractors.tiffimagingextractor import TiffImagingExtractor
-
-class Benisty2022ImagingInterface(BaseImagingExtractorInterface):
+class Lohani2022MesoscopicImagingInterface(BaseImagingExtractorInterface):
     """Data Interface for writing imaging data for the Higley lab to NWB file using TiffImagingExtractor."""
 
     Extractor = TiffImagingExtractor

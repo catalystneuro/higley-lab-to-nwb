@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Union
 import os
-from benisty_2022_convert_session import session_to_nwb
+from .lohani_2022_convert_session import session_to_nwb
 
 
 
