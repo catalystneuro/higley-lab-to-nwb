@@ -9,15 +9,6 @@
 * Synchronization signals, TTL pulses triggered by the different systems and recorded by the electrophysiology system (here used just for synch purpose), Spike2 output format. ([TTL signals](#ttl-signals))
 
 ## Raw Imaging 
-### Method description from [Lohani 2024](https://www.nature.com/articles/s41593-023-01498-y):
-**Mesoscopic imaging**
-Widefield mesoscopic calcium imaging was performed using a Zeiss Axiozoom with a 1×, 0.25 NA objective with a 56 mm working distance (Zeiss). Epifluorescent excitation was provided by an LED bank (Spectra X Light Engine, Lumencor) using two output wavelengths: 395/25 (isosbestic for GRABACh3.0) and 575/25 nm (jRCaMP1b). Emitted light passed through a dual camera image splitter (TwinCam, Cairn Research) then through either a 525/50 (GRABACh3.0) or 630/75 (jRCaMP1b) emission filter (Chroma) before it reached two sCMOS cameras (Orca-Flash V3, Hamamatsu). Images were acquired at 512×512 resolution after 4× pixel binning, and each channel was acquired at 10 Hz with 20 ms exposure using HCImage software (Hamamatsu).
-
-**Two-photon imaging**
-Two-photon imaging was performed using a MOM microscope (Sutter Instruments) coupled to a 16×, 0.8 NA objective (Nikon). Excitation was driven by a Titanium-Sapphire Laser (Mai-Tai eHP DeepSee, Spectra-Physics) tuned to 920 nm. Emitted light was collected through a 525/50 filter and a gallium arsenide phosphide photomultiplier tube (Hamamatsu). Images were acquired at 512×512 resolution at 30 Hz using a galvo-resonant scan system controlled by ScanImage software (Vidrio).
-
-**Dual mesoscopic and two-photon imaging**
-Dual imaging was carried out using a custom microscope combining a Zeiss Axiozoom (as above) and a Sutter MOM (as above), as described previously 25. To image through the implanted prism, a long-working distance objective (20×, 0.4 NA, Mitutoyo) was used. Frame acquisitions were interleaved with an overall rate of 9.15 Hz, with each cycle alternating sequentially between a 920nm two-photon acquisition (512×512 resolution), a 395/25nm widefield excitation acquisition, and a 470/20nm widefield excitation acquisition. Widefield data were collected through a 525/50nm filter into a sCMOS camera (Orca Fusion, Hamamatsu) at 576×576 resolution after 45× pixel binning with 20ms exposure.
 
 ### Method description from [Lohani 2022](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10661869/):
 **Widefield imaging**
@@ -112,7 +103,7 @@ Then using the 'BL_LED', 'UV_LED' and 'Green LED' we can separate the three imag
 ...
 
 ## Behavior
-### Method description from [Lohani 2024](https://www.nature.com/articles/s41593-023-01498-y):
+### Method description from [Benisty 2024](https://www.nature.com/articles/s41593-023-01498-y):
 #### Wheel motion
 All imaging was performed in awake, behaving mice that were head-fixed so that they could freely run on a cylindrical wheel. A magnetic angle sensor (Digikey) attached to the wheel continuously monitored wheel motion. Mice received at least three wheel-training habituation sessions before imaging to ensure consistent running bouts. During widefield imaging sessions, the face (including the pupil and whiskers) was illuminated with an IR LED bank and imaged with a miniature CMOS camera (Blackfly s-USB3, Flir) with a frame rate of 10 Hz using FlyCam2 software (Flir).
 ![alt text](behavioral_signals.png)
@@ -192,5 +183,4 @@ Wheel position was obtained from a linear angle detector attached to the wheel a
 - _wpix_:
 
 ##Lab Code
-* [Lohani 2024](https://github.com/cardin-higley-lab/Lohani_Higley_2023)
 * [Lohani 2022](https://github.com/cardin-higley-lab/Lohani_Moberly_et_al_2022)
