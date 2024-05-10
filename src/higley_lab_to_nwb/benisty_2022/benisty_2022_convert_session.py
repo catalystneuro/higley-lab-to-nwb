@@ -7,26 +7,28 @@ from higley_lab_to_nwb.benisty_2022 import Benisty2022NWBConverter
 from higley_lab_to_nwb.benisty_2022.benisty_2022_spike2signals_interface import get_streams
 from higley_lab_to_nwb.benisty_2022.benisty_2022_utils import create_tiff_stack, read_session_start_time
 import os
+import glob
 
 
-def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, Path], stub_test: bool = False):
+def session_to_nwb(
+    folder_path: Union[str, Path], output_dir_path: Union[str, Path], session_id: str, stub_test: bool = False
+):
 
-    data_dir_path = Path(data_dir_path)
     output_dir_path = Path(output_dir_path)
     if stub_test:
         output_dir_path = output_dir_path / "nwb_stub"
     output_dir_path.mkdir(parents=True, exist_ok=True)
 
-    session_id = "11222019_grabAM05_spont"
     nwbfile_path = output_dir_path / f"{session_id}.nwb"
 
     source_data = dict()
     conversion_options = dict()
 
-    folder_path = data_dir_path / session_id
+    search_pattern = '_'.join(session_id.split("_")[:2])
 
     # Add Analog signals from Spike2
-    file_path = str(folder_path / f"{session_id}_spike2.smrx")
+    smrx_files = glob.glob(os.path.join(folder_path, f"{search_pattern}*.smrx"))
+    file_path = smrx_files[0]
     stream_ids, stream_names = get_streams(file_path=file_path)
 
     TTLsignals_name_map = {
@@ -67,19 +69,19 @@ def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, 
         )
 
     conversion_options.update(dict(Spike2Signals=dict(stub_test=stub_test)))
-    
-    # Add Imaging    
+
+    # Add Imaging
     sampling_frequency = 10.0
     photon_series_index = 0
 
     excitation_type_to_start_frame_index_mapping = dict(Blue=0, Violet=1, Green=2)
-    channel_to_frame_side_mapping = dict(Green="left", Red="right")
+    channel_to_frame_side_mapping = dict(Green="right", Red="left")
 
     for excitation_type in excitation_type_to_start_frame_index_mapping:
         for channel in channel_to_frame_side_mapping:
             start_frame_index = excitation_type_to_start_frame_index_mapping[excitation_type]
             frame_side = channel_to_frame_side_mapping[channel]
-            tif_file_path = str(folder_path) + f"_channel{start_frame_index}_{frame_side}.tiff"
+            tif_file_path = str(folder_path) + f"/{session_id}_channel{start_frame_index}_{frame_side}.tiff"
             if not os.path.exists(tif_file_path):
                 create_tiff_stack(
                     folder_path=folder_path,
@@ -105,13 +107,14 @@ def session_to_nwb(data_dir_path: Union[str, Path], output_dir_path: Union[str, 
             photon_series_index += 1
 
     # Add Behavioral Video Recording
-    video_file_path = data_dir_path / session_id / f"{session_id}.avi"
+    avi_files = glob.glob(os.path.join(folder_path, f"{search_pattern}*.avi"))
+    video_file_path = avi_files[0]
     source_data.update(dict(Video=dict(file_paths=[video_file_path], verbose=False)))
     conversion_options.update(dict(Video=dict(stub_test=stub_test, external_mode=False)))
 
     # Add Facemap outpt
-    video_file_path = data_dir_path / session_id / f"{session_id}.avi"
-    mat_file_path = data_dir_path / session_id / f"{session_id}_proc.mat"
+    mat_files = glob.glob(os.path.join(folder_path, f"{search_pattern}*_proc.mat"))
+    mat_file_path = mat_files[0]
     source_data.update(
         dict(
             FacemapInterface=dict(mat_file_path=str(mat_file_path), video_file_path=str(video_file_path), verbose=False)
@@ -146,9 +149,12 @@ if __name__ == "__main__":
     data_dir_path = root_path / "Higley-CN-data-share"
     output_dir_path = root_path / "Higley-conversion_nwb/"
     stub_test = True
-
+    session_ids = os.listdir(data_dir_path)
+    session_id = '11222019_grabAM06_vis_stim'
+    folder_path = data_dir_path / Path(session_id)
     session_to_nwb(
-        data_dir_path=data_dir_path,
+        folder_path= folder_path,
         output_dir_path=output_dir_path,
+        session_id=session_id,
         stub_test=stub_test,
     )

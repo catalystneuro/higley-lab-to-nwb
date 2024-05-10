@@ -5,10 +5,11 @@ from neo import io
 from neuroconv import BaseDataInterface
 from neuroconv.tools import get_package
 from neuroconv.utils import FilePathType
-from neuroconv.tools.signal_processing import get_rising_frames_from_ttl
+from neuroconv.tools.signal_processing import get_rising_frames_from_ttl, get_falling_frames_from_ttl
 from spikeinterface.extractors import CedRecordingExtractor
 from pynwb import NWBFile, TimeSeries
-from ndx_events import TtlsTable, TtlTypesTable, EventsTable, EventTypesTable
+from pynwb.epoch import TimeIntervals
+from ndx_events import TtlsTable, TtlTypesTable
 
 
 def _test_sonpy_installation() -> None:
@@ -93,11 +94,15 @@ class Benisty2022Spike2SignalsInterface(BaseDataInterface):
 
         return metadata
 
-    def get_event_times_from_ttl(self, stream_id):
+    def get_event_times_from_ttl(self, stream_id, rising: bool = True):
         extractor = CedRecordingExtractor(file_path=str(self.source_data["file_path"]), stream_id=stream_id)
         times = extractor.get_times()
         traces = extractor.get_traces()
-        event_times = get_rising_frames_from_ttl(traces)
+        if rising:
+            event_times = get_rising_frames_from_ttl(traces)
+        else:
+            event_times = get_falling_frames_from_ttl(traces)
+
         return times[event_times]
 
     def add_to_nwbfile(self, nwbfile: NWBFile, metadata: dict, stub_test: bool = False) -> None:
@@ -126,31 +131,22 @@ class Benisty2022Spike2SignalsInterface(BaseDataInterface):
 
         if self.stimulus_stream_ids_to_names_map is not None:
 
-            stimulus_types_table = EventTypesTable(
-                name="StimulusTypesTable",
-                description="Contains the type of stimulus signals from Spike2 output.",
-            )
-            stimuli_table = EventsTable(
-                name="StimuliTable",
-                description="Contains the stimulus signals onset times.",
-                target_tables={"event_type": stimulus_types_table},
-            )
+            for stream_id, stream_name in self.stimulus_stream_ids_to_names_map.items():
+                intervals_table = TimeIntervals(
+                                    name=stream_name,
+                                    description=f"Intervals for each {stream_name}",
+                                )
+                start_times = self.get_event_times_from_ttl(stream_id=stream_id)
+                stop_times = self.get_event_times_from_ttl(stream_id=stream_id,rising=False)
 
-            for stimulus_type, (stream_id, stream_name) in enumerate(self.stimulus_stream_ids_to_names_map.items()):
-                timestamps = self.get_event_times_from_ttl(stream_id=stream_id)
-                stimulus_types_table.add_row(
-                    event_name=stream_name,
-                    event_type_description=f"The onset times of the {stream_name} event.",
-                )
-                if len(timestamps):
-                    for timestamp in timestamps[:end_frame]:
-                        stimuli_table.add_row(
-                            event_type=stimulus_type,
-                            timestamp=timestamp,
+                if len(start_times):
+                    for start,stop in zip(start_times[:end_frame], stop_times[:end_frame]):
+                        intervals_table.add_row(
+                            start_time=start,
+                            stop_time=stop,
                         )
 
-            nwbfile.add_acquisition(stimulus_types_table)
-            nwbfile.add_acquisition(stimuli_table)
+            nwbfile.add_time_intervals(intervals_table)
 
         for stream_id, stream_name in self.behavioral_stream_ids_to_names_map.items():
             extractor = CedRecordingExtractor(file_path=str(self.source_data["file_path"]), stream_id=stream_id)
