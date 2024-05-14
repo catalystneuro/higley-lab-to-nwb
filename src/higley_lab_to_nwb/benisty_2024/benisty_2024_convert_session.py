@@ -33,11 +33,6 @@ def session_to_nwb(
         dict(TwoPhotonImagingGreenChannel=dict(folder_path=str(folder_path), file_pattern=f"*.tif", channel_name="Channel 1"))
     )
     conversion_options.update(dict(TwoPhotonImagingGreenChannel=dict(stub_test=stub_test)))
-    # source_data.update(
-    #     dict(TwoPhotonImagingRedChannel=dict(folder_path=str(folder_path), file_pattern=f"*.tif", channel_name="Channel 2"))
-    # )
-    # conversion_options.update(dict(TwoPhotonImagingRedChannel=dict(stub_test=stub_test, photon_series_index=1)))
-
 
     converter = Benisty2024NWBConverter(
         source_data=source_data,
@@ -57,6 +52,7 @@ def session_to_nwb(
     # Add ophys metadata
     ophys_metadata_path = Path(__file__).parent / "metadata" / "benisty_2024_ophys_metadata.yaml"
     ophys_metadata = load_dict_from_file(ophys_metadata_path)
+    metadata.pop("Ophys", None)
     metadata = dict_deep_update(metadata, ophys_metadata)
 
     # Run conversion

@@ -13,7 +13,7 @@ Ophys:
       description: Imaging plane for the Green channel recorded with 2p microscope.
       excitation_lambda: 920.0  # in nm
       location: Whole Brain
-      device: 2pMicroscope
+      device: TwoPhotonMicroscope
       optical_channel:
         - name: Green
           description: Emitted light was collected through a 525/50 filter and a gallium arsenide phosphide photomultiplier tube (Hamamatsu).
