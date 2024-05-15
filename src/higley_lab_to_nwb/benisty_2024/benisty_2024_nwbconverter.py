@@ -10,5 +10,4 @@ class Benisty2024NWBConverter(NWBConverter):
 
     data_interface_classes = dict(
         TwoPhotonImagingGreenChannel=ScanImageMultiFileImagingInterface,
-        TwoPhotonImagingRedChannel=ScanImageMultiFileImagingInterface
     )
