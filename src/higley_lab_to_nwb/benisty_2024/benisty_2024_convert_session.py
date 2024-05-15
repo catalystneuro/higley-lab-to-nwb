@@ -32,11 +32,21 @@ def session_to_nwb(
     source_data.update(dict(TwoPhotonImagingGreenChannel=dict(folder_path=str(imaging_path), file_pattern=f"*.tif")))
     conversion_options.update(dict(TwoPhotonImagingGreenChannel=dict(stub_test=stub_test)))
 
+    # Add Segmentation
+    suite2p_path = folder_path / "suite2p"
+    source_data.update(dict(SegmentationGreenChannel=dict(folder_path = suite2p_path)))
+    conversion_options.update(dict(SegmentationGreenChannel=dict(stub_test=stub_test)))
+
+    # Add ophys metadata
+    ophys_metadata_path = Path(__file__).parent / "metadata" / "benisty_2024_ophys_metadata.yaml"
+    ophys_metadata = load_dict_from_file(ophys_metadata_path)
+
     converter = Benisty2024NWBConverter(
-        source_data=source_data,
+        source_data=source_data,ophys_metadata=ophys_metadata
     )
 
     # Add datetime to conversion
+
     metadata = converter.get_metadata()
     subject_id = session_id.split("_")[1]
     metadata["Subject"].update(subject_id=subject_id)
@@ -46,12 +56,6 @@ def session_to_nwb(
     editable_metadata_path = Path(__file__).parent / "benisty_2024_metadata.yaml"
     editable_metadata = load_dict_from_file(editable_metadata_path)
     metadata = dict_deep_update(metadata, editable_metadata)
-
-    # Add ophys metadata
-    ophys_metadata_path = Path(__file__).parent / "metadata" / "benisty_2024_ophys_metadata.yaml"
-    ophys_metadata = load_dict_from_file(ophys_metadata_path)
-    metadata.pop("Ophys", None)
-    metadata = dict_deep_update(metadata, ophys_metadata)
 
     # Run conversion
     converter.run_conversion(
