@@ -21,17 +21,15 @@ def session_to_nwb(
 
     source_data = dict()
     conversion_options = dict()
-    
+
     nwbfile_path = output_dir_path / f"{session_id}.nwb"
 
     source_data = dict()
     conversion_options = dict()
 
     # Add 2p Imaging
-    folder_path = data_dir_path / session_id / "tiff"
-    source_data.update(
-        dict(TwoPhotonImagingGreenChannel=dict(folder_path=str(folder_path), file_pattern=f"*.tif", channel_name="Channel 1"))
-    )
+    imaging_path = folder_path / "tiff"
+    source_data.update(dict(TwoPhotonImagingGreenChannel=dict(folder_path=str(imaging_path), file_pattern=f"*.tif")))
     conversion_options.update(dict(TwoPhotonImagingGreenChannel=dict(stub_test=stub_test)))
 
     converter = Benisty2024NWBConverter(

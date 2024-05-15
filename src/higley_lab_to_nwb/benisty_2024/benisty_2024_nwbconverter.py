@@ -3,7 +3,6 @@
 
 from neuroconv import NWBConverter
 from neuroconv.datainterfaces import ScanImageMultiFileImagingInterface
-from neuroconv.utils import DeepDict
 
 class Benisty2024NWBConverter(NWBConverter):
     """Primary conversion class."""
