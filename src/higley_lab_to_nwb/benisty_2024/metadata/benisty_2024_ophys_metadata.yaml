@@ -1,21 +1,4 @@
 Ophys:
   Device:
-    - name: TwoPhotonMicroscope
-      description: MOM microscope (Sutter Instruments) coupled to a 16x, 0.8 NA objective (Nikon). Excitation was driven by a Titanium-Sapphire Laser (Mai-Tai eHP DeepSee, Spectra-Physics).
-      manufacturer: Sutter Instruments
-  TwoPhotonSeries:
-    - name: TwoPhotonSeriesGreenChannel
-      description: Imaging data from Green channel recorded with 2p microscope. Images were acquired at 512x512 resolution at 30 Hz using a galvo-resonant scan system controlled by ScanImage software (Vidrio).
-      imaging_plane: ImagingPlaneGreenChannel
-      unit: n.a.
+  OnePhotonSeries:
   ImagingPlane:
-    - name: ImagingPlaneGreenChannel
-      description: Imaging plane for the Green channel recorded with 2p microscope.
-      excitation_lambda: 920.0  # in nm
-      location: Whole Brain
-      device: TwoPhotonMicroscope
-      optical_channel:
-        - name: Green
-          description: Emitted light was collected through a 525/50 filter and a gallium arsenide phosphide photomultiplier tube (Hamamatsu).
-          emission_lambda: 525.0
-      indicator: GCaMP6s
