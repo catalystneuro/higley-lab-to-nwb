@@ -3,9 +3,9 @@
 from pathlib import Path
 from typing import Union
 from neuroconv.utils import load_dict_from_file, dict_deep_update
-from higley_lab_to_nwb.benisty_2022 import Benisty2022NWBConverter
-from higley_lab_to_nwb.benisty_2022.benisty_2022_spike2signals_interface import get_streams
-from higley_lab_to_nwb.benisty_2022.benisty_2022_utils import create_tiff_stack, read_session_start_time
+from higley_lab_to_nwb.lohani_2022 import Lohani2022NWBConverter
+from higley_lab_to_nwb.lohani_2022.interfaces.lohani_2022_spike2signals_interface import get_streams
+from higley_lab_to_nwb.lohani_2022.utils.lohani_2022_utils import create_tiff_stack, read_session_start_time
 import os
 import glob
 
@@ -19,18 +19,19 @@ def session_to_nwb(
         output_dir_path = output_dir_path / "nwb_stub"
     output_dir_path.mkdir(parents=True, exist_ok=True)
 
-    nwbfile_path = output_dir_path / f"{session_id}.nwb"
+    nwbfile_path = output_dir_path / f"{session_id}_new.nwb"
 
     source_data = dict()
     conversion_options = dict()
 
-    search_pattern = '_'.join(session_id.split("_")[:2])
+    search_pattern = "_".join(session_id.split("_")[:2])
 
     # Add Analog signals from Spike2
     smrx_files = glob.glob(os.path.join(folder_path, f"{search_pattern}*.smrx"))
     file_path = smrx_files[0]
     stream_ids, stream_names = get_streams(file_path=file_path)
 
+    # Define each smrx signal name
     TTLsignals_name_map = {
         stream_ids[stream_names == "BL_LED"][0]: "TTLSignalBlueLED",
         stream_ids[stream_names == "UV_LED"][0]: "TTLSignalVioletLED",
@@ -74,7 +75,9 @@ def session_to_nwb(
     sampling_frequency = 10.0
     photon_series_index = 0
 
+    # Define a dictonary that for each excitation type associate the starting frame index
     excitation_type_to_start_frame_index_mapping = dict(Blue=0, Violet=1, Green=2)
+    # Define a dictonary that for each optical channel/filter associate the frame side
     channel_to_frame_side_mapping = dict(Green="right", Red="left")
 
     for excitation_type in excitation_type_to_start_frame_index_mapping:
@@ -96,8 +99,6 @@ def session_to_nwb(
             source_data[interface_name] = {
                 "file_path": tif_file_path,
                 "sampling_frequency": sampling_frequency,
-                "channel": channel,
-                "excitation_type": excitation_type,
             }
             conversion_options[interface_name] = {
                 "stub_test": stub_test,
@@ -121,7 +122,11 @@ def session_to_nwb(
         )
     )
 
-    converter = Benisty2022NWBConverter(source_data=source_data)
+    converter = Lohani2022NWBConverter(
+        source_data=source_data,
+        excitation_types=excitation_type_to_start_frame_index_mapping.keys(),
+        channels=channel_to_frame_side_mapping.keys(),
+    )
 
     # Add datetime to conversion
     metadata = converter.get_metadata()
@@ -132,9 +137,14 @@ def session_to_nwb(
     metadata["NWBFile"].update(session_id=session_id)
 
     # Update default metadata with the editable in the corresponding yaml file
-    editable_metadata_path = Path(__file__).parent / "benisty_2022_metadata.yaml"
+    editable_metadata_path = Path(__file__).parent / "lohani_2022_metadata.yaml"
     editable_metadata = load_dict_from_file(editable_metadata_path)
     metadata = dict_deep_update(metadata, editable_metadata)
+
+    # Add ophys metadata
+    ophys_metadata_path = Path(__file__).parent / "metadata" / "lohani_2022_ophys_metadata.yaml"
+    ophys_metadata = load_dict_from_file(ophys_metadata_path)
+    metadata = dict_deep_update(metadata, ophys_metadata)
 
     # Run conversion
     converter.run_conversion(
@@ -150,10 +160,10 @@ if __name__ == "__main__":
     output_dir_path = root_path / "Higley-conversion_nwb/"
     stub_test = True
     session_ids = os.listdir(data_dir_path)
-    session_id = '11222019_grabAM06_vis_stim'
+    session_id = "11222019_grabAM06_vis_stim"
     folder_path = data_dir_path / Path(session_id)
     session_to_nwb(
-        folder_path= folder_path,
+        folder_path=folder_path,
         output_dir_path=output_dir_path,
         session_id=session_id,
         stub_test=stub_test,
