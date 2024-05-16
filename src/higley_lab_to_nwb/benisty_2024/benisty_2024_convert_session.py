@@ -17,7 +17,7 @@ def session_to_nwb(
         output_dir_path = output_dir_path / "nwb_stub"
     output_dir_path.mkdir(parents=True, exist_ok=True)
 
-    nwbfile_path = output_dir_path / f"{session_id}.nwb"
+    nwbfile_path = output_dir_path / f"{session_id}_new.nwb"
 
     source_data = dict()
     conversion_options = dict()
@@ -48,6 +48,8 @@ def session_to_nwb(
     # Add datetime to conversion
 
     metadata = converter.get_metadata()
+    date = read_session_start_time(folder_path=folder_path)
+    metadata["NWBFile"]["session_start_time"] = date
     subject_id = session_id.split("_")[1]
     metadata["Subject"].update(subject_id=subject_id)
     metadata["NWBFile"].update(session_id=session_id)
@@ -70,7 +72,8 @@ if __name__ == "__main__":
     data_dir_path = root_path / "Higley-CN-data-share"
     output_dir_path = root_path / "Higley-conversion_nwb/"
     stub_test = True
-    session_id = "04072021_am2psi_05_spont"
+    session_ids = os.listdir(data_dir_path)
+    session_id = "11222019_grabAM06_vis_stim"
     folder_path = data_dir_path / Path(session_id)
     session_to_nwb(
         folder_path=folder_path,
