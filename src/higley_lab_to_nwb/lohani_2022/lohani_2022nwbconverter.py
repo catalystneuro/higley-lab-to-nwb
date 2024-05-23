@@ -1,11 +1,12 @@
 """Primary NWBConverter class for this dataset."""
 
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List
 from neuroconv import NWBConverter
-from higley_lab_to_nwb.lohani_2022.interfaces.lohani_2022_spike2signals_interface import (
+from higley_lab_to_nwb.lohani_2022.interfaces import (
+    Lohani2022MesoscopicImagingInterface,
     Lohani2022Spike2SignalsInterface,
+    Lohani2022VisualStimulusInterface,
 )
-from higley_lab_to_nwb.lohani_2022.interfaces.lohani_2022_imaginginterface import Lohani2022MesoscopicImagingInterface
 from neuroconv.datainterfaces import VideoInterface, FacemapInterface
 
 
@@ -16,6 +17,7 @@ class Lohani2022NWBConverter(NWBConverter):
         Spike2Signals=Lohani2022Spike2SignalsInterface,
         Video=VideoInterface,
         FacemapInterface=FacemapInterface,
+        VisualStimulusInterface=Lohani2022VisualStimulusInterface,
     )
 
     def __init__(
@@ -31,8 +33,8 @@ class Lohani2022NWBConverter(NWBConverter):
             for channel in channels:
                 suffix = f"{excitation_type}Excitation{channel}Channel"
                 interface_name = f"Imaging{suffix}"
-                self.data_interface_classes[interface_name]=Lohani2022MesoscopicImagingInterface
-                
+                self.data_interface_classes[interface_name] = Lohani2022MesoscopicImagingInterface
+
         self.verbose = verbose
         self._validate_source_data(source_data=source_data, verbose=self.verbose)
 
