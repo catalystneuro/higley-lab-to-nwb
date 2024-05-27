@@ -2,7 +2,7 @@ from typing import List
 import pandas as pd
 from neo import io
 
-from neuroconv import BaseDataInterface
+from neuroconv import BaseTemporalAlignmentInterface  
 from neuroconv.tools import get_package
 from neuroconv.utils import FilePathType
 from neuroconv.tools.signal_processing import get_rising_frames_from_ttl, get_falling_frames_from_ttl
@@ -28,7 +28,7 @@ def get_streams(file_path: FilePathType) -> List[str]:
     return stream_ids, stream_names
 
 
-class Lohani2022VisualStimulusInterface(BaseDataInterface):
+class Lohani2022VisualStimulusInterface(BaseTemporalAlignmentInterface):
     """
     Data interface class for converting Spike2 visual stimulus signals from CED (Cambridge Electronic
     Design) using the :py:class:`~spikeinterface.extractors.CedRecordingExtractor`."""
@@ -98,6 +98,7 @@ class Lohani2022VisualStimulusInterface(BaseDataInterface):
         spatial_frequencies = self.get_stimulus_feature(column_index=[3])
         intervals_table.add_column(name="stimulus_size", description="Size of the visual stimulus, in degrees.")
         sizes = self.get_stimulus_feature(column_index=[4])
+        #TODO add a more descriptive text as description for "screen_coordinates" column
         intervals_table.add_column(name="screen_coordinates", description="Visual stimulus coordinates on the screen.")
         screen_coordinates = self.get_stimulus_feature(column_index=[5, 6, 7, 8])
 
@@ -114,7 +115,7 @@ class Lohani2022VisualStimulusInterface(BaseDataInterface):
                 orientation=orientations[frame][0],
                 stimulus_frequency=stimulus_frequencies[frame][0],
                 spatial_frequency=spatial_frequencies[frame][0],
-                size=sizes[frame][0],
+                stimulus_size=sizes[frame][0],
                 screen_coordinates=screen_coordinates[frame][:],
             )
 
