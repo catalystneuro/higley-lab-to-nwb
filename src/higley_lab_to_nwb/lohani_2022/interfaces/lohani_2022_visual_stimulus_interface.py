@@ -96,7 +96,7 @@ class Lohani2022VisualStimulusInterface(BaseDataInterface):
             name="spatial_frequency", description="Spatial frequency of the stimulus, in cycles per degrees."
         )
         spatial_frequencies = self.get_stimulus_feature(column_index=[3])
-        intervals_table.add_column(name="size", description="Size of the visual stimulus, in degrees.")
+        intervals_table.add_column(name="stimulus_size", description="Size of the visual stimulus, in degrees.")
         sizes = self.get_stimulus_feature(column_index=[4])
         intervals_table.add_column(name="screen_coordinates", description="Visual stimulus coordinates on the screen.")
         screen_coordinates = self.get_stimulus_feature(column_index=[5, 6, 7, 8])
