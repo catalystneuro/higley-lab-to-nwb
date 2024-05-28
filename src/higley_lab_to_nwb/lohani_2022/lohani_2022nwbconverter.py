@@ -18,6 +18,12 @@ class Lohani2022NWBConverter(NWBConverter):
         Video=VideoInterface,
         FacemapInterface=FacemapInterface,
         VisualStimulusInterface=Lohani2022VisualStimulusInterface,
+        ImagingBlueExcitationGreenChannel=Lohani2022MesoscopicImagingInterface,
+        ImagingBlueExcitationRedChannel=Lohani2022MesoscopicImagingInterface,
+        ImagingUVExcitationGreenChannel=Lohani2022MesoscopicImagingInterface,
+        ImagingUVExcitationRedChannel=Lohani2022MesoscopicImagingInterface,
+        ImagingGreenExcitationGreenChannel=Lohani2022MesoscopicImagingInterface,
+        ImagingGreenExcitationRedChannel=Lohani2022MesoscopicImagingInterface,
     )
 
     def __init__(

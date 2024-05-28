@@ -107,7 +107,7 @@ def session_to_nwb(
     avi_files = glob.glob(os.path.join(folder_path, f"{search_pattern}*.avi"))
     video_file_path = avi_files[0]
     source_data.update(dict(Video=dict(file_paths=[video_file_path], verbose=False)))
-    conversion_options.update(dict(Video=dict(stub_test=stub_test, external_mode=False)))
+    conversion_options.update(dict(Video=dict(stub_test=stub_test)))
 
     # Add Facemap outpt
     mat_files = glob.glob(os.path.join(folder_path, f"{search_pattern}*_proc.mat"))

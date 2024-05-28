@@ -2,7 +2,7 @@ from typing import List
 import pandas as pd
 from neo import io
 
-from neuroconv import BaseTemporalAlignmentInterface  
+from neuroconv import BaseDataInterface  
 from neuroconv.tools import get_package
 from neuroconv.utils import FilePathType
 from neuroconv.tools.signal_processing import get_rising_frames_from_ttl, get_falling_frames_from_ttl
@@ -28,7 +28,7 @@ def get_streams(file_path: FilePathType) -> List[str]:
     return stream_ids, stream_names
 
 
-class Lohani2022VisualStimulusInterface(BaseTemporalAlignmentInterface):
+class Lohani2022VisualStimulusInterface(BaseDataInterface):
     """
     Data interface class for converting Spike2 visual stimulus signals from CED (Cambridge Electronic
     Design) using the :py:class:`~spikeinterface.extractors.CedRecordingExtractor`."""
