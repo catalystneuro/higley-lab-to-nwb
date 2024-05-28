@@ -88,7 +88,7 @@ class Lohani2022VisualStimulusInterface(BaseTemporalAlignmentInterface):
 
         intervals_table.add_column(name="contrast", description="Contrast of the visual stimulus image.")
         contrasts = self.get_stimulus_feature(column_index=[0])
-        intervals_table.add_column(name="orientation", description="Contrast of the visual stimulus image.")
+        intervals_table.add_column(name="orientation", description="Orientation of the visual stimulus image, in degree.")
         orientations = self.get_stimulus_feature(column_index=[1])
         intervals_table.add_column(name="stimulus_frequency", description="Temporal frequency of the stimulus, in Hz.")
         stimulus_frequencies = self.get_stimulus_feature(column_index=[2])
