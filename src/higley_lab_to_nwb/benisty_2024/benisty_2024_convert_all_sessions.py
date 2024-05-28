@@ -1,9 +1,8 @@
 """Primary script to run to convert an entire session for of data using the NWBConverter."""
 
 from pathlib import Path
-from typing import Union
 import os
-from .benisty_2024_convert_session import session_to_nwb
+from .benisty_2024_convert_2p_only_session import session_to_nwb
 
 
 
