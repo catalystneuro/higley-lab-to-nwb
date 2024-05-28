@@ -27,8 +27,7 @@ def session_to_nwb(
     search_pattern = "_".join(session_id.split("_")[:2])
 
     # Add Analog signals from Spike2
-    smrx_files = glob.glob(os.path.join(folder_path, f"{search_pattern}*.smrx"))
-    file_path = smrx_files[0]
+    file_path = glob.glob(os.path.join(folder_path, f"{search_pattern}*.smrx"))[0]
     stream_ids, stream_names = get_streams(file_path=file_path)
 
     # Define each smrx signal name
@@ -43,33 +42,30 @@ def session_to_nwb(
     behavioral_name_map = {
         stream_ids[stream_names == "wheel"][0]: "WheelSignal",
     }
-    stimulus_name_map = {
-        stream_ids[stream_names == "Vis"][0]: "VisualStimulus",
-        # stream_ids[stream_names == "airpuff"][0]: "AirpuffStimulus",
-    }
-    if "vis_stim" in session_id:
-        source_data.update(
-            dict(
-                Spike2Signals=dict(
-                    file_path=file_path,
-                    ttl_stream_ids_to_names_map=TTLsignals_name_map,
-                    behavioral_stream_ids_to_names_map=behavioral_name_map,
-                    stimulus_stream_ids_to_names_map=stimulus_name_map,
-                )
-            )
-        )
-    else:
-        source_data.update(
-            dict(
-                Spike2Signals=dict(
-                    file_path=file_path,
-                    ttl_stream_ids_to_names_map=TTLsignals_name_map,
-                    behavioral_stream_ids_to_names_map=behavioral_name_map,
-                )
-            )
-        )
 
+    source_data.update(
+        dict(
+            Spike2Signals=dict(
+                file_path=file_path,
+                ttl_stream_ids_to_names_map=TTLsignals_name_map,
+                behavioral_stream_ids_to_names_map=behavioral_name_map,
+            )
+        )
+    )
     conversion_options.update(dict(Spike2Signals=dict(stub_test=stub_test)))
+
+    if "vis_stim" in session_id:
+        csv_file_path = glob.glob(os.path.join(folder_path, f"{search_pattern}*.csv"))[0]
+        source_data.update(
+            dict(
+                VisualStimulusInterface=dict(
+                    spike2_file_path=file_path,
+                    csv_file_path=csv_file_path,
+                    stream_id=stream_ids[stream_names == "Vis"][0],
+                )
+            )
+        )
+        conversion_options.update(dict(VisualStimulusInterface=dict(stub_test=stub_test)))
 
     # Add Imaging
     sampling_frequency = 10.0

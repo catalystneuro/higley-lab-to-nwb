@@ -52,7 +52,6 @@ class Lohani2022Spike2SignalsInterface(BaseDataInterface):
         file_path: FilePathType,
         ttl_stream_ids_to_names_map: dict,
         behavioral_stream_ids_to_names_map: dict,
-        stimulus_stream_ids_to_names_map: dict = None,
         verbose: bool = True,
     ):
         """
@@ -64,8 +63,6 @@ class Lohani2022Spike2SignalsInterface(BaseDataInterface):
             If there are several streams for ttl signals, specify the stream id and associated name.
         behavioral_stream_ids_to_names_map: dict
             If there are several streams for behavioural signals, specify the stream id and associated name.
-        stimulus_stream_ids_to_names_map: dict
-            If there are several streams for external stimuli, specify the stream id and associated name.
         verbose : bool, default: True
         """
         _test_sonpy_installation()
@@ -77,7 +74,6 @@ class Lohani2022Spike2SignalsInterface(BaseDataInterface):
 
         self.ttl_stream_ids_to_names_map = ttl_stream_ids_to_names_map
         self.behavioral_stream_ids_to_names_map = behavioral_stream_ids_to_names_map
-        self.stimulus_stream_ids_to_names_map = stimulus_stream_ids_to_names_map
 
     def get_metadata(self) -> dict:
         metadata = super().get_metadata()
@@ -128,25 +124,6 @@ class Lohani2022Spike2SignalsInterface(BaseDataInterface):
 
         nwbfile.add_acquisition(ttl_types_table)
         nwbfile.add_acquisition(ttls_table)
-
-        if self.stimulus_stream_ids_to_names_map is not None:
-
-            for stream_id, stream_name in self.stimulus_stream_ids_to_names_map.items():
-                intervals_table = TimeIntervals(
-                                    name=stream_name,
-                                    description=f"Intervals for each {stream_name}",
-                                )
-                start_times = self.get_event_times_from_ttl(stream_id=stream_id)
-                stop_times = self.get_event_times_from_ttl(stream_id=stream_id,rising=False)
-
-                if len(start_times):
-                    for start,stop in zip(start_times[:end_frame], stop_times[:end_frame]):
-                        intervals_table.add_row(
-                            start_time=start,
-                            stop_time=stop,
-                        )
-
-            nwbfile.add_time_intervals(intervals_table)
 
         for stream_id, stream_name in self.behavioral_stream_ids_to_names_map.items():
             extractor = CedRecordingExtractor(file_path=str(self.source_data["file_path"]), stream_id=stream_id)
