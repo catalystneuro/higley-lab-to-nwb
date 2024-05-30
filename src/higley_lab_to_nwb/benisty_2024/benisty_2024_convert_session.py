@@ -22,14 +22,32 @@ def session_to_nwb(
     conversion_options = dict()
 
     # Add 2p Imaging
-    imaging_path = folder_path / "tiff"    
-    source_data.update(dict(TwoPhotonImagingGreenChannel=dict(folder_path=str(imaging_path), file_pattern="*.tif")))
-    conversion_options.update(dict(TwoPhotonImagingGreenChannel=dict(stub_test=stub_test)))
+    imaging_path = folder_path / "tiff"
+    source_data.update(dict(TwoPhotonImaging=dict(folder_path=str(imaging_path), file_pattern="*.tif")))
+    conversion_options.update(dict(TwoPhotonImaging=dict(stub_test=stub_test)))
 
-    # Add Segmentation
+    # Add suite2p Segmentation
     suite2p_path = folder_path / "suite2p"
-    source_data.update(dict(SegmentationGreenChannel=dict(folder_path=suite2p_path)))
-    conversion_options.update(dict(SegmentationGreenChannel=dict(stub_test=stub_test)))
+    source_data.update(dict(Suite2pSegmentation=dict(folder_path=suite2p_path,plane_segmentation_name="Suite2pPlaneSegmentation")))
+    conversion_options.update(dict(Suite2pSegmentation=dict(stub_test=stub_test)))
+
+    # Add CIDAN Segmentation
+    cidan_path = folder_path / "CIDAN"
+    parameters_file_path = cidan_path / "parameters.json"
+    roi_list_file_path = cidan_path / "roi_list.json"
+    mat_file_path = cidan_path / "timetraces.mat"
+    source_data.update(
+        dict(
+            CIDANSegmentation=dict(
+                parameters_file_path=parameters_file_path,
+                roi_list_file_path=roi_list_file_path,
+                mat_file_path=mat_file_path,
+                sampling_frequency=15.0,
+                plane_segmentation_name="CIDANPlaneSegmentation",
+            )
+        )
+    )
+    conversion_options.update(dict(CIDANSegmentation=dict(stub_test=stub_test)))
 
     # Add ophys metadata
     ophys_metadata_path = Path(__file__).parent / "metadata" / "benisty_2024_ophys_metadata.yaml"
