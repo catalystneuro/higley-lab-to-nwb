@@ -6,7 +6,7 @@ from copy import deepcopy
 from neuroconv.datainterfaces.ophys.basesegmentationextractorinterface import BaseSegmentationExtractorInterface
 from neuroconv.utils import DeepDict, FilePathType
 
-from .benisty_2024_cidansegmentation_extractor import (
+from ..extractors.benisty_2024_cidansegmentation_extractor import (
     Benisty2024CidanSegmentationExtractor,
 )
 
@@ -64,7 +64,7 @@ class Benisty2024CidanSegmentationInterface(BaseSegmentationExtractorInterface):
             sampling_frequency=sampling_frequency,
         )
 
-       plane_segmentation_name = plane_segmentation_name or "PlaneSegmentation"
+        plane_segmentation_name = plane_segmentation_name or "PlaneSegmentation"
 
         self.plane_segmentation_name = plane_segmentation_name
         self.verbose = verbose
@@ -103,28 +103,3 @@ class Benisty2024CidanSegmentationInterface(BaseSegmentationExtractorInterface):
 
         return metadata
 
-    def add_to_nwbfile(
-        self,
-        nwbfile: NWBFile,
-        metadata: Optional[dict] = None,
-        stub_test: bool = False,
-        stub_frames: int = 100,
-        include_roi_centroids: bool = True,
-        include_roi_acceptance: bool = False,
-        mask_type: Optional[str] = "image",  # Literal["image", "pixel", "voxel"]
-        plane_segmentation_name: Optional[str] = None,
-        iterator_options: Optional[dict] = None,
-        compression_options: Optional[dict] = None,
-    ):
-        super().add_to_nwbfile(
-            nwbfile=nwbfile,
-            metadata=metadata,
-            stub_test=stub_test,
-            stub_frames=stub_frames,
-            include_roi_centroids=include_roi_centroids,
-            include_roi_acceptance=include_roi_acceptance,
-            mask_type=mask_type,
-            plane_segmentation_name=self.plane_segmentation_name,
-            iterator_options=iterator_options,
-            compression_options=compression_options,
-        )

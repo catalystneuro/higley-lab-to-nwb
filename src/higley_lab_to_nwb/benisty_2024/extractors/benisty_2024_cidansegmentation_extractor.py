@@ -1,9 +1,9 @@
-"""A segmentation extractor for Suite2p.
+"""A segmentation extractor for Higley Lab using CIDAN software.
 
 Classes
 -------
-Suite2pSegmentationExtractor
-    A segmentation extractor for Suite2p.
+Benisty2024CidanSegmentationExtractor
+    A segmentation extractor for Higley Lab using CIDAN software.
 """
 
 import scipy.io
@@ -18,10 +18,6 @@ class Benisty2024CidanSegmentationExtractor(SegmentationExtractor):
     """A segmentation extractor for CIDAN."""
 
     extractor_name = "Benisty2024CidanSegmentationExtractor"
-    installed = True  # check at class level if installed or not
-    is_writable = False
-    mode = "file"
-    installation_mesg = ""  # error message when not installed
 
     def __init__(
         self,
@@ -40,6 +36,8 @@ class Benisty2024CidanSegmentationExtractor(SegmentationExtractor):
             The path to the CIDAN roi_list .json file.
         mat_file_path: str or Path
             The path to the CIDAN df/f traces .mat file.
+        sampling_frequency: float
+            The sampling frequency for the df/f traces.    
         """
         self.parameters_file_path = parameters_file_path
         self.roi_list_file_path = roi_list_file_path
@@ -50,14 +48,6 @@ class Benisty2024CidanSegmentationExtractor(SegmentationExtractor):
 
         mat_contents = scipy.io.loadmat(self.mat_file_path)
         self._roi_response_denoised = np.array(mat_contents["deltafoverf"]).T
-
-        self._image_size = (512, 512)
-
-        self._image_masks = _image_mask_extractor(
-            self.get_roi_pixel_masks(),
-            self.get_roi_ids(),
-            self.get_image_size(),
-        )
 
         with open(self.parameters_file_path) as file:
             self.parameters_dict = json.load(file)
@@ -79,9 +69,6 @@ class Benisty2024CidanSegmentationExtractor(SegmentationExtractor):
             ele = [i for i, j in enumerate(roi_idx) if j.size == 0]
             roi_idx_ = [j[0] for i, j in enumerate(roi_idx) if i not in ele]
         return [pixel_mask[i] for i in roi_idx_]
-
-    def get_image_size(self):
-        return self._image_size
 
     def get_accepted_list(self):
         return self.get_roi_ids()

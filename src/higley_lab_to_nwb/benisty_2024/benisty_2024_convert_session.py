@@ -28,7 +28,9 @@ def session_to_nwb(
 
     # Add suite2p Segmentation
     suite2p_path = folder_path / "suite2p"
-    source_data.update(dict(Suite2pSegmentation=dict(folder_path=suite2p_path,plane_segmentation_name="Suite2pPlaneSegmentation")))
+    source_data.update(
+        dict(Suite2pSegmentation=dict(folder_path=suite2p_path, plane_segmentation_name="Suite2pPlaneSegmentation"))
+    )
     conversion_options.update(dict(Suite2pSegmentation=dict(stub_test=stub_test)))
 
     # Add CIDAN Segmentation
@@ -36,6 +38,8 @@ def session_to_nwb(
     parameters_file_path = cidan_path / "parameters.json"
     roi_list_file_path = cidan_path / "roi_list.json"
     mat_file_path = cidan_path / "timetraces.mat"
+    plane_segmentation_name = "CIDANPlaneSegmentation"
+
     source_data.update(
         dict(
             CIDANSegmentation=dict(
@@ -43,11 +47,20 @@ def session_to_nwb(
                 roi_list_file_path=roi_list_file_path,
                 mat_file_path=mat_file_path,
                 sampling_frequency=15.0,
-                plane_segmentation_name="CIDANPlaneSegmentation",
+                plane_segmentation_name=plane_segmentation_name,
             )
         )
     )
-    conversion_options.update(dict(CIDANSegmentation=dict(stub_test=stub_test)))
+    conversion_options.update(
+        dict(
+            CIDANSegmentation=dict(
+                include_roi_acceptance=False,
+                plane_segmentation_name=plane_segmentation_name,
+                mask_type="pixel",
+                stub_test=stub_test,
+            )
+        )
+    )
 
     # Add ophys metadata
     ophys_metadata_path = Path(__file__).parent / "metadata" / "benisty_2024_ophys_metadata.yaml"

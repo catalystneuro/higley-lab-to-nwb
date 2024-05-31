@@ -5,7 +5,7 @@ from neuroconv import NWBConverter
 from neuroconv.utils import DeepDict
 
 from neuroconv.datainterfaces import ScanImageMultiFileImagingInterface, Suite2pSegmentationInterface
-from .interfaces.benisty_2024_cidansegmentation_interface import Benisty2024CidanSegmentationInterface
+from .interfaces import Benisty2024CidanSegmentationInterface
 
 class Benisty2024NWBConverter(NWBConverter):
     """Primary conversion class."""
