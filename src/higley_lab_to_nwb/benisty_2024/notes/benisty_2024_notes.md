@@ -16,7 +16,32 @@ Dual imaging was carried out using a custom microscope combining a Zeiss Axiozoo
 
 
 ### Data structure:
-- **Each .tif is a trial of N frame of [512,512]**
+- **2p only data** 
+    Each .tif is a trial of N frames of [512,512] --> ScanImageMultiFileImagingInterface working 
+- **1p data in dual acquisition modality**
+    Each .tif is a trial of 12000 frames of [369,418] (why different dims wrt the paper?) --> MultiFileMultiPlaneImagingExtractor needed.
+    Frames are acquired cycling over blue (excitation filter 470/20) and violet(excitation filter 395/25) light (same emission filter at 525/50):
+    ![alt text](image.png)
+    ![alt text](image-1.png)
+
+    ```
+    description: 
+        ImageJ=1.52v
+        images=12000
+        slices=12000
+        unit=inch
+        loop=false
+        min=1447.0
+        max=7936.0
+    ```
+    However, these are the .tiff stacks of the same type of acquisition for Lohani22.
+
+
+- **2p data in dual acquisition modality**
+    Each .tif is a trial of ? frames of ? --> ScanImageMultiFileImagingInterface working 
+    
+    
+
 
 ### Imaging metadata (from Benisty paper)
 - Custom miscroscope: see description in the methods
