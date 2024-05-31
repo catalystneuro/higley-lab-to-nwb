@@ -64,8 +64,7 @@ class Benisty2024CidanSegmentationInterface(BaseSegmentationExtractorInterface):
             sampling_frequency=sampling_frequency,
         )
 
-        if plane_segmentation_name is None:
-            plane_segmentation_name = "PlaneSegmentation"
+       plane_segmentation_name = plane_segmentation_name or "PlaneSegmentation"
 
         self.plane_segmentation_name = plane_segmentation_name
         self.verbose = verbose
