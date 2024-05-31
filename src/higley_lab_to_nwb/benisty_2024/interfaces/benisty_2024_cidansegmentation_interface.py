@@ -10,6 +10,19 @@ from .benisty_2024_cidansegmentation_extractor import (
     Benisty2024CidanSegmentationExtractor,
 )
 
+def format_string_for_parameters_dict(dict_obj, indent=2):
+    def format_key_value(key, value, level):
+        indentation = ' ' * (level * indent)
+        if isinstance(value, dict):
+            formatted_value = format_dict(value, level + 1)
+            return f"{indentation}{key}:\n{formatted_value}"
+        else:
+            return f"{indentation}{key}: {value}\n"
+    
+    def format_dict(d, level):
+        return ''.join([format_key_value(k, v, level) for k, v in d.items()])
+    
+    return format_dict(dict_obj, 0)
 
 class Benisty2024CidanSegmentationInterface(BaseSegmentationExtractorInterface):
     """Interface for Suite2p segmentation data."""
@@ -76,10 +89,18 @@ class Benisty2024CidanSegmentationInterface(BaseSegmentationExtractorInterface):
         fluorescence_metadata_per_plane = metadata["Ophys"]["Fluorescence"].pop(default_plane_segmentation_name)
         # override the default name of the plane segmentation
         metadata["Ophys"]["Fluorescence"][self.plane_segmentation_name] = fluorescence_metadata_per_plane
-        trace_names = [property_name for property_name in fluorescence_metadata_per_plane.keys() if property_name != "name"]
+        trace_names = [
+            property_name for property_name in fluorescence_metadata_per_plane.keys() if property_name != "name"
+        ]
+        comments=format_string_for_parameters_dict(dict_obj=self.segmentation_extractor.parameters_dict)
         for trace_name in trace_names:
-            default_raw_traces_name = fluorescence_metadata_per_plane[trace_name]["name"].replace(default_plane_suffix, "")
-            fluorescence_metadata_per_plane[trace_name].update(name=default_raw_traces_name + new_plane_name_suffix)
+            default_raw_traces_name = fluorescence_metadata_per_plane[trace_name]["name"].replace(
+                default_plane_suffix, ""
+            )
+            fluorescence_metadata_per_plane[trace_name].update(
+                name=default_raw_traces_name + new_plane_name_suffix,
+                comments=comments,
+            )
 
         return metadata
 

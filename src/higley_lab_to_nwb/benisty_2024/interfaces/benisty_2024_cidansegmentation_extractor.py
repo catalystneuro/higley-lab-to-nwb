@@ -59,6 +59,12 @@ class Benisty2024CidanSegmentationExtractor(SegmentationExtractor):
             self.get_image_size(),
         )
 
+        with open(self.parameters_file_path) as file:
+            self.parameters_dict = json.load(file)
+            # keep only paramenters that describe the segmentation algorithm
+            self.parameters_dict.pop("dataset_params")
+            self.parameters_dict.pop("global_params")
+
     def get_roi_pixel_masks(self, roi_ids=None):
         pixel_mask = []
         with open(self.roi_list_file_path) as file:
