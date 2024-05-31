@@ -7,6 +7,27 @@ from higley_lab_to_nwb.benisty_2024 import Benisty2024NWBConverter
 import os
 
 
+def _get_sampling_frequency_and_image_size(folder_path: Union[str, Path]):
+    from roiextractors.extractors.tiffimagingextractors.scanimagetiff_utils import (
+        extract_extra_metadata,
+        parse_metadata,
+        _get_scanimage_reader,
+    )
+    from natsort import natsorted
+
+    file_paths = natsorted(Path(folder_path).glob("*.tif"))
+    file_path = file_paths[0]
+    image_metadata = extract_extra_metadata(file_path=file_path)
+    parsed_metadata = parse_metadata(metadata=image_metadata)
+    ScanImageTiffReader = _get_scanimage_reader()
+    with ScanImageTiffReader(str(file_path)) as io:
+        shape = io.shape()  # [frames, rows, columns]
+    if len(shape) == 3:
+        _num_frames, _num_rows, _num_columns = shape
+    image_size = [_num_rows, _num_columns]
+    return parsed_metadata["sampling_frequency"], image_size
+
+
 def session_to_nwb(
     folder_path: Union[str, Path], output_dir_path: Union[str, Path], session_id: str, stub_test: bool = False
 ):
@@ -40,13 +61,15 @@ def session_to_nwb(
     mat_file_path = cidan_path / "timetraces.mat"
     plane_segmentation_name = "CIDANPlaneSegmentation"
 
+    sampling_frequency, image_size = _get_sampling_frequency_and_image_size(folder_path=imaging_path)
     source_data.update(
         dict(
             CIDANSegmentation=dict(
                 parameters_file_path=parameters_file_path,
                 roi_list_file_path=roi_list_file_path,
                 mat_file_path=mat_file_path,
-                sampling_frequency=15.0,
+                sampling_frequency=sampling_frequency,
+                image_size=image_size,
                 plane_segmentation_name=plane_segmentation_name,
             )
         )
@@ -56,7 +79,6 @@ def session_to_nwb(
             CIDANSegmentation=dict(
                 include_roi_acceptance=False,
                 plane_segmentation_name=plane_segmentation_name,
-                mask_type="pixel",
                 stub_test=stub_test,
             )
         )

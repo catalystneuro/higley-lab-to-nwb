@@ -25,6 +25,7 @@ class Benisty2024CidanSegmentationExtractor(SegmentationExtractor):
         roi_list_file_path: FilePathType,
         mat_file_path: FilePathType,
         sampling_frequency: float,
+        image_size: list,
     ):
         """Create SegmentationExtractor object out of CIDAN data type.
 
@@ -37,7 +38,9 @@ class Benisty2024CidanSegmentationExtractor(SegmentationExtractor):
         mat_file_path: str or Path
             The path to the CIDAN df/f traces .mat file.
         sampling_frequency: float
-            The sampling frequency for the df/f traces.    
+            The sampling frequency for the df/f traces.
+        image_size: list
+            The frame dimension.    
         """
         self.parameters_file_path = parameters_file_path
         self.roi_list_file_path = roi_list_file_path
@@ -48,7 +51,14 @@ class Benisty2024CidanSegmentationExtractor(SegmentationExtractor):
 
         mat_contents = scipy.io.loadmat(self.mat_file_path)
         self._roi_response_denoised = np.array(mat_contents["deltafoverf"]).T
-
+        
+        self._image_size = image_size
+        self._image_masks = _image_mask_extractor(
+            self.get_roi_pixel_masks(),
+            self.get_roi_ids(),
+            self.get_image_size(),
+        )
+        
         with open(self.parameters_file_path) as file:
             self.parameters_dict = json.load(file)
             # keep only paramenters that describe the segmentation algorithm
@@ -79,3 +89,6 @@ class Benisty2024CidanSegmentationExtractor(SegmentationExtractor):
 
     def get_sampling_frequency(self) -> float:
         return self._sampling_frequency
+
+    def get_image_size(self):
+        return self._image_size
