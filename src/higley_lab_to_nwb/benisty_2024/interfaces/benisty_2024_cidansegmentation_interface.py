@@ -99,11 +99,12 @@ class Benisty2024CidanSegmentationInterface(BaseSegmentationExtractorInterface):
         ]
         comments = format_string_for_parameters_dict(dict_obj=self.segmentation_extractor.parameters_dict)
         for trace_name in trace_names:
-            default_raw_traces_name = fluorescence_metadata_per_plane[trace_name]["name"].replace(
+            default_traces_name = fluorescence_metadata_per_plane[trace_name]["name"].replace(
                 default_plane_suffix, ""
             )
             fluorescence_metadata_per_plane[trace_name].update(
-                name=default_raw_traces_name + new_plane_name_suffix,
+                name=default_traces_name + new_plane_name_suffix,
+                description="Fluorescence traces extracted with CIDAN software",
                 comments=comments,
             )
 
