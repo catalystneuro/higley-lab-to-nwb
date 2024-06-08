@@ -18,6 +18,98 @@ Dual imaging was carried out using a custom microscope combining a Zeiss Axiozoo
 ### Data structure:
 - **Each .tif is a trial of N frame of [512,512]**
 
+- **CIDAN output**
+    - parameters.json: file containing all the settings for the algorithm
+    ```json
+    {
+    "global_params": {},
+    "dataset_params": {
+        "dataset_folder_path": "/home/sschickl/Downloads/animal7",
+        "trials_loaded": ["file_00001_00001.tif"],
+        "trials_all": ["file_00001_00001.tif"],
+        "single_file_mode": true,
+        "original_folder_trial_split": ["file_00001_00001.tif"],
+        "slice_stack": false,
+        "slice_every": 3,
+        "slice_start": 0,
+        "crop_stack": true,
+        "crop_x": [20,490],
+        "crop_y": [20,490],
+        "trial_split": true,
+        "trial_length": 500,
+        "auto_crop": false
+    },
+    "filter_params": {
+        "median_filter": false,
+        "median_filter_size": 3,
+        "z_score": false,
+        "hist_eq": true,
+        "localSpatialDenoising": true,
+        "pca": false,
+        "pca_threshold": 0.97
+    },
+    "box_params": {
+        "total_num_time_steps": 4,
+        "total_num_spatial_boxes": 1,
+        "spatial_overlap": 40
+    },
+    "eigen_params": {
+        "eigen_vectors_already_generated": false,
+        "num_eig": 50,
+        "normalize_w_k": 32,
+        "metric": "l2",
+        "knn": 50,
+        "accuracy": 75,
+        "eigen_accuracy": 8,
+        "connections": 40
+    },
+    "roi_extraction_params": {
+        "elbow_threshold_method": true,
+        "elbow_threshold_value": 0.95,
+        "eigen_threshold_method": true,
+        "eigen_threshold_value": 0.5,
+        "num_eigen_vector_select": 1,
+        "merge_temporal_coef": 0.9,
+        "roi_size_min": 30,
+        "roi_size_max": 600,
+        "merge": true,
+        "num_rois": 150,
+        "fill_holes": true,
+        "refinement": true,
+        "max_iter": 100,
+        "roi_circ_threshold": 0,
+        "roi_eccentricity_limit": 0.8,
+        "local_max_method": false
+    },
+    "time_trace_params": {
+        "min_neuropil_pixels": 25
+    }
+    }
+    ```
+    - roi_list.json: file containing the pixel_mask for each roi
+    ```json
+    [
+        {
+            "id": 0,
+            "coordinates": [[286,276],[286,278],[287,274],...],
+        }
+        {
+            "id": 1,
+            "coordinates": [...],
+        }
+        {
+            "id": 2,
+            "coordinates": [...],
+        }
+        {
+            "id": 3,
+            "coordinates": [...],
+        }
+        ...
+    ]
+    ```
+    - timetraces.mat: file containing df/f traces (simple rois x frames matrix)
+
 ### Imaging metadata (from Benisty paper)
 - Custom miscroscope: see description in the methods
 - stimulation wavelengths for the three optical channel: Imaging was performed by strobing 575 nm (jRCaMP1b), 470 nm (ACh3.0) and 395 nm (control)
