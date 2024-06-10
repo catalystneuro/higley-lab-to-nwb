@@ -7,7 +7,7 @@ from higley_lab_to_nwb.lohani_2022.interfaces import (
     Lohani2022Spike2SignalsInterface,
     Lohani2022VisualStimulusInterface,
 )
-from neuroconv.datainterfaces import VideoInterface#, FacemapInterface
+from neuroconv.datainterfaces import VideoInterface, FacemapInterface, TiffImagingInterface
 
 
 class Lohani2022NWBConverter(NWBConverter):
@@ -16,14 +16,14 @@ class Lohani2022NWBConverter(NWBConverter):
     data_interface_classes = dict(
         Spike2Signals=Lohani2022Spike2SignalsInterface,
         Video=VideoInterface,
-        # FacemapInterface=FacemapInterface,
+        FacemapInterface=FacemapInterface,
         VisualStimulusInterface=Lohani2022VisualStimulusInterface,
-        ImagingBlueExcitationGreenChannel=Lohani2022MesoscopicImagingInterface,
-        ImagingBlueExcitationRedChannel=Lohani2022MesoscopicImagingInterface,
-        ImagingUVExcitationGreenChannel=Lohani2022MesoscopicImagingInterface,
-        ImagingUVExcitationRedChannel=Lohani2022MesoscopicImagingInterface,
-        ImagingGreenExcitationGreenChannel=Lohani2022MesoscopicImagingInterface,
-        ImagingGreenExcitationRedChannel=Lohani2022MesoscopicImagingInterface,
+        ImagingBlueExcitationGreenChannel=TiffImagingInterface,
+        ImagingBlueExcitationRedChannel=TiffImagingInterface,
+        ImagingUVExcitationGreenChannel=TiffImagingInterface,
+        ImagingUVExcitationRedChannel=TiffImagingInterface,
+        ImagingGreenExcitationGreenChannel=TiffImagingInterface,
+        ImagingGreenExcitationRedChannel=TiffImagingInterface,
     )
 
     def __init__(

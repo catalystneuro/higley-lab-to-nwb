@@ -95,11 +95,11 @@ def session_to_nwb(
             source_data[interface_name] = {
                 "file_path": tif_file_path,
                 "sampling_frequency": sampling_frequency,
+                "photon_series_type": "OnePhotonSeries",
             }
             conversion_options[interface_name] = {
                 "stub_test": stub_test,
                 "photon_series_index": photon_series_index,
-                "photon_series_type": "OnePhotonSeries",
             }
             photon_series_index += 1
 
