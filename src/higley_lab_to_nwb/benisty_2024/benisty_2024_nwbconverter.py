@@ -26,10 +26,11 @@ class Benisty2024NWBConverter(NWBConverter):
         for segmentation_metadata_ind in range(len(suite2p_segmentation_metadata["Ophys"]["ImageSegmentation"]["plane_segmentations"])):
             metadata["Ophys"]["ImageSegmentation"]["plane_segmentations"][segmentation_metadata_ind]["imaging_plane"] = self.ophys_metadata["Ophys"]["ImagingPlane"][0]["name"]
 
-        cidan_segmentation_metadata = self.data_interface_objects["CIDANSegmentation"].get_metadata()
-        for segmentation_metadata_ind in range(len(cidan_segmentation_metadata["Ophys"]["ImageSegmentation"]["plane_segmentations"])):
-            metadata["Ophys"]["ImageSegmentation"]["plane_segmentations"][segmentation_metadata_ind]["imaging_plane"] = self.ophys_metadata["Ophys"]["ImagingPlane"][0]["name"]
-        
+        if "CIDANSegmentation" in self.data_interface_objects.keys():
+            cidan_segmentation_metadata = self.data_interface_objects["CIDANSegmentation"].get_metadata()
+            for segmentation_metadata_ind in range(len(cidan_segmentation_metadata["Ophys"]["ImageSegmentation"]["plane_segmentations"])):
+                metadata["Ophys"]["ImageSegmentation"]["plane_segmentations"][segmentation_metadata_ind]["imaging_plane"] = self.ophys_metadata["Ophys"]["ImagingPlane"][0]["name"]
+            
         metadata["Ophys"]["Device"] = self.ophys_metadata["Ophys"]["Device"]
         metadata["Ophys"]["TwoPhotonSeries"] = self.ophys_metadata["Ophys"]["TwoPhotonSeries"]
         metadata["Ophys"]["ImagingPlane"] = self.ophys_metadata["Ophys"]["ImagingPlane"]
