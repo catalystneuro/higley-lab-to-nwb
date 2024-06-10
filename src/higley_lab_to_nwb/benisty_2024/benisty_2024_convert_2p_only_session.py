@@ -130,13 +130,13 @@ def session_to_nwb(
     conversion_options.update(dict(Video=dict(stub_test=stub_test)))
 
     # Add Facemap outpt
-    mat_files = glob.glob(os.path.join(folder_path, f"{search_pattern}*_proc.mat"))
-    mat_file_path = mat_files[0]
-    source_data.update(
-        dict(
-            FacemapInterface=dict(mat_file_path=str(mat_file_path), video_file_path=str(video_file_path), verbose=False)
-        )
-    )
+    # mat_files = glob.glob(os.path.join(folder_path, f"{search_pattern}*_proc.mat"))
+    # mat_file_path = mat_files[0]
+    # source_data.update(
+    #     dict(
+    #         FacemapInterface=dict(mat_file_path=str(mat_file_path), video_file_path=str(video_file_path), verbose=False)
+    #     )
+    # )
 
     # Add ophys metadata
     ophys_metadata_path = Path(__file__).parent / "metadata" / "benisty_2024_ophys_metadata.yaml"

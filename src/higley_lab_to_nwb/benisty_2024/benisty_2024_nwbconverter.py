@@ -19,7 +19,7 @@ class Benisty2024NWBConverter(NWBConverter):
 
     data_interface_classes = dict(
         TwoPhotonImaging=ScanImageMultiFileImagingInterface,
-        Segmentation=Suite2pSegmentationInterface,
+        Suite2pSegmentation=Suite2pSegmentationInterface,
         Spike2Signals=Lohani2022Spike2SignalsInterface,
         CIDANSegmentation=Benisty2024CidanSegmentationInterface,
         Video=VideoInterface,
@@ -52,7 +52,7 @@ class Benisty2024NWBConverter(NWBConverter):
         ttlsignal_interface = self.data_interface_objects["Spike2Signals"]
         # Synch imaging
         imaging_interface = self.data_interface_objects["TwoPhotonImaging"]
-        segmentation_interface = self.data_interface_objects["Segmentation"]
+        segmentation_interface = self.data_interface_objects["Suite2pSegmentation"]
         stream_id = next(
             (
                 stream_id
@@ -67,7 +67,7 @@ class Benisty2024NWBConverter(NWBConverter):
 
         # Synch behaviour
         video_interface = self.data_interface_objects["Video"]
-        facemap_interface = self.data_interface_objects["FacemapInterface"]
+        # facemap_interface = self.data_interface_objects["FacemapInterface"]
         video_interface._timestamps = video_interface.get_timestamps()
         stream_id = next(
             (
@@ -79,4 +79,4 @@ class Benisty2024NWBConverter(NWBConverter):
         )
         ttl_times = ttlsignal_interface.get_event_times_from_ttl(stream_id=stream_id)
         video_interface.set_aligned_starting_time(ttl_times[0])
-        facemap_interface.set_aligned_starting_time(ttl_times[0])
+        # facemap_interface.set_aligned_starting_time(ttl_times[0])
