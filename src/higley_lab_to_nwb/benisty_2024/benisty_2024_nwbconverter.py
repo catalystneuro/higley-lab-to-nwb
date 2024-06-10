@@ -2,6 +2,8 @@
 
 from typing import Dict
 from neuroconv import NWBConverter
+from neuroconv.utils import DeepDict
+
 from neuroconv.datainterfaces import ScanImageMultiFileImagingInterface, Suite2pSegmentationInterface
 from higley_lab_to_nwb.lohani_2022.interfaces import (
     Lohani2022Spike2SignalsInterface,
@@ -9,7 +11,7 @@ from higley_lab_to_nwb.lohani_2022.interfaces import (
 )
 from neuroconv.datainterfaces import VideoInterface, FacemapInterface
 
-from neuroconv.utils import DeepDict
+from .interfaces import Benisty2024CidanSegmentationInterface
 
 
 class Benisty2024NWBConverter(NWBConverter):
@@ -19,6 +21,7 @@ class Benisty2024NWBConverter(NWBConverter):
         TwoPhotonImaging=ScanImageMultiFileImagingInterface,
         Segmentation=Suite2pSegmentationInterface,
         Spike2Signals=Lohani2022Spike2SignalsInterface,
+        CIDANSegmentation=Benisty2024CidanSegmentationInterface,
         Video=VideoInterface,
         FacemapInterface=FacemapInterface,
         VisualStimulusInterface=Lohani2022VisualStimulusInterface,
@@ -30,14 +33,15 @@ class Benisty2024NWBConverter(NWBConverter):
 
     def get_metadata(self) -> DeepDict:
         metadata = super().get_metadata()
-        segmentation_metadata = self.data_interface_objects["Segmentation"].get_metadata()
-        for segmentation_metadata_ind in range(
-            len(segmentation_metadata["Ophys"]["ImageSegmentation"]["plane_segmentations"])
-        ):
-            metadata["Ophys"]["ImageSegmentation"]["plane_segmentations"][segmentation_metadata_ind][
-                "imaging_plane"
-            ] = self.ophys_metadata["Ophys"]["ImagingPlane"][0]["name"]
 
+        suite2p_segmentation_metadata = self.data_interface_objects["Suite2pSegmentation"].get_metadata()
+        for segmentation_metadata_ind in range(len(suite2p_segmentation_metadata["Ophys"]["ImageSegmentation"]["plane_segmentations"])):
+            metadata["Ophys"]["ImageSegmentation"]["plane_segmentations"][segmentation_metadata_ind]["imaging_plane"] = self.ophys_metadata["Ophys"]["ImagingPlane"][0]["name"]
+
+        cidan_segmentation_metadata = self.data_interface_objects["CIDANSegmentation"].get_metadata()
+        for segmentation_metadata_ind in range(len(cidan_segmentation_metadata["Ophys"]["ImageSegmentation"]["plane_segmentations"])):
+            metadata["Ophys"]["ImageSegmentation"]["plane_segmentations"][segmentation_metadata_ind]["imaging_plane"] = self.ophys_metadata["Ophys"]["ImagingPlane"][0]["name"]
+        
         metadata["Ophys"]["Device"] = self.ophys_metadata["Ophys"]["Device"]
         metadata["Ophys"]["TwoPhotonSeries"] = self.ophys_metadata["Ophys"]["TwoPhotonSeries"]
         metadata["Ophys"]["ImagingPlane"] = self.ophys_metadata["Ophys"]["ImagingPlane"]
