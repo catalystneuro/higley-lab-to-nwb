@@ -31,13 +31,12 @@ class Lohani2022MesoscopicImagingInterface(BaseImagingExtractorInterface):
         sampling_frequency : float
         verbose : bool, default: True
         """
-        super().__init__(file_path=file_path, sampling_frequency=sampling_frequency, verbose=verbose)
+        super().__init__(file_path=file_path, sampling_frequency=sampling_frequency, verbose=verbose, photon_series_type="OnePhotonSeries")
 
     def get_metadata_schema(self):
-        metadata_schema=super().get_metadata_schema(photon_series_type="OnePhotonSeries")
+        metadata_schema=super().get_metadata_schema()
         return metadata_schema
     
     def get_metadata(self) -> DeepDict:
-        metadata = super().get_metadata(photon_series_type="OnePhotonSeries")
-
+        metadata = super().get_metadata()
         return metadata

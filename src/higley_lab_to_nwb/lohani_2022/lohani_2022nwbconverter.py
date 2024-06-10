@@ -7,7 +7,7 @@ from higley_lab_to_nwb.lohani_2022.interfaces import (
     Lohani2022Spike2SignalsInterface,
     Lohani2022VisualStimulusInterface,
 )
-from neuroconv.datainterfaces import VideoInterface, FacemapInterface
+from neuroconv.datainterfaces import VideoInterface#, FacemapInterface
 
 
 class Lohani2022NWBConverter(NWBConverter):
@@ -16,7 +16,7 @@ class Lohani2022NWBConverter(NWBConverter):
     data_interface_classes = dict(
         Spike2Signals=Lohani2022Spike2SignalsInterface,
         Video=VideoInterface,
-        FacemapInterface=FacemapInterface,
+        # FacemapInterface=FacemapInterface,
         VisualStimulusInterface=Lohani2022VisualStimulusInterface,
         ImagingBlueExcitationGreenChannel=Lohani2022MesoscopicImagingInterface,
         ImagingBlueExcitationRedChannel=Lohani2022MesoscopicImagingInterface,
@@ -69,7 +69,7 @@ class Lohani2022NWBConverter(NWBConverter):
 
         # Synch behaviour
         video_interface = self.data_interface_objects["Video"]
-        facemap_interface = self.data_interface_objects["FacemapInterface"]
+        # facemap_interface = self.data_interface_objects["FacemapInterface"]
         video_interface._timestamps = video_interface.get_timestamps()
         stream_id = next(
             (
@@ -81,4 +81,4 @@ class Lohani2022NWBConverter(NWBConverter):
         )
         ttl_times = ttlsignal_interface.get_event_times_from_ttl(stream_id=stream_id)
         video_interface.set_aligned_starting_time(ttl_times[0])
-        facemap_interface.set_aligned_starting_time(ttl_times[0])
+        # facemap_interface.set_aligned_starting_time(ttl_times[0])
