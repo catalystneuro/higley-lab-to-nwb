@@ -81,7 +81,7 @@ def session_to_nwb(
         )
         conversion_options.update(dict(VisualStimulusInterface=dict(stub_test=stub_test)))
 
-# Add 2p Imaging
+    # Add 2p Imaging
     imaging_path = folder_path / "tiff"
     source_data.update(dict(TwoPhotonImaging=dict(folder_path=str(imaging_path), file_pattern="*.tif")))
     conversion_options.update(dict(TwoPhotonImaging=dict(stub_test=stub_test)))
@@ -139,7 +139,7 @@ def session_to_nwb(
     # )
 
     # Add ophys metadata
-    ophys_metadata_path = Path(__file__).parent / "metadata" / "benisty_2024_ophys_metadata.yaml"
+    ophys_metadata_path = Path(__file__).parent / "metadata" / "benisty_2024_ophys_2p_only_metadata.yaml.yaml"
     ophys_metadata = load_dict_from_file(ophys_metadata_path)
 
     converter = Benisty2024NWBConverter(source_data=source_data, ophys_metadata=ophys_metadata)
