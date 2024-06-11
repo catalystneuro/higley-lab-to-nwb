@@ -50,7 +50,7 @@ def session_to_nwb(
 
     # Define each smrx signal name
     TTLsignals_name_map = {
-        stream_ids[stream_names == "galvo"][0]: "TTLSignalMicroscopeCamera",
+        stream_ids[stream_names == "galvo"][0]: "TTLSignal2pMicroscopeCamera",
         stream_ids[stream_names == "pupilcam"][0]: "TTLSignalPupilCamera",
     }
     behavioral_name_map = {
@@ -139,7 +139,7 @@ def session_to_nwb(
     # )
 
     # Add ophys metadata
-    ophys_metadata_path = Path(__file__).parent / "metadata" / "benisty_2024_ophys_2p_only_metadata.yaml.yaml"
+    ophys_metadata_path = Path(__file__).parent / "metadata" / "benisty_2024_ophys_2p_only_metadata.yaml"
     ophys_metadata = load_dict_from_file(ophys_metadata_path)
 
     converter = Benisty2024NWBConverter(source_data=source_data, ophys_metadata=ophys_metadata)

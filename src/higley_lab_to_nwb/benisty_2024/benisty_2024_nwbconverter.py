@@ -57,7 +57,7 @@ class Benisty2024NWBConverter(NWBConverter):
             (
                 stream_id
                 for stream_id, stream_name in ttlsignal_interface.ttl_stream_ids_to_names_map.items()
-                if stream_name == "TTLSignalMicroscopeCamera"
+                if stream_name == "TTLSignal2pMicroscopeCamera"
             ),
             None,
         )
