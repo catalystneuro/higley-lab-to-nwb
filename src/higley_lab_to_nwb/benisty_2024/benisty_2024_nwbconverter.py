@@ -12,8 +12,7 @@ from higley_lab_to_nwb.lohani_2022.interfaces import (
 from neuroconv.datainterfaces import VideoInterface, FacemapInterface
 
 from .interfaces import Benisty2024CidanSegmentationInterface
-
-
+from higley_lab_to_nwb.lohani_2022.interfaces import Lohani2022Spike2SignalsInterface
 class Benisty2024NWBConverter(NWBConverter):
     """Primary conversion class."""
 
@@ -38,10 +37,11 @@ class Benisty2024NWBConverter(NWBConverter):
         for segmentation_metadata_ind in range(len(suite2p_segmentation_metadata["Ophys"]["ImageSegmentation"]["plane_segmentations"])):
             metadata["Ophys"]["ImageSegmentation"]["plane_segmentations"][segmentation_metadata_ind]["imaging_plane"] = self.ophys_metadata["Ophys"]["ImagingPlane"][0]["name"]
 
-        cidan_segmentation_metadata = self.data_interface_objects["CIDANSegmentation"].get_metadata()
-        for segmentation_metadata_ind in range(len(cidan_segmentation_metadata["Ophys"]["ImageSegmentation"]["plane_segmentations"])):
-            metadata["Ophys"]["ImageSegmentation"]["plane_segmentations"][segmentation_metadata_ind]["imaging_plane"] = self.ophys_metadata["Ophys"]["ImagingPlane"][0]["name"]
-        
+        if "CIDANSegmentation" in self.data_interface_objects.keys():
+            cidan_segmentation_metadata = self.data_interface_objects["CIDANSegmentation"].get_metadata()
+            for segmentation_metadata_ind in range(len(cidan_segmentation_metadata["Ophys"]["ImageSegmentation"]["plane_segmentations"])):
+                metadata["Ophys"]["ImageSegmentation"]["plane_segmentations"][segmentation_metadata_ind]["imaging_plane"] = self.ophys_metadata["Ophys"]["ImagingPlane"][0]["name"]
+            
         metadata["Ophys"]["Device"] = self.ophys_metadata["Ophys"]["Device"]
         metadata["Ophys"]["TwoPhotonSeries"] = self.ophys_metadata["Ophys"]["TwoPhotonSeries"]
         metadata["Ophys"]["ImagingPlane"] = self.ophys_metadata["Ophys"]["ImagingPlane"]
