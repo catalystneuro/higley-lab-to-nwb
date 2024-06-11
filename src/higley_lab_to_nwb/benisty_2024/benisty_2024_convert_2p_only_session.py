@@ -50,7 +50,7 @@ def session_to_nwb(
 
     # Define each smrx signal name
     TTLsignals_name_map = {
-        stream_ids[stream_names == "galvo"][0]: "TTLSignal2pMicroscopeCamera",
+        stream_ids[stream_names == "galvo"][0]: "TTLSignal2PExcitation",
         stream_ids[stream_names == "pupilcam"][0]: "TTLSignalPupilCamera",
     }
     behavioral_name_map = {
