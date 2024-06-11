@@ -38,3 +38,20 @@ class Benisty2024NWBConverter(NWBConverter):
         metadata["Ophys"]["ImagingPlane"] = self.ophys_metadata["Ophys"]["ImagingPlane"]
 
         return metadata
+    
+    def temporally_align_data_interfaces(self):
+        ttlsignal_interface = self.data_interface_objects["Spike2Signals"]
+        # Synch imaging
+        imaging_interface = self.data_interface_objects["TwoPhotonImaging"]
+        segmentation_interface = self.data_interface_objects["Suite2pSegmentation"]
+        stream_id = next(
+            (
+                stream_id
+                for stream_id, stream_name in ttlsignal_interface.ttl_stream_ids_to_names_map.items()
+                if stream_name == "TTLSignal2PExcitation"
+            ),
+            None,
+        )
+        ttl_times = ttlsignal_interface.get_event_times_from_ttl(stream_id=stream_id)
+        imaging_interface.set_aligned_starting_time(ttl_times[0])
+        segmentation_interface.set_aligned_starting_time(ttl_times[0])
