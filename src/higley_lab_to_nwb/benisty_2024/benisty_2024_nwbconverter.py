@@ -6,7 +6,7 @@ from neuroconv.utils import DeepDict
 
 from neuroconv.datainterfaces import ScanImageMultiFileImagingInterface, Suite2pSegmentationInterface
 from .interfaces import Benisty2024CidanSegmentationInterface
-
+from higley_lab_to_nwb.lohani_2022.interfaces import Lohani2022Spike2SignalsInterface
 class Benisty2024NWBConverter(NWBConverter):
     """Primary conversion class."""
 
@@ -14,7 +14,9 @@ class Benisty2024NWBConverter(NWBConverter):
         TwoPhotonImaging=ScanImageMultiFileImagingInterface,
         Suite2pSegmentation=Suite2pSegmentationInterface,
         CIDANSegmentation=Benisty2024CidanSegmentationInterface,
+        Spike2Signals=Lohani2022Spike2SignalsInterface,
     )
+
     def __init__(self, source_data: Dict[str, dict],ophys_metadata: Dict[str, dict],  verbose: bool = True):
         super().__init__(source_data, verbose)
         self.ophys_metadata=ophys_metadata

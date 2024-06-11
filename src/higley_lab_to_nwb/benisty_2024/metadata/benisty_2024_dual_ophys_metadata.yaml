@@ -7,9 +7,9 @@ Ophys:
       description: Zeiss Axiozoom with a 1x, 0.25 NA objective with a 56 mm working distance. Epifluorescent excitation was provided by an LED bank (Spectra X Light Engine, Lumencor). To image through the implanted prism, a long-working distance objective (20x, 0.4 NA, Mitutoyo) was used.
       manufacturer: Zeiss
   TwoPhotonSeries:
-    - name: TwoPhotonSeriesGreenChannel
+    - name: TwoPhotonSeries
       description: Imaging data from Green channel recorded with 2p microscope. Images were acquired at 576x576 resolution after 45x pixel binning with 20ms exposure.
-      imaging_plane: ImagingPlaneGreenChannel
+      imaging_plane: TwoPhotonImagingPlane
       unit: n.a.
   OnePhotonSeries:
     - name: OnePhotonSeriesGreenChannel
@@ -31,7 +31,7 @@ Ophys:
       location: Whole Brain
       device: TwoPhotonMicroscope
       optical_channel:
-        - name: GreenOpticalChannel
+        - name: Green
           description: Emitted light was collected through a 525/50 filter and a gallium arsenide phosphide photomultiplier tube (Hamamatsu).
           emission_lambda: 525.0
       indicator: GCaMP6s #TODO change
@@ -41,7 +41,7 @@ Ophys:
       location: Whole Brain
       device: OnePhotonMicroscope
       optical_channel:
-        - name: RedMesoscopicOpticalChannel
+        - name: Red
           description: Emitted light was collected through a  630/75 filter (Chroma).
           emission_lambda: 630.0
       indicator: jRCaMP1b36 
@@ -51,17 +51,17 @@ Ophys:
       location: Whole Brain
       device: OnePhotonMicroscope
       optical_channel:
-        - name: GreenMesoscopicOpticalChannel
+        - name: Green
           description: Emitted light was collected through a 525/50 filter and a gallium arsenide phosphide photomultiplier tube (Hamamatsu).
           emission_lambda: 525.0 
       indicator: ACh3.0 
     - name: OnePhotonImagingPlaneIsosbestic
-      description: Imaging plane for the Green channel recorded with 2p microscope.
+      description: Imaging plane for the Isosbestic Green channel recorded with 2p microscope.
       excitation_lambda: 395.0  # in nm
       location: Whole Brain
       device: OnePhotonMicroscope
       optical_channel:
-        - name: GreenMesoscopicOpticalChannel
+        - name: Green
           description: Emitted light was collected through a 525/50 filter and a gallium arsenide phosphide photomultiplier tube (Hamamatsu).
           emission_lambda: 525.0 
       indicator: ACh3.0 
