@@ -19,7 +19,7 @@ def session_to_nwb(
         output_dir_path = output_dir_path / "nwb_stub"
     output_dir_path.mkdir(parents=True, exist_ok=True)
 
-    nwbfile_path = output_dir_path / f"{session_id}_new.nwb"
+    nwbfile_path = output_dir_path / f"{session_id}.nwb"
 
     source_data = dict()
     conversion_options = dict()
@@ -35,8 +35,8 @@ def session_to_nwb(
         stream_ids[stream_names == "BL_LED"][0]: "TTLSignalBlueLED",
         stream_ids[stream_names == "UV_LED"][0]: "TTLSignalVioletLED",
         stream_ids[stream_names == "Green LED"][0]: "TTLSignalGreenLED",
-        stream_ids[stream_names == "MesoCam"][0]: "TTLSignalMesoscopicCamera",
-        stream_ids[stream_names == "R_mesocam"][0]: "TTLSignalRedMesoscopicCamera",
+        # stream_ids[stream_names == "MesoCam"][0]: "TTLSignalMesoscopicCamera",
+        # stream_ids[stream_names == "R_mesocam"][0]: "TTLSignalRedMesoscopicCamera",
         stream_ids[stream_names == "pupilcam"][0]: "TTLSignalPupilCamera",
     }
     behavioral_name_map = {
@@ -100,6 +100,7 @@ def session_to_nwb(
             conversion_options[interface_name] = {
                 "stub_test": stub_test,
                 "photon_series_index": photon_series_index,
+                "photon_series_type": "OnePhotonSeries",
             }
             photon_series_index += 1
 
@@ -118,10 +119,14 @@ def session_to_nwb(
     #     )
     # )
 
+    ophys_metadata_path = Path(__file__).parent / "metadata" / "lohani_2022_ophys_metadata.yaml"
+    ophys_metadata = load_dict_from_file(ophys_metadata_path)
+
     converter = Lohani2022NWBConverter(
         source_data=source_data,
         excitation_types=excitation_type_to_start_frame_index_mapping.keys(),
         channels=channel_to_frame_side_mapping.keys(),
+        ophys_metadata = ophys_metadata,
     )
 
     # Add datetime to conversion
@@ -136,11 +141,6 @@ def session_to_nwb(
     editable_metadata_path = Path(__file__).parent / "lohani_2022_metadata.yaml"
     editable_metadata = load_dict_from_file(editable_metadata_path)
     metadata = dict_deep_update(metadata, editable_metadata)
-
-    # Add ophys metadata
-    ophys_metadata_path = Path(__file__).parent / "metadata" / "lohani_2022_ophys_metadata.yaml"
-    ophys_metadata = load_dict_from_file(ophys_metadata_path)
-    metadata = dict_deep_update(metadata, ophys_metadata)
 
     # Run conversion
     converter.run_conversion(

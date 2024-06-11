@@ -1,6 +1,6 @@
 Ophys:
   Device:
-    - name: CustomMicroscope
+    - name: OnePhotonMicroscope
       description: "Camera Type: DUAL_DCAM, Camera Name: C13440-20C S/N: 301751 S/N: 300073"
       manufacturer: Hamamatsu Inc.
   OnePhotonSeries:
@@ -33,7 +33,7 @@ Ophys:
       description: Imaging plane for the Green channel recorded with Blue excitation.
       excitation_lambda: 470.0  # in nm
       location: Whole Brain
-      device: CustomMicroscope
+      device: OnePhotonMicroscope
       optical_channel:
         - name: Green
           description: Green channel of the microscope, 525/50 nm filter.
@@ -43,7 +43,7 @@ Ophys:
       description: Imaging plane for the Green channel recorded with Violet excitation.
       excitation_lambda: 395.0  # in nm
       location: Whole Brain
-      device: CustomMicroscope
+      device: OnePhotonMicroscope
       optical_channel:
         - name: Green
           description: Green channel of the microscope, 525/50 nm filter.
@@ -53,7 +53,7 @@ Ophys:
       description: Imaging plane for the Green channel recorded with Green excitation.
       excitation_lambda: 575.0  # in nm
       location: Whole Brain
-      device: CustomMicroscope
+      device: OnePhotonMicroscope
       optical_channel:
         - name: Green
           description: Green channel of the microscope, 525/50 nm filter.
@@ -63,7 +63,7 @@ Ophys:
       description: Imaging plane for the Red channel recorded with Blue excitation.
       excitation_lambda: 470.0  # in nm
       location: Whole Brain
-      device: CustomMicroscope
+      device: OnePhotonMicroscope
       optical_channel:
         - name: Red
           description: Red channel of the microscope, 630/75 nm filter.
@@ -73,7 +73,7 @@ Ophys:
       description: Imaging plane for the Red channel recorded with Violet excitation.
       excitation_lambda: 395.0  # in nm
       location: Whole Brain
-      device: CustomMicroscope
+      device: OnePhotonMicroscope
       optical_channel:
         - name: Red
           description: Red channel of the microscope, 630/75 nm filter.
@@ -83,7 +83,7 @@ Ophys:
       description: Imaging plane for the Red channel recorded with Green excitation.
       excitation_lambda: 575.0  # in nm
       location: Whole Brain
-      device: CustomMicroscope
+      device: OnePhotonMicroscope
       optical_channel:
         - name: Red
           description: Red channel of the microscope, 630/75 nm filter.

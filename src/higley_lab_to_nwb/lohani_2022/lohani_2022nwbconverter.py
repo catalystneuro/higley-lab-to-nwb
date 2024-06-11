@@ -8,6 +8,7 @@ from higley_lab_to_nwb.lohani_2022.interfaces import (
     Lohani2022VisualStimulusInterface,
 )
 from neuroconv.datainterfaces import VideoInterface, FacemapInterface, TiffImagingInterface
+from neuroconv.utils import DeepDict
 
 
 class Lohani2022NWBConverter(NWBConverter):
@@ -18,12 +19,6 @@ class Lohani2022NWBConverter(NWBConverter):
         Video=VideoInterface,
         FacemapInterface=FacemapInterface,
         VisualStimulusInterface=Lohani2022VisualStimulusInterface,
-        ImagingBlueExcitationGreenChannel=TiffImagingInterface,
-        ImagingBlueExcitationRedChannel=TiffImagingInterface,
-        ImagingUVExcitationGreenChannel=TiffImagingInterface,
-        ImagingUVExcitationRedChannel=TiffImagingInterface,
-        ImagingGreenExcitationGreenChannel=TiffImagingInterface,
-        ImagingGreenExcitationRedChannel=TiffImagingInterface,
     )
 
     def __init__(
@@ -31,6 +26,7 @@ class Lohani2022NWBConverter(NWBConverter):
         excitation_types: List[str],
         channels: List[str],
         source_data: Dict[str, dict],
+        ophys_metadata: Dict[str, dict],
         verbose: bool = True,
     ):
         self.excitation_types = excitation_types
@@ -39,7 +35,7 @@ class Lohani2022NWBConverter(NWBConverter):
             for channel in channels:
                 suffix = f"{excitation_type}Excitation{channel}Channel"
                 interface_name = f"Imaging{suffix}"
-                self.data_interface_classes[interface_name] = Lohani2022MesoscopicImagingInterface
+                self.data_interface_classes[interface_name] = TiffImagingInterface
 
         self.verbose = verbose
         self._validate_source_data(source_data=source_data, verbose=self.verbose)
@@ -49,6 +45,17 @@ class Lohani2022NWBConverter(NWBConverter):
             for name, data_interface in self.data_interface_classes.items()
             if name in source_data
         }
+
+        self.ophys_metadata = ophys_metadata
+
+    def get_metadata(self) -> DeepDict:
+        metadata = super().get_metadata()
+
+        metadata["Ophys"]["Device"] = self.ophys_metadata["Ophys"]["Device"]
+        metadata["Ophys"]["OnePhotonSeries"] = self.ophys_metadata["Ophys"]["OnePhotonSeries"]
+        metadata["Ophys"]["ImagingPlane"] = self.ophys_metadata["Ophys"]["ImagingPlane"]
+
+        return metadata
 
     def temporally_align_data_interfaces(self):
         ttlsignal_interface = self.data_interface_objects["Spike2Signals"]
