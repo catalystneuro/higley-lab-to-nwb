@@ -4,9 +4,7 @@ from typing import Optional
 from neuroconv.datainterfaces.ophys.basesegmentationextractorinterface import BaseSegmentationExtractorInterface
 from neuroconv.utils import DeepDict, FilePathType
 
-from ..extractors.cidansegmentation_extractor import (
-    CidanSegmentationExtractor,
-)
+from ..extractors.cidansegmentation_extractor import CidanSegmentationExtractor
 
 
 def format_string_for_parameters_dict(dict_obj, indent=2):
