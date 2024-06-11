@@ -36,7 +36,7 @@ Ophys:
           emission_lambda: 525.0
       indicator: GCaMP6s #TODO change
     - name: OnePhotonImagingPlaneRedChannel
-      description: Imaging plane for the Green channel recorded with 2p microscope.
+      description: Imaging plane for the Green channel recorded with 1p microscope.
       excitation_lambda: 575.0  # in nm
       location: Whole Brain
       device: OnePhotonMicroscope
@@ -46,7 +46,7 @@ Ophys:
           emission_lambda: 630.0
       indicator: jRCaMP1b36 
     - name: OnePhotonImagingPlaneGreenChannel
-      description: Imaging plane for the Green channel recorded with 2p microscope.
+      description: Imaging plane for the Green channel recorded with 1p microscope.
       excitation_lambda: 470.0  # in nm
       location: Whole Brain
       device: OnePhotonMicroscope
@@ -56,7 +56,7 @@ Ophys:
           emission_lambda: 525.0 
       indicator: ACh3.0 
     - name: OnePhotonImagingPlaneIsosbestic
-      description: Imaging plane for the Isosbestic Green channel recorded with 2p microscope.
+      description: Imaging plane for the Isosbestic Green channel recorded with 1p microscope.
       excitation_lambda: 395.0  # in nm
       location: Whole Brain
       device: OnePhotonMicroscope
