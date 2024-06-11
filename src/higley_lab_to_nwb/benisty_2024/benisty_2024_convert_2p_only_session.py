@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Union
 from neuroconv.utils import load_dict_from_file, dict_deep_update
 from higley_lab_to_nwb.benisty_2024 import Benisty2024NWBConverter
-from higley_lab_to_nwb.lohani_2022.interfaces.lohani_2022_spike2signals_interface import get_streams
+from higley_lab_to_nwb.interfaces.spike2signals_interface import get_streams
 import os
 import glob
 

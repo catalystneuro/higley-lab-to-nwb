@@ -2,10 +2,9 @@
 
 from typing import Dict, List
 from neuroconv import NWBConverter
-from higley_lab_to_nwb.lohani_2022.interfaces import (
-    Lohani2022MesoscopicImagingInterface,
-    Lohani2022Spike2SignalsInterface,
-    Lohani2022VisualStimulusInterface,
+from higley_lab_to_nwb.interfaces import (
+    Spike2SignalsInterface,
+    VisualStimulusInterface,
 )
 from neuroconv.datainterfaces import VideoInterface, FacemapInterface, TiffImagingInterface
 from neuroconv.utils import DeepDict
@@ -15,10 +14,10 @@ class Lohani2022NWBConverter(NWBConverter):
     """Primary conversion class."""
 
     data_interface_classes = dict(
-        Spike2Signals=Lohani2022Spike2SignalsInterface,
+        Spike2Signals=Spike2SignalsInterface,
         Video=VideoInterface,
         FacemapInterface=FacemapInterface,
-        VisualStimulusInterface=Lohani2022VisualStimulusInterface,
+        VisualStimulusInterface=VisualStimulusInterface,
     )
 
     def __init__(

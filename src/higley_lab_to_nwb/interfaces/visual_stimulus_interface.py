@@ -28,7 +28,7 @@ def get_streams(file_path: FilePathType) -> List[str]:
     return stream_ids, stream_names
 
 
-class Lohani2022VisualStimulusInterface(BaseDataInterface):
+class VisualStimulusInterface(BaseDataInterface):
     """
     Data interface class for converting Spike2 visual stimulus signals from CED (Cambridge Electronic
     Design) using the :py:class:`~spikeinterface.extractors.CedRecordingExtractor`."""
