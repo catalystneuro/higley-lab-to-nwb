@@ -59,6 +59,7 @@ class Benisty2024NWBConverter(NWBConverter):
 
         return metadata
 
+
     def temporally_align_data_interfaces(self):
         ttlsignal_interface = self.data_interface_objects["Spike2Signals"]
         # Synch imaging
