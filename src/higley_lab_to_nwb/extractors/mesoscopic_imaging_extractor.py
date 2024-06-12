@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Optional, Tuple, List, Iterable
 from warnings import warn
 import numpy as np
-from roiextractors.extraction_tools import PathType, FloatType, ArrayType, DtypeType
+from roiextractors.extraction_tools import PathType, FloatType, ArrayType, DtypeType, get_package
 from roiextractors.imagingextractor import ImagingExtractor
 from roiextractors.multiimagingextractor import MultiImagingExtractor
 from roiextractors.extractors.tiffimagingextractors.scanimagetiff_utils import _get_scanimage_reader
@@ -95,15 +95,26 @@ class MesoscopicImagingExtractor(ImagingExtractor):
         Notes
         -----
         """
+        tifffile = get_package(package_name="tifffile")
+
+        super().__init__()
         self.file_path = Path(file_path)
         self._sampling_frequency = sampling_frequency
         self._num_channels = number_of_channels
         self.channel_first_frame_index = channel_first_frame_index
         self._channel_names = [f"Channel{i}" for i in range(number_of_channels)]
+        
+        try:
+            self._raw_video = tifffile.memmap(self.file_path, mode="r")
+        except ValueError:
+            warn(
+                "memmap of TIFF file could not be established. Reading entire matrix into memory. "
+                "Consider using the ScanImageTiffExtractor for lazy data access."
+            )
+            with tifffile.TiffFile(self.file_path) as tif:
+                self._raw_video = tif.asarray()
 
-        ScanImageTiffReader = _get_scanimage_reader()
-        with ScanImageTiffReader(str(self.file_path)) as io:
-            shape = io.shape()  # [frames, rows, columns]
+        shape = self._raw_video.shape
         if len(shape) == 3:
             self._total_num_frames, self._num_rows, self._num_columns = shape
             self._num_frames = self._total_num_frames // self._num_channels
@@ -149,10 +160,8 @@ class MesoscopicImagingExtractor(ImagingExtractor):
             The frame of data.
         """
         self.check_frame_inputs(frame)
-        ScanImageTiffReader = _get_scanimage_reader()
         raw_index = self.frame_to_raw_index(frame)
-        with ScanImageTiffReader(str(self.file_path)) as io:
-            return io.data(beg=raw_index, end=raw_index + 1)
+        return self._raw_video[raw_index:raw_index + 1]
 
     def get_video(self, start_frame=None, end_frame=None) -> np.ndarray:
         """Get the video frames.
@@ -176,14 +185,10 @@ class MesoscopicImagingExtractor(ImagingExtractor):
         end_frame_inclusive = end_frame - 1
         self.check_frame_inputs(end_frame_inclusive)
         self.check_frame_inputs(start_frame)
-        raw_start = self.frame_to_raw_index(start_frame) 
-        raw_end_inclusive = self.frame_to_raw_index(end_frame_inclusive) 
+        raw_start = self.frame_to_raw_index(start_frame)
+        raw_end_inclusive = self.frame_to_raw_index(end_frame_inclusive)
         raw_end = raw_end_inclusive + 1
-
-        ScanImageTiffReader = _get_scanimage_reader()
-        with ScanImageTiffReader(filename=str(self.file_path)) as io:
-            raw_video = io.data(beg=raw_start, end=raw_end)
-        video = raw_video[::self._num_channels]
+        video = self._raw_video[raw_start:raw_end:self._num_channels, ...]
         return video
 
     def get_image_size(self) -> Tuple[int, int]:
@@ -197,10 +202,10 @@ class MesoscopicImagingExtractor(ImagingExtractor):
 
     def get_num_channels(self) -> int:
         return self._num_channels
-    
+
     def get_channel_names(self) -> list:
         return self._channel_names
-    
+
     def get_dtype(self) -> DtypeType:
         return self.get_frames(0).dtype
 
