@@ -37,7 +37,7 @@ def dual_imaging_session_to_nwb(
         stream_ids[stream_names == "blue_LED"][0]: "TTLSignalBlueLED",
         stream_ids[stream_names == "uv_LED"][0]: "TTLSignalVioletLED",
         stream_ids[stream_names == "Galvo"][0]: "TTLSignal2PExcitation",
-        stream_ids[stream_names == "EyeCam"][0]: "TTLSignalPupilCamera",
+        stream_ids[stream_names == "EyeCam"][0]: "TTLSignalPupilCamera", # in the .log file 2p acquisition sync with "EyeCam"
     }
     behavioral_name_map = {
         stream_ids[stream_names == "Wheel"][0]: "WheelSignal",
@@ -66,9 +66,11 @@ def dual_imaging_session_to_nwb(
     conversion_options.update(dict(Suite2pSegmentation=dict(stub_test=stub_test)))
 
     # Add 1p Imaging
-    # meso_imaging_path = data_dir_path / f"{subject_id}_1p"
+    meso_imaging_path = data_dir_path / f"{subject_id}_1p"
     # # ad hoc extractor for 1p imaging to separate strobing blue vs violet excitation
     # source_data.update(dict(OnePhotonImaging=dict(folder_path=str(meso_imaging_path), file_pattern=f"{session_id}*.tif")))
+    # conversion_options.update(dict(OnePhotonImaging=dict(stub_test=stub_test)))
+    # source_data.update(dict(OnePhotonImagingIsosbestic=dict(folder_path=str(meso_imaging_path), file_pattern=f"{session_id}*.tif")))
     # conversion_options.update(dict(OnePhotonImaging=dict(stub_test=stub_test)))
 
     # Add ophys metadata
