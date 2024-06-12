@@ -7,16 +7,14 @@ ScanImageTiffImagingExtractor
 """
 
 from pathlib import Path
-from typing import Optional, Tuple, List, Iterable
+from typing import Tuple
 from warnings import warn
 import numpy as np
-from roiextractors.extraction_tools import PathType, FloatType, ArrayType, DtypeType, get_package
+from roiextractors.extraction_tools import PathType, ArrayType, DtypeType, get_package
 from roiextractors.imagingextractor import ImagingExtractor
 from roiextractors.multiimagingextractor import MultiImagingExtractor
-from roiextractors.extractors.tiffimagingextractors.scanimagetiff_utils import _get_scanimage_reader
 
-
-class MesoscopicImagingTiffStackExtractor(MultiImagingExtractor):
+class MesoscopicImagingMultiTiffStackExtractor(MultiImagingExtractor):
     """Specialized extractor for reading multi-file (buffered) TIFF files."""  # TODO add description
 
     extractor_name = "MesoscopicImagingTiffStackExtractor"
@@ -53,7 +51,7 @@ class MesoscopicImagingTiffStackExtractor(MultiImagingExtractor):
 
         imaging_extractors = []
         for file_path in file_paths:
-            imaging_extractor = MesoscopicImagingExtractor(
+            imaging_extractor = MesoscopicImagingTiffStackExtractor(
                 file_path=file_path,
                 number_of_channels=number_of_channels,
                 channel_first_frame_index=channel_first_frame_index,
@@ -63,10 +61,10 @@ class MesoscopicImagingTiffStackExtractor(MultiImagingExtractor):
         super().__init__(imaging_extractors=imaging_extractors)
 
 
-class MesoscopicImagingExtractor(ImagingExtractor):
+class MesoscopicImagingTiffStackExtractor(ImagingExtractor):
     """Specialized extractor for reading a TIFF file."""  # TODO add description
 
-    extractor_name = "MesoscopicImagingExtractor"
+    extractor_name = "MesoscopicImagingTiffStackExtractor"
     is_writable = True
     mode = "file"
 
@@ -77,7 +75,7 @@ class MesoscopicImagingExtractor(ImagingExtractor):
         channel_first_frame_index: int,
         sampling_frequency: float,
     ) -> None:
-        """Create a MesoscopicImagingExtractor instance from a TIFF file.
+        """Create a MesoscopicImagingTiffStackExtractor instance from a TIFF file.
 
         The underlying data is stored in a round-robin format collapsed into 3 dimensions (frames, rows, columns).
         I.e. the first frame of each channel is stored, and then the second frame of each channel, etc.
