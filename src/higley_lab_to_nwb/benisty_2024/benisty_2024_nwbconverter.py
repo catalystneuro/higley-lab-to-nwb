@@ -10,6 +10,7 @@ from higley_lab_to_nwb.interfaces import (
     VisualStimulusInterface,
     Spike2SignalsInterface,
     CidanSegmentationInterface,
+    MesoscopicImagingMultiTiffStackInterface,
 )
 from neuroconv.datainterfaces import VideoInterface, FacemapInterface
 
@@ -25,6 +26,8 @@ class Benisty2024NWBConverter(NWBConverter):
         Video=VideoInterface,
         FacemapInterface=FacemapInterface,
         VisualStimulusInterface=VisualStimulusInterface,
+        OnePhotonImaging=MesoscopicImagingMultiTiffStackInterface,
+        OnePhotonImagingIsosbestic=MesoscopicImagingMultiTiffStackInterface,
     )
 
     def __init__(self, source_data: Dict[str, dict], ophys_metadata: Dict[str, dict], verbose: bool = True):
@@ -53,8 +56,7 @@ class Benisty2024NWBConverter(NWBConverter):
 
         metadata["Ophys"]["Device"] = self.ophys_metadata["Ophys"]["Device"]
         metadata["Ophys"]["TwoPhotonSeries"] = self.ophys_metadata["Ophys"]["TwoPhotonSeries"]
-        if "OnePhotonSeries" in metadata["Ophys"].keys():
-            metadata["Ophys"]["OnePhotonSeries"] = self.ophys_metadata["Ophys"]["OnePhotonSeries"]
+        metadata["Ophys"]["OnePhotonSeries"] = self.ophys_metadata["Ophys"]["OnePhotonSeries"]
         metadata["Ophys"]["ImagingPlane"] = self.ophys_metadata["Ophys"]["ImagingPlane"]
 
         return metadata

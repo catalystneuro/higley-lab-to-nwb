@@ -33,11 +33,12 @@ def dual_imaging_session_to_nwb(
     stream_ids, stream_names = get_streams(file_path=file_path)
 
     # Define each smr signal name
+    # in the .log file 2p acquisition sync with "EyeCam"
     TTLsignals_name_map = {
         stream_ids[stream_names == "blue_LED"][0]: "TTLSignalBlueLED",
         stream_ids[stream_names == "uv_LED"][0]: "TTLSignalVioletLED",
         stream_ids[stream_names == "Galvo"][0]: "TTLSignal2PExcitation",
-        stream_ids[stream_names == "EyeCam"][0]: "TTLSignalPupilCamera", # in the .log file 2p acquisition sync with "EyeCam"
+        stream_ids[stream_names == "EyeCam"][0]: "TTLSignalPupilCamera",
     }
     behavioral_name_map = {
         stream_ids[stream_names == "Wheel"][0]: "WheelSignal",
@@ -67,11 +68,50 @@ def dual_imaging_session_to_nwb(
 
     # Add 1p Imaging
     meso_imaging_path = data_dir_path / f"{subject_id}_1p"
+    file_pattern = f"{session_id.split('_')[0]}_1p_{session_id.split('_')[1]}*.tif"
     # # ad hoc extractor for 1p imaging to separate strobing blue vs violet excitation
-    # source_data.update(dict(OnePhotonImaging=dict(folder_path=str(meso_imaging_path), file_pattern=f"{session_id}*.tif")))
-    # conversion_options.update(dict(OnePhotonImaging=dict(stub_test=stub_test)))
-    # source_data.update(dict(OnePhotonImagingIsosbestic=dict(folder_path=str(meso_imaging_path), file_pattern=f"{session_id}*.tif")))
-    # conversion_options.update(dict(OnePhotonImaging=dict(stub_test=stub_test)))
+    sampling_frequency = 9.15
+    number_of_channels = 2
+
+    channel_first_frame_index = 0
+    source_data.update(
+        dict(
+            OnePhotonImaging=dict(
+                folder_path=str(meso_imaging_path),
+                file_pattern=file_pattern,
+                number_of_channels=number_of_channels,
+                channel_first_frame_index=channel_first_frame_index,
+                sampling_frequency=sampling_frequency,
+            )
+        )
+    )
+    conversion_options.update(
+        dict(
+            OnePhotonImaging=dict(
+                stub_test=stub_test, photon_series_type="OnePhotonSeries", photon_series_index=0
+            )
+        )
+    )
+
+    channel_first_frame_index = 1
+    source_data.update(
+        dict(
+            OnePhotonImagingIsosbestic=dict(
+                folder_path=str(meso_imaging_path),
+                file_pattern=file_pattern,
+                number_of_channels=number_of_channels,
+                channel_first_frame_index=channel_first_frame_index,
+                sampling_frequency=sampling_frequency,
+            )
+        )
+    )
+    conversion_options.update(
+        dict(
+            OnePhotonImagingIsosbestic=dict(
+                stub_test=stub_test, photon_series_type="OnePhotonSeries", photon_series_index=1
+            )
+        )
+    )
 
     # Add ophys metadata
     ophys_metadata_path = Path(__file__).parent / "metadata" / "benisty_2024_dual_ophys_metadata.yaml"

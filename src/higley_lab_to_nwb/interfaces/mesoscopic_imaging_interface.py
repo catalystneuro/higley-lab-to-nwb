@@ -7,7 +7,7 @@ from neuroconv.datainterfaces.ophys.baseimagingextractorinterface import BaseIma
 from neuroconv.utils import FolderPathType
 from neuroconv.utils.dict import DeepDict
 
-from ..extractors.mesoscopic_imaging_extractor import MesoscopicImagingMultiTiffStackExtractor
+from ..extractors import MesoscopicImagingMultiTiffStackExtractor
 
 
 class MesoscopicImagingMultiTiffStackInterface(BaseImagingExtractorInterface):
@@ -25,6 +25,7 @@ class MesoscopicImagingMultiTiffStackInterface(BaseImagingExtractorInterface):
         channel_first_frame_index: int,
         sampling_frequency: float,
         verbose: bool = True,
+        photon_series_type: str = "OnePhotonSeries",
     ) -> None:
         """Create a MesoscopicImagingTiffStackExtractor instance from a folder of TIFF files.
 
@@ -48,8 +49,9 @@ class MesoscopicImagingMultiTiffStackInterface(BaseImagingExtractorInterface):
             channel_first_frame_index=channel_first_frame_index,
             sampling_frequency=sampling_frequency,
             verbose=verbose,
+            photon_series_type=photon_series_type,
         )
-        self.photon_series_type = "OnePhotonSeries"
+
 
     def get_metadata(self) -> DeepDict:
         metadata = super().get_metadata()
