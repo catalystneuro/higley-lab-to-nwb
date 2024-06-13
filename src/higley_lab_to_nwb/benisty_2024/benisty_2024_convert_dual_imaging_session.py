@@ -55,6 +55,21 @@ def dual_imaging_session_to_nwb(
     )
     conversion_options.update(dict(Spike2Signals=dict(stub_test=stub_test)))
 
+    csv_file_paths = glob.glob(os.path.join(folder_path, f"{session_id}*.csv"))
+    if csv_file_paths:
+        csv_file_path = csv_file_paths[0]
+        mat_file_path = os.path.splitext(csv_file_path)[0] + '.mat'
+        source_data.update(
+            dict(
+                VisualStimulusInterface=dict(
+                    mat_file_path=mat_file_path,
+                    csv_file_path=csv_file_path,
+                    stream_id=stream_ids[stream_names == "diode"][0],
+                )
+            )
+        )
+        conversion_options.update(dict(VisualStimulusInterface=dict(stub_test=stub_test)))
+
     # Add 2p Imaging
     imaging_path = data_dir_path / f"{subject_id}_2p"
     file_pattern = f"{session_id.split('_')[0]}_2p_{session_id.split('_')[1]}*.tif"
@@ -144,7 +159,7 @@ if __name__ == "__main__":
     output_dir_path = root_path / "Higley-conversion_nwb/"
     stub_test = True
     subject_id = "dbvdual035"
-    session_id = "20201231_00001"
+    session_id = "20201231_00002"
     dual_imaging_session_to_nwb(
         data_dir_path=data_dir_path,
         output_dir_path=output_dir_path,
