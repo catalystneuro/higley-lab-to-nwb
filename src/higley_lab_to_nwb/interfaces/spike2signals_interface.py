@@ -101,6 +101,20 @@ class Spike2SignalsInterface(BaseDataInterface):
 
         return times[event_times]
 
+    def get_event_times_from_ttl_channel_name(self, channel_name: str) -> int:
+
+        stream_id = next(
+            (
+                stream_id
+                for stream_id, stream_name in self.ttl_stream_ids_to_names_map.items()
+                if stream_name == channel_name
+            ),
+            None,
+        )
+        times = self.get_event_times_from_ttl(stream_id=stream_id)
+
+        return times
+
     def add_to_nwbfile(self, nwbfile: NWBFile, metadata: dict, stub_test: bool = False) -> None:
         end_frame = 100 if stub_test else None
 

@@ -56,7 +56,8 @@ class Benisty2024NWBConverter(NWBConverter):
 
         metadata["Ophys"]["Device"] = self.ophys_metadata["Ophys"]["Device"]
         metadata["Ophys"]["TwoPhotonSeries"] = self.ophys_metadata["Ophys"]["TwoPhotonSeries"]
-        metadata["Ophys"]["OnePhotonSeries"] = self.ophys_metadata["Ophys"]["OnePhotonSeries"]
+        if "OnePhotonSeries" in metadata["Ophys"]:
+            metadata["Ophys"]["OnePhotonSeries"] = self.ophys_metadata["Ophys"]["OnePhotonSeries"]
         metadata["Ophys"]["ImagingPlane"] = self.ophys_metadata["Ophys"]["ImagingPlane"]
 
         return metadata
@@ -64,34 +65,35 @@ class Benisty2024NWBConverter(NWBConverter):
 
     def temporally_align_data_interfaces(self):
         ttlsignal_interface = self.data_interface_objects["Spike2Signals"]
-        # Synch imaging
-        imaging_interface = self.data_interface_objects["TwoPhotonImaging"]
+
+        # Synch 2p imaging
+        two_photon_imaging_interface = self.data_interface_objects["TwoPhotonImaging"]
         segmentation_interface = self.data_interface_objects["Suite2pSegmentation"]
-        stream_id = next(
-            (
-                stream_id
-                for stream_id, stream_name in ttlsignal_interface.ttl_stream_ids_to_names_map.items()
-                if stream_name == "TTLSignal2PExcitation"
-            ),
-            None,
-        )
-        ttl_times = ttlsignal_interface.get_event_times_from_ttl(stream_id=stream_id)
-        imaging_interface.set_aligned_starting_time(ttl_times[0])
+        channel_name = "TTLSignal2PExcitation"
+        ttl_times = ttlsignal_interface.get_event_times_from_ttl_channel_name(channel_name=channel_name)
+        two_photon_imaging_interface.set_aligned_starting_time(ttl_times[0])
         segmentation_interface.set_aligned_starting_time(ttl_times[0])
+
+        # Synch 1p imaging
+        if "OnePhotonImaging" in self.data_interface_objects.keys():
+            one_photon_imaging_interface = self.data_interface_objects["OnePhotonImaging"]
+            channel_name = "TTLSignalBlueLED"
+            ttl_times = ttlsignal_interface.get_event_times_from_ttl_channel_name(channel_name=channel_name)
+            one_photon_imaging_interface.set_aligned_starting_time(ttl_times[0])
+
+        # Synch 1p isosbestic imaging
+        if "OnePhotonImagingIsosbestic" in self.data_interface_objects.keys():
+            one_photon_imaging_interface = self.data_interface_objects["OnePhotonImagingIsosbestic"]
+            channel_name = "TTLSignalVioletLED"
+            ttl_times = ttlsignal_interface.get_event_times_from_ttl_channel_name(channel_name=channel_name)
+            one_photon_imaging_interface.set_aligned_starting_time(ttl_times[0])
 
         # Synch behaviour
         if "Video" in self.data_interface_objects.keys():
             video_interface = self.data_interface_objects["Video"]
             # facemap_interface = self.data_interface_objects["FacemapInterface"]
             video_interface._timestamps = video_interface.get_timestamps()
-            stream_id = next(
-                (
-                    stream_id
-                    for stream_id, stream_name in ttlsignal_interface.ttl_stream_ids_to_names_map.items()
-                    if stream_name == "TTLSignalPupilCamera"
-                ),
-                None,
-            )
-            ttl_times = ttlsignal_interface.get_event_times_from_ttl(stream_id=stream_id)
+            channel_name = "TTLSignalPupilCamera"
+            ttl_times = ttlsignal_interface.get_event_times_from_ttl_channel_name(channel_name=channel_name)
             video_interface.set_aligned_starting_time(ttl_times[0])
             # facemap_interface.set_aligned_starting_time(ttl_times[0])
