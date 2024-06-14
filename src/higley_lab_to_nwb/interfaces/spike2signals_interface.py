@@ -38,7 +38,7 @@ def _get_stream_gain_offset(file_path: FilePathType, stream_id: str) -> List[str
     return gain, offset
 
 
-class Lohani2022Spike2SignalsInterface(BaseDataInterface):
+class Spike2SignalsInterface(BaseDataInterface):
     """
     Data interface class for converting Spike2 analogue signals from CED (Cambridge Electronic
     Design) using the :py:class:`~spikeinterface.extractors.CedRecordingExtractor`."""
@@ -130,7 +130,7 @@ class Lohani2022Spike2SignalsInterface(BaseDataInterface):
             gain, offset = _get_stream_gain_offset(file_path=str(self.source_data["file_path"]), stream_id=stream_id)
             behavioral_time_series = TimeSeries(
                 name=stream_name,
-                data=extractor.get_traces(end_frame=end_frame),
+                data=extractor.get_traces(end_frame=end_frame).reshape(-1),
                 rate=extractor.get_sampling_frequency(),
                 description=f"The {stream_name} measured over time.",
                 unit="Volts",

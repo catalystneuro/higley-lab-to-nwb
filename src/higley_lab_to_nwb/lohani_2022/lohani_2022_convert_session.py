@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Union
 from neuroconv.utils import load_dict_from_file, dict_deep_update
 from higley_lab_to_nwb.lohani_2022 import Lohani2022NWBConverter
-from higley_lab_to_nwb.lohani_2022.interfaces.lohani_2022_spike2signals_interface import get_streams
+from higley_lab_to_nwb.interfaces.spike2signals_interface import get_streams
 from higley_lab_to_nwb.lohani_2022.utils.lohani_2022_utils import create_tiff_stack, read_session_start_time
 import os
 import glob
@@ -19,7 +19,7 @@ def session_to_nwb(
         output_dir_path = output_dir_path / "nwb_stub"
     output_dir_path.mkdir(parents=True, exist_ok=True)
 
-    nwbfile_path = output_dir_path / f"{session_id}_new.nwb"
+    nwbfile_path = output_dir_path / f"{session_id}.nwb"
 
     source_data = dict()
     conversion_options = dict()
@@ -35,8 +35,8 @@ def session_to_nwb(
         stream_ids[stream_names == "BL_LED"][0]: "TTLSignalBlueLED",
         stream_ids[stream_names == "UV_LED"][0]: "TTLSignalVioletLED",
         stream_ids[stream_names == "Green LED"][0]: "TTLSignalGreenLED",
-        stream_ids[stream_names == "MesoCam"][0]: "TTLSignalMesoscopicCamera",
-        stream_ids[stream_names == "R_mesocam"][0]: "TTLSignalRedMesoscopicCamera",
+        # stream_ids[stream_names == "MesoCam"][0]: "TTLSignalMesoscopicCamera",
+        # stream_ids[stream_names == "R_mesocam"][0]: "TTLSignalRedMesoscopicCamera",
         stream_ids[stream_names == "pupilcam"][0]: "TTLSignalPupilCamera",
     }
     behavioral_name_map = {
@@ -95,6 +95,7 @@ def session_to_nwb(
             source_data[interface_name] = {
                 "file_path": tif_file_path,
                 "sampling_frequency": sampling_frequency,
+                "photon_series_type": "OnePhotonSeries",
             }
             conversion_options[interface_name] = {
                 "stub_test": stub_test,
@@ -107,7 +108,7 @@ def session_to_nwb(
     avi_files = glob.glob(os.path.join(folder_path, f"{search_pattern}*.avi"))
     video_file_path = avi_files[0]
     source_data.update(dict(Video=dict(file_paths=[video_file_path], verbose=False)))
-    conversion_options.update(dict(Video=dict(stub_test=stub_test, external_mode=False)))
+    conversion_options.update(dict(Video=dict(stub_test=stub_test)))
 
     # Add Facemap outpt
     mat_files = glob.glob(os.path.join(folder_path, f"{search_pattern}*_proc.mat"))
@@ -118,10 +119,14 @@ def session_to_nwb(
         )
     )
 
+    ophys_metadata_path = Path(__file__).parent / "metadata" / "lohani_2022_ophys_metadata.yaml"
+    ophys_metadata = load_dict_from_file(ophys_metadata_path)
+
     converter = Lohani2022NWBConverter(
         source_data=source_data,
         excitation_types=excitation_type_to_start_frame_index_mapping.keys(),
         channels=channel_to_frame_side_mapping.keys(),
+        ophys_metadata = ophys_metadata,
     )
 
     # Add datetime to conversion
@@ -137,11 +142,6 @@ def session_to_nwb(
     editable_metadata = load_dict_from_file(editable_metadata_path)
     metadata = dict_deep_update(metadata, editable_metadata)
 
-    # Add ophys metadata
-    ophys_metadata_path = Path(__file__).parent / "metadata" / "lohani_2022_ophys_metadata.yaml"
-    ophys_metadata = load_dict_from_file(ophys_metadata_path)
-    metadata = dict_deep_update(metadata, ophys_metadata)
-
     # Run conversion
     converter.run_conversion(
         metadata=metadata, nwbfile_path=nwbfile_path, conversion_options=conversion_options, overwrite=True
@@ -156,7 +156,7 @@ if __name__ == "__main__":
     output_dir_path = root_path / "Higley-conversion_nwb/"
     stub_test = True
     session_ids = os.listdir(data_dir_path)
-    session_id = "11222019_grabAM06_vis_stim"
+    session_id = "11222019_grabAM06_spont"
     folder_path = data_dir_path / Path(session_id)
     session_to_nwb(
         folder_path=folder_path,

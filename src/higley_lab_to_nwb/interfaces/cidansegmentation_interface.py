@@ -1,14 +1,10 @@
 from typing import Optional
-from pynwb import NWBFile
-from copy import deepcopy
 
 
 from neuroconv.datainterfaces.ophys.basesegmentationextractorinterface import BaseSegmentationExtractorInterface
 from neuroconv.utils import DeepDict, FilePathType
 
-from ..extractors.benisty_2024_cidansegmentation_extractor import (
-    Benisty2024CidanSegmentationExtractor,
-)
+from ..extractors.cidansegmentation_extractor import CidanSegmentationExtractor
 
 
 def format_string_for_parameters_dict(dict_obj, indent=2):
@@ -26,13 +22,13 @@ def format_string_for_parameters_dict(dict_obj, indent=2):
     return format_dict(dict_obj, 0)
 
 
-class Benisty2024CidanSegmentationInterface(BaseSegmentationExtractorInterface):
+class CidanSegmentationInterface(BaseSegmentationExtractorInterface):
     """Interface for Suite2p segmentation data."""
 
     display_name = "CIDAN Segmentation"
     associated_suffixes = (".json", ".mat")
     info = "Interface for CIDAN segmentation."
-    Extractor = Benisty2024CidanSegmentationExtractor
+    Extractor = CidanSegmentationExtractor
 
     def __init__(
         self,
@@ -99,9 +95,7 @@ class Benisty2024CidanSegmentationInterface(BaseSegmentationExtractorInterface):
         ]
         comments = format_string_for_parameters_dict(dict_obj=self.segmentation_extractor.parameters_dict)
         for trace_name in trace_names:
-            default_traces_name = fluorescence_metadata_per_plane[trace_name]["name"].replace(
-                default_plane_suffix, ""
-            )
+            default_traces_name = fluorescence_metadata_per_plane[trace_name]["name"].replace(default_plane_suffix, "")
             fluorescence_metadata_per_plane[trace_name].update(
                 name=default_traces_name + new_plane_name_suffix,
                 description="Fluorescence traces extracted with CIDAN software",

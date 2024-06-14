@@ -2,7 +2,7 @@
 
 Classes
 -------
-Benisty2024CidanSegmentationExtractor
+CidanSegmentationExtractor
     A segmentation extractor for Higley Lab using CIDAN software.
 """
 
@@ -14,10 +14,10 @@ from roiextractors.extraction_tools import _image_mask_extractor
 from roiextractors.segmentationextractor import SegmentationExtractor
 
 
-class Benisty2024CidanSegmentationExtractor(SegmentationExtractor):
+class CidanSegmentationExtractor(SegmentationExtractor):
     """A segmentation extractor for CIDAN."""
 
-    extractor_name = "Benisty2024CidanSegmentationExtractor"
+    extractor_name = "CidanSegmentationExtractor"
 
     def __init__(
         self,
