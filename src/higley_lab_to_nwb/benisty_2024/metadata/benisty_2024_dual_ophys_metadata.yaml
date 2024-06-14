@@ -12,17 +12,13 @@ Ophys:
       imaging_plane: TwoPhotonImagingPlane
       unit: n.a.
   OnePhotonSeries:
-    - name: OnePhotonSeriesGreenChannel
+    - name: OnePhotonSeries
       description: Imaging data from Green channel recorded with 1p microscope. Images were acquired at 576x576 resolution after 45x pixel binning with 20ms exposure.
-      imaging_plane: OnePhotonImagingPlaneGreenChannel
+      imaging_plane: OnePhotonImagingPlane
       unit: n.a.
     - name: OnePhotonSeriesIsosbestic
       description: Imaging data recorded with 1p microscope for isosbestic control. Images were acquired at 576x576 resolution after 45x pixel binning with 20ms exposure.
       imaging_plane: OnePhotonImagingPlaneIsosbestic
-      unit: n.a.
-    - name: OnePhotonSeriesRedChannel
-      description: Imaging data from Red channel recorded with 1p microscope. Images were acquired at at 576x576 resolution after 45x pixel binning with 20ms exposure.
-      imaging_plane: OnePhotonImagingPlaneRedChannel
       unit: n.a.
   ImagingPlane:
     - name: TwoPhotonImagingPlane
@@ -34,18 +30,8 @@ Ophys:
         - name: Green
           description: Emitted light was collected through a 525/50 filter and a gallium arsenide phosphide photomultiplier tube (Hamamatsu).
           emission_lambda: 525.0
-      indicator: GCaMP6s #TODO change
-    - name: OnePhotonImagingPlaneRedChannel
-      description: Imaging plane for the Green channel recorded with 1p microscope.
-      excitation_lambda: 575.0  # in nm
-      location: Whole Brain
-      device: OnePhotonMicroscope
-      optical_channel:
-        - name: Red
-          description: Emitted light was collected through a  630/75 filter (Chroma).
-          emission_lambda: 630.0
-      indicator: jRCaMP1b36 
-    - name: OnePhotonImagingPlaneGreenChannel
+      indicator: GCaMP6s 
+    - name: OnePhotonImagingPlane
       description: Imaging plane for the Green channel recorded with 1p microscope.
       excitation_lambda: 470.0  # in nm
       location: Whole Brain
@@ -54,7 +40,7 @@ Ophys:
         - name: Green
           description: Emitted light was collected through a 525/50 filter and a gallium arsenide phosphide photomultiplier tube (Hamamatsu).
           emission_lambda: 525.0 
-      indicator: ACh3.0 
+      indicator: GCaMP6s
     - name: OnePhotonImagingPlaneIsosbestic
       description: Imaging plane for the Isosbestic Green channel recorded with 1p microscope.
       excitation_lambda: 395.0  # in nm
@@ -64,4 +50,4 @@ Ophys:
         - name: Green
           description: Emitted light was collected through a 525/50 filter and a gallium arsenide phosphide photomultiplier tube (Hamamatsu).
           emission_lambda: 525.0 
-      indicator: ACh3.0 
+      indicator: GCaMP6s

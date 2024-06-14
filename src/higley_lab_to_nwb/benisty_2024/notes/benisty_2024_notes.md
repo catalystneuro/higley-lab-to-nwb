@@ -38,7 +38,7 @@ Dual imaging was carried out using a custom microscope combining a Zeiss Axiozoo
 
 
 - **2p data in dual acquisition modality**
-    Each .tif is a trial of ? frames of ? --> ScanImageMultiFileImagingInterface working 
+    Each .tif is a trial of N frames of [512,512] --> ScanImageMultiFileImagingInterface working 
     
     
 
@@ -135,7 +135,7 @@ Dual imaging was carried out using a custom microscope combining a Zeiss Axiozoo
     ```
     - timetraces.mat: file containing df/f traces (simple rois x frames matrix)
 
-### Imaging metadata (from Benisty paper)
+### Imaging metadata (from Benisty paper not the same as example data)
 - Custom miscroscope: see description in the methods
 - stimulation wavelengths for the three optical channel: Imaging was performed by strobing 575 nm (jRCaMP1b), 470 nm (ACh3.0) and 395 nm (control)
 excitation light
