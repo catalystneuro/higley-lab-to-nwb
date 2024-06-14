@@ -128,13 +128,15 @@ class Spike2SignalsInterface(BaseDataInterface):
                 event_name=stream_name,
                 event_type_description=f"The onset times of the {stream_name} event.",
                 pulse_value=1,
+                check_ragged = False,
             )
             if len(timestamps):
                 for timestamp in timestamps[:end_frame]:
                     ttls_table.add_row(
                         ttl_type=ttl_type,
                         timestamp=timestamp,
-                    )
+                        check_ragged = False,
+                    )        
 
         nwbfile.add_acquisition(ttl_types_table)
         nwbfile.add_acquisition(ttls_table)
