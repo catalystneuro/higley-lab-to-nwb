@@ -167,6 +167,7 @@ class VisualStimulusInterface(BaseDataInterface):
                 spatial_frequency=spatial_frequencies[frame][0],
                 stimulus_size=sizes[frame][0],
                 screen_coordinates=screen_coordinates[frame][:],
+                check_ragged = False,
             )
 
         nwbfile.add_time_intervals(intervals_table)
