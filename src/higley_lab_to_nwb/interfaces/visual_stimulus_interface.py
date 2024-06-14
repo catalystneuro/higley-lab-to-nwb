@@ -65,8 +65,8 @@ class VisualStimulusInterface(BaseDataInterface):
             raise ValueError(
                 "Both spike2_file_path and mat_file_path have been defined. Define either spike2_file_path or mat_file_path to extract the visual stimulus event times."
             )
-        
-        elif spike2_file_path is not None: 
+
+        elif spike2_file_path is not None:
             super().__init__(
                 spike2_file_path=spike2_file_path,
                 csv_file_path=csv_file_path,
@@ -75,7 +75,7 @@ class VisualStimulusInterface(BaseDataInterface):
             )
             self._event_times_from_ttl = True
 
-        elif mat_file_path is not None: 
+        elif mat_file_path is not None:
             super().__init__(
                 mat_file_path=mat_file_path,
                 csv_file_path=csv_file_path,
@@ -96,19 +96,20 @@ class VisualStimulusInterface(BaseDataInterface):
             event_times = get_falling_frames_from_ttl(traces)
 
         return times[event_times]
-    
+
     def get_event_times_from_table(self, event_type: Literal["start", "stop"]):
-        import h5py 
+        import h5py
+
         with h5py.File(self.source_data["mat_file_path"], "r") as file:
             # Check if the DATA group exists
-            if 'DATA' in file:
-                data_group = file['DATA']                
+            if "DATA" in file:
+                data_group = file["DATA"]
                 # Check if the event_times dataset exists
-                if 'event_times' in data_group:
-                    event_times_data = data_group['event_times']
+                if "event_times" in data_group:
+                    event_times_data = data_group["event_times"]
                     event_time_ref = event_times_data[int(self.source_data["stream_id"]), 0]  # Assuming (8, 1) shape
                     event_time_dataset = file[event_time_ref]
-                    times = event_time_dataset[:] 
+                    times = event_time_dataset[:]
                     if event_type == "start":
                         return times[0]
                     if event_type == "stop":
@@ -117,7 +118,7 @@ class VisualStimulusInterface(BaseDataInterface):
                     raise f"event_times dataset does not exists in {self.source_data['mat_file_path']}"
             else:
                 raise f"DATA group does not exists in {self.source_data['mat_file_path']}"
-            
+
     def get_stimulus_feature(self, column_index):
         feature = pd.read_csv(self.source_data["csv_file_path"], usecols=column_index)
         return feature.to_numpy()
@@ -144,7 +145,14 @@ class VisualStimulusInterface(BaseDataInterface):
         intervals_table.add_column(name="stimulus_size", description="Size of the visual stimulus, in degrees.")
         sizes = self.get_stimulus_feature(column_index=[4])
         # TODO add a more descriptive text as description for "screen_coordinates" column
-        intervals_table.add_column(name="screen_coordinates", description="Visual stimulus coordinates on the screen.")
+        intervals_table.add_column(
+            name="screen_coordinates",
+            description="Screen coordinates that define the position of the stimulus on the monitor, i.e. [x1,y1,x2,y2]."
+            "Left (x1): The x-coordinate of the left edge of the rectangle."
+            "Top (y1): The y-coordinate of the top edge of the rectangle."
+            "Right (x2): The x-coordinate of the right edge of the rectangle."
+            "Bottom (y2): The y-coordinate of the bottom edge of the rectangle.",
+        )
         screen_coordinates = self.get_stimulus_feature(column_index=[5, 6, 7, 8])
 
         if self._event_times_from_ttl:
@@ -153,7 +161,6 @@ class VisualStimulusInterface(BaseDataInterface):
         else:
             start_times = self.get_event_times_from_table(event_type="start")
             stop_times = self.get_event_times_from_table(event_type="stop")
-
 
         n_frames = 100 if stub_test else len(start_times)
 
@@ -167,7 +174,7 @@ class VisualStimulusInterface(BaseDataInterface):
                 spatial_frequency=spatial_frequencies[frame][0],
                 stimulus_size=sizes[frame][0],
                 screen_coordinates=screen_coordinates[frame][:],
-                check_ragged = False,
+                check_ragged=False,
             )
 
         nwbfile.add_time_intervals(intervals_table)
