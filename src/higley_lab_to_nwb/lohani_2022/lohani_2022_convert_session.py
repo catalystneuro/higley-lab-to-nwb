@@ -111,13 +111,13 @@ def session_to_nwb(
     conversion_options.update(dict(Video=dict(stub_test=stub_test)))
 
     # Add Facemap outpt
-    # mat_files = glob.glob(os.path.join(folder_path, f"{search_pattern}*_proc.mat"))
-    # mat_file_path = mat_files[0]
-    # source_data.update(
-    #     dict(
-    #         FacemapInterface=dict(mat_file_path=str(mat_file_path), video_file_path=str(video_file_path), verbose=False)
-    #     )
-    # )
+    mat_files = glob.glob(os.path.join(folder_path, f"{search_pattern}*_proc.mat"))
+    mat_file_path = mat_files[0]
+    source_data.update(
+        dict(
+            FacemapInterface=dict(mat_file_path=str(mat_file_path), video_file_path=str(video_file_path), verbose=False)
+        )
+    )
 
     ophys_metadata_path = Path(__file__).parent / "metadata" / "lohani_2022_ophys_metadata.yaml"
     ophys_metadata = load_dict_from_file(ophys_metadata_path)
@@ -156,7 +156,7 @@ if __name__ == "__main__":
     output_dir_path = root_path / "Higley-conversion_nwb/"
     stub_test = True
     session_ids = os.listdir(data_dir_path)
-    session_id = "11222019_grabAM06_vis_stim"
+    session_id = "11222019_grabAM06_spont"
     folder_path = data_dir_path / Path(session_id)
     session_to_nwb(
         folder_path=folder_path,
