@@ -1,12 +1,18 @@
 NWBFile:
-  session_description:
-    A rich text description of the experiment. Can also just be the abstract of the publication.
-  institution: Institution where the lab is located
+  related_publications:
+    - https://www.nature.com/articles/s41593-022-01202-6
+    - https://github.com/cardin-higley-lab/Lohani_Moberly_et_al_2022
+  keywords: [Dual-color mesoscopic ACh, calcium imaging, visual stimulus, mouse]
+  experiment_description: Dual-color mesoscopic imaging of both ACh and calcium across the neocortex of awake mice to investigate their relationships with behavioral variables. We find that higher arousal, categorized by diferent motor behaviors, is associated with spatiotemporally dynamic patterns of cholinergic modulation and enhanced large-scale network correlations. Overall, our fndings demonstrate that ACh provides a highly dynamic and spatially heterogeneous signal that links fuctuations in behavior to functional reorganization of cortical networks.
+  session_description: Dual-color mesoscopic imaging of both ACh and calcium across the neocortex of awake mice. All imaging was performed during the second half of the light cycle in awake, behaving mice that were head-fixed so that they could freely run on a cylindrical wheel. Small (20° diameter) sinusoidal drifting gratings (2 Hz, 0.04 cycles per degree, 100% contrast) were generated using Psychtoolbox in MATLAB and presented on an LCD monitor at a distance of 20 cm. Stimuli were presented for 1-2 s. Air-puff stimuli were delivered using a thin metal tube aimed at the fur along the back and coupled to a solenoid valve (Clark Solutions) that delivered brief (200-ms) puffs of compressed air.
+  institution: Yale University School of Medicine
   lab: Higley
   experimenter:
-    - Last, First Middle
-    - Last, First Middle
+    - Moberly, Andrew # others
+  surgery: All surgical implantation procedures were performed on adult mice (>P50). Mice were anesthetized using 1-2% isoflurane and maintained at 37 °C for the duration of the surgery. The skin and fascia above the skull were removed from the nasal bone to the posterior of the intraparietal bone and laterally between the temporal muscles. The surface of the skull was thoroughly cleaned with saline, and the edges of the incision were secured to the skull with Vetbond. A custom titanium headpost was secured to the posterior of the nasal bone with trans-parent dental cement (Metabond, Parkell), and a thin layer of dental cement was applied to the entire dorsal surface of the skull. Next, alayer of cyanoacrylate (Maxi-Cure, Bob Smith Industries) was used to cover the skull and left to cure approximately 30 min at 22-24 °C room temperature to provide a smooth surface for transcranial imaging.
+  virus: Pups were injected bilaterally with 2 μl of AAV9-hsyn-ACh3.0 (1.8 x 1013 gc / ml) and 2 μl of AAV9-hsyn-NES-jRCaMP1b (2.5 x 1013 gc / ml; Addgene) per hemisphere.
 Subject:
-  species: Rattus norvegicus
-  age: P1W2D  # in ISO 8601, such as "P1W2D"
-  sex: U  # One of M, F, U, or O
+  species: Mus musculus
+  age: P1W2D # to be modified for each subject
+  sex: M # One of M, F, U, or O
+  strain: C57BL/6J
