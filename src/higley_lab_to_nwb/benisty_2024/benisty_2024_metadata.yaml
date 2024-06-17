@@ -1,12 +1,19 @@
 NWBFile:
-  session_description:
-    A rich text description of the experiment. Can also just be the abstract of the publication.
-  institution: Institution where the lab is located
+  related_publications:
+    - https://www.nature.com/articles/s41593-023-01498-y
+    - https://github.com/cardin-higley-lab/Benisty_Higley_2023
+  keywords: [Dual-color mesoscopic ACh, calcium imaging, visual stimulus, mouse]
+  experiment_description: Here, we used wide-field mesoscopic calcium imaging to monitor cortical dynamics in awake mice and developed an approach to quantify rapidly time-varying functional connectivity. We show that spontaneous behaviors are represented by fast changes in both the magnitude and correlational structure of cortical network activity. Combining mesoscopic imaging with simultaneous cellular-resolution two-photon microscopy demonstrated that correlations among neighboring neurons and between local and large-scale networks also encode behavior. Finally, the dynamic functional connectivity of mesoscale signals revealed subnetworks not predicted by traditional anatomical atlas-based parcellation of the cortex. These results provide new insights into how behavioral information is represented across the neocortex and demonstrate an analytical framework for investigating time-varying functional connectivity in neural networks.
+  session_description: All imaging was performed in awake, behaving mice that were head-fixed so that they could freely run on a cylindrical wheel. A magnetic angle sensor (Digikey) attached to the wheel continuously monitored wheel motion. Mice received at least three wheel-training habituation sessions before imaging to ensure consistent running bouts. During widefield imaging sessions, the face (including the pupil and whiskers) was illuminated with an IR LED bank and imaged with a miniature CMOS camera (Blackfly s-USB3, Flir) with a frame rate of 10 Hz using FlyCam2 software (Flir). Visual stimulation For visual stimulation experiments, sinusoidal drifting gratings (2 Hz, 0.04 cycles/degree) with varied contrast were generated using custom-written functions based on Psychtoolbox in Matlab and presented on an LCD monitor at a distance of 20 cm from the right eye. Stimuli were presented for 2 seconds with a 5 second inter-stimulus interval.
+  institution: Yale University School of Medicine
   lab: Higley
   experimenter:
-    - Last, First Middle
-    - Last, First Middle
+    - Moberly, Andrew # others
+  surgery: All surgical implant procedures were performed on adult mice (>P50). Mice were anesthetized using 1-2% isoflurane and maintained at 37°C for the duration of the surgery. For mesoscopic imaging, the skin and fascia above the skull were removed from the nasal bone to the posterior of the intraparietal bone and laterally between the temporal muscles. The surface of the skull was thoroughly cleaned with saline and the edges of the incision secured to the skull with Vetbond. A custom titanium headpost was secured to the skull with transparent dental cement (Metabond, Parkell), and a thin layer of dental cement was applied to the entire dorsal surface of the skull. Next, a layer of cyanoacrylate (Maxi-Cure, Bob Smith Industries) was used to cover the skull and left to cure ~30 min at room temperature to provide a smooth surface for transcranial imaging. A similar procedure was used to prepare mice for two-photon imaging, with the addition of a dual-layer glass window implanted into a small (~4 mm square) craniotomy placed over the left primary visual cortex. The edges of the window were then sealed to the skull with dental cement. For dual mesoscopic and two-photon imaging, a 2mm glass microprism (Tower Optical) was placed on top of a dual-layer glass window implanted over the right primary visual cortex.
+  virus: 700nL of AAV1-cag-flex-gcamp6s-p2a-mruby2 into R V1
 Subject:
-  species: Rattus norvegicus
-  age: P1W2D  # in ISO 8601, such as "P1W2D"
-  sex: U  # One of M, F, U, or O
+  species: Mus musculus
+  age: P1W2D # to be modified for each subject
+  sex: F 
+  strain: C57BL/6J
+  genotype: VIP-cre;Camk2a-tTA;tetO-GCaMP6s (cre+/-)
