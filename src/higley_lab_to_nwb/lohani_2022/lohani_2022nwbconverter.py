@@ -24,19 +24,16 @@ class Lohani2022NWBConverter(NWBConverter):
 
     def __init__(
         self,
-        excitation_types: List[str],
-        channels: List[str],
+        excitation_type_channel_comb: dict,
         source_data: Dict[str, dict],
         ophys_metadata: Dict[str, dict],
         verbose: bool = True,
     ):
-        self.excitation_types = excitation_types
-        self.channels = channels
-        for excitation_type in excitation_types:
-            for channel in channels:
-                suffix = f"{excitation_type}Excitation{channel}Channel"
-                interface_name = f"Imaging{suffix}"
-                self.data_interface_classes[interface_name] = TiffImagingInterface
+        self.excitation_type_channel_comb = excitation_type_channel_comb
+        for excitation_type, channel in self.excitation_type_channel_comb.items():
+            suffix = f"{excitation_type}Excitation{channel}Channel"
+            interface_name = f"Imaging{suffix}"
+            self.data_interface_classes[interface_name] = TiffImagingInterface
 
         self.verbose = verbose
         self._validate_source_data(source_data=source_data, verbose=self.verbose)
@@ -88,20 +85,20 @@ class Lohani2022NWBConverter(NWBConverter):
 
     def temporally_align_data_interfaces(self):
         ttlsignal_interface = self.data_interface_objects["Spike2Signals"]
+        
         # Synch imaging
-        for excitation_type in self.excitation_types:
-            for channel in self.channels:
-                imaging_interface = self.data_interface_objects[f"Imaging{excitation_type}Excitation{channel}Channel"]
-                stream_id = next(
-                    (
-                        stream_id
-                        for stream_id, stream_name in ttlsignal_interface.ttl_stream_ids_to_names_map.items()
-                        if stream_name == f"TTLSignal{excitation_type}LED"
-                    ),
-                    None,
-                )
-                ttl_times = ttlsignal_interface.get_event_times_from_ttl(stream_id=stream_id)
-                imaging_interface.set_aligned_starting_time(ttl_times[0])
+        for excitation_type, channel in self.excitation_type_channel_comb.items():
+            imaging_interface = self.data_interface_objects[f"Imaging{excitation_type}Excitation{channel}Channel"]
+            stream_id = next(
+                (
+                    stream_id
+                    for stream_id, stream_name in ttlsignal_interface.ttl_stream_ids_to_names_map.items()
+                    if stream_name == f"TTLSignal{excitation_type}LED"
+                ),
+                None,
+            )
+            ttl_times = ttlsignal_interface.get_event_times_from_ttl(stream_id=stream_id)
+            imaging_interface.set_aligned_starting_time(ttl_times[0])
 
         # Synch behaviour
         video_interface = self.data_interface_objects["Video"]
