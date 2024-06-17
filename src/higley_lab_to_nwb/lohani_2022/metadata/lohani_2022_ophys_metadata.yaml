@@ -12,18 +12,6 @@ Ophys:
       description: Imaging data from Green channel recorded with Violet excitation.
       imaging_plane: ImagingPlaneVioletExcitationGreenChannel
       unit: n.a.
-    - name: OnePhotonSeriesGreenExcitationGreenChannel
-      description: Imaging data from Green channel recorded with Green excitation.
-      imaging_plane: ImagingPlaneGreenExcitationGreenChannel
-      unit: n.a.
-    - name: OnePhotonSeriesBlueExcitationRedChannel
-      description: Imaging data from Red channel recorded with Blue excitation.
-      imaging_plane: ImagingPlaneBlueExcitationRedChannel
-      unit: n.a.
-    - name: OnePhotonSeriesVioletExcitationRedChannel
-      description: Imaging data from Red channel recorded with Violet excitation.
-      imaging_plane: ImagingPlaneVioletExcitationRedChannel
-      unit: n.a.
     - name: OnePhotonSeriesGreenExcitationRedChannel
       description: Imaging data from Red channel recorded with Green excitation.
       imaging_plane: ImagingPlaneGreenExcitationRedChannel
@@ -38,7 +26,7 @@ Ophys:
         - name: Green
           description: Green channel of the microscope, 525/50 nm filter.
           emission_lambda: 525.0
-      indicator: jRCaMP1b
+      indicator: ACh3.0
     - name: ImagingPlaneVioletExcitationGreenChannel
       description: Imaging plane for the Green channel recorded with Violet excitation.
       excitation_lambda: 395.0  # in nm
@@ -48,36 +36,6 @@ Ophys:
         - name: Green
           description: Green channel of the microscope, 525/50 nm filter.
           emission_lambda: 525.0
-      indicator: jRCaMP1b
-    - name: ImagingPlaneGreenExcitationGreenChannel
-      description: Imaging plane for the Green channel recorded with Green excitation.
-      excitation_lambda: 575.0  # in nm
-      location: Whole Brain
-      device: OnePhotonMicroscope
-      optical_channel:
-        - name: Green
-          description: Green channel of the microscope, 525/50 nm filter.
-          emission_lambda: 525.0
-      indicator: jRCaMP1b
-    - name: ImagingPlaneBlueExcitationRedChannel
-      description: Imaging plane for the Red channel recorded with Blue excitation.
-      excitation_lambda: 470.0  # in nm
-      location: Whole Brain
-      device: OnePhotonMicroscope
-      optical_channel:
-        - name: Red
-          description: Red channel of the microscope, 630/75 nm filter.
-          emission_lambda: 630.0
-      indicator: ACh3.0
-    - name: ImagingPlaneVioletExcitationRedChannel
-      description: Imaging plane for the Red channel recorded with Violet excitation.
-      excitation_lambda: 395.0  # in nm
-      location: Whole Brain
-      device: OnePhotonMicroscope
-      optical_channel:
-        - name: Red
-          description: Red channel of the microscope, 630/75 nm filter.
-          emission_lambda: 630.0
       indicator: ACh3.0
     - name: ImagingPlaneGreenExcitationRedChannel
       description: Imaging plane for the Red channel recorded with Green excitation.
@@ -88,4 +46,4 @@ Ophys:
         - name: Red
           description: Red channel of the microscope, 630/75 nm filter.
           emission_lambda: 630.0
-      indicator: ACh3.0
+      indicator: jRCaMP1b
