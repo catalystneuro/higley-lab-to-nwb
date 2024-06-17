@@ -14,5 +14,5 @@ NWBFile:
 Subject:
   species: Mus musculus
   age: P1W2D # to be modified for each subject
-  sex: M # One of M, F, U, or O
+  sex: M 
   strain: C57BL/6J
