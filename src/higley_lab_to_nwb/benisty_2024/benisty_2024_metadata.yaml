@@ -13,7 +13,7 @@ NWBFile:
   virus: 700nL of AAV1-cag-flex-gcamp6s-p2a-mruby2 into R V1
 Subject:
   species: Mus musculus
-  age: P1W2D # to be modified for each subject
+  age: P60D/P100D
   sex: F 
   strain: C57BL/6J
   genotype: VIP-cre;Camk2a-tTA;tetO-GCaMP6s (cre+/-)

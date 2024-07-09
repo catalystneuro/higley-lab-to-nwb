@@ -9,10 +9,10 @@ NWBFile:
   lab: Higley
   experimenter:
     - Moberly, Andrew # others
-  surgery: All surgical implantation procedures were performed on adult mice (>P50). Mice were anesthetized using 1-2% isoflurane and maintained at 37 °C for the duration of the surgery. The skin and fascia above the skull were removed from the nasal bone to the posterior of the intraparietal bone and laterally between the temporal muscles. The surface of the skull was thoroughly cleaned with saline, and the edges of the incision were secured to the skull with Vetbond. A custom titanium headpost was secured to the posterior of the nasal bone with trans-parent dental cement (Metabond, Parkell), and a thin layer of dental cement was applied to the entire dorsal surface of the skull. Next, alayer of cyanoacrylate (Maxi-Cure, Bob Smith Industries) was used to cover the skull and left to cure approximately 30 min at 22-24 °C room temperature to provide a smooth surface for transcranial imaging.
+  surgery: All surgical implantation procedures were performed on adult mice (>P50D). Mice were anesthetized using 1-2% isoflurane and maintained at 37 °C for the duration of the surgery. The skin and fascia above the skull were removed from the nasal bone to the posterior of the intraparietal bone and laterally between the temporal muscles. The surface of the skull was thoroughly cleaned with saline, and the edges of the incision were secured to the skull with Vetbond. A custom titanium headpost was secured to the posterior of the nasal bone with trans-parent dental cement (Metabond, Parkell), and a thin layer of dental cement was applied to the entire dorsal surface of the skull. Next, alayer of cyanoacrylate (Maxi-Cure, Bob Smith Industries) was used to cover the skull and left to cure approximately 30 min at 22-24 °C room temperature to provide a smooth surface for transcranial imaging.
   virus: Pups were injected bilaterally with 2 μl of AAV9-hsyn-ACh3.0 (1.8 x 1013 gc / ml) and 2 μl of AAV9-hsyn-NES-jRCaMP1b (2.5 x 1013 gc / ml; Addgene) per hemisphere.
 Subject:
   species: Mus musculus
-  age: P1W2D # to be modified for each subject
-  sex: M 
+  age: P60D/P100D
+  sex: U
   strain: C57BL/6J
