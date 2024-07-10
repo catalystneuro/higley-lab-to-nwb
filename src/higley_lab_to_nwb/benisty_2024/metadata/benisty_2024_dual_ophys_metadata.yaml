@@ -20,6 +20,18 @@ Ophys:
       description: Imaging data recorded with 1p microscope for isosbestic control. Images were acquired at 576x576 resolution after 45x pixel binning with 20ms exposure.
       imaging_plane: OnePhotonImagingPlaneIsosbestic
       unit: n.a.
+    - name: DffOnePhotonSeries
+      description: Processed imaging data from Green channel recorded with 1p microscope. Raw images are detrended and baseline corrected to calculate DF/F images. Specifically, for each pixel, a 100th-order fir filter with 0.001-Hz frequency cutoff was applied to extract the low-pass-filtered signal. This low-pass signal was used as baseline (F0), and DF/F for each pixel was calculated as (F − F0)/F0, where F is the raw unfiltered signal.
+      imaging_plane: OnePhotonImagingPlane
+      unit: n.a.
+    - name: DffOnePhotonSeriesIsosbestic
+      description: Processed imaging data from Green channel recorded with 1p microscope for isosbestic control. Raw images are detrended and baseline corrected to calculate DF/F images. Specifically, for each pixel, a 100th-order fir filter with 0.001-Hz frequency cutoff was applied to extract the low-pass-filtered signal. This low-pass signal was used as baseline (F0), and DF/F for each pixel was calculated as (F − F0)/F0, where F is the raw unfiltered signal.
+      imaging_plane: OnePhotonImagingPlaneIsosbestic
+      unit: n.a.
+    - name: HemodynamicCorrectedOnePhotonSeries
+      description: Processed imaging data from Green channel recorded with 1p microscope. Hemodynamic artifact removal is implemented as the optimal linear predictor for the neuronal time series, given the 470-nm and 395-nm excitation signals.
+      imaging_plane: OnePhotonImagingPlane
+      unit: n.a.
   ImagingPlane:
     - name: TwoPhotonImagingPlane
       description: Imaging plane for the Green channel recorded with 2p microscope.

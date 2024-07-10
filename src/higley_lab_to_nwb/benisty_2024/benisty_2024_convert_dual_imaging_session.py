@@ -56,6 +56,7 @@ def dual_imaging_session_to_nwb(
     )
     conversion_options.update(dict(Spike2Signals=dict(stub_test=stub_test)))
 
+    # Add Visual Stimulus
     csv_file_paths = glob.glob(os.path.join(folder_path, f"{session_id}*.csv"))
     if csv_file_paths:
         csv_file_path = csv_file_paths[0]
@@ -122,6 +123,72 @@ def dual_imaging_session_to_nwb(
         dict(
             OnePhotonImagingIsosbestic=dict(
                 stub_test=stub_test, photon_series_type="OnePhotonSeries", photon_series_index=1
+            )
+        )
+    )
+
+    # Add processed imaging data
+    processed_imaging_path = meso_imaging_path / f"{session_id}"
+    # add Df_over_f imaging data from blue excitation
+    file_path = processed_imaging_path / f"FIR_dff_blue.mat"
+    source_data.update(
+        dict(
+            DffOnePhotonImaging=dict(
+                file_path=str(file_path),
+                sampling_frequency=sampling_frequency,
+                process_type="dff_blue",
+            )
+        )
+    )
+    conversion_options.update(
+        dict(
+            DffOnePhotonImaging=dict(
+                stub_test=stub_test,
+                photon_series_type="OnePhotonSeries",
+                photon_series_index=2,
+                parent_container="processing/ophys",
+            )
+        )
+    )
+    # add Df_over_f imaging data from violet excitation (isosbestic control)
+    file_path = processed_imaging_path / f"FIR_dff_uv.mat"
+    source_data.update(
+        dict(
+            DffOnePhotonImagingIsosbestic=dict(
+                file_path=str(file_path),
+                sampling_frequency=sampling_frequency,
+                process_type="dff_uv",
+            )
+        )
+    )
+    conversion_options.update(
+        dict(
+            DffOnePhotonImagingIsosbestic=dict(
+                stub_test=stub_test,
+                photon_series_type="OnePhotonSeries",
+                photon_series_index=3,
+                parent_container="processing/ophys",
+            )
+        )
+    )
+    # add hemodynamic corrected imaging data
+    file_path = processed_imaging_path / f"FIR_DFF_patch11_final_dFoF.mat"
+    source_data.update(
+        dict(
+            HemodynamicCorrectedOnePhotonImaging=dict(
+                file_path=str(file_path),
+                sampling_frequency=sampling_frequency,
+                process_type="dff_final",
+            )
+        )
+    )
+    conversion_options.update(
+        dict(
+            HemodynamicCorrectedOnePhotonImaging=dict(
+                stub_test=stub_test,
+                photon_series_type="OnePhotonSeries",
+                photon_series_index=4,
+                parent_container="processing/ophys",
             )
         )
     )

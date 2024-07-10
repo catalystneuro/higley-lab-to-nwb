@@ -10,6 +10,7 @@ from higley_lab_to_nwb.interfaces import (
     Spike2SignalsInterface,
     CidanSegmentationInterface,
     MesoscopicImagingMultiTiffStackInterface,
+    ProcessedImagingInterface,
 )
 from neuroconv.datainterfaces import VideoInterface, FacemapInterface
 
@@ -27,6 +28,9 @@ class Benisty2024NWBConverter(NWBConverter):
         VisualStimulusInterface=VisualStimulusInterface,
         OnePhotonImaging=MesoscopicImagingMultiTiffStackInterface,
         OnePhotonImagingIsosbestic=MesoscopicImagingMultiTiffStackInterface,
+        DffOnePhotonImaging=ProcessedImagingInterface,
+        DffOnePhotonImagingIsosbestic=ProcessedImagingInterface,
+        HemodynamicCorrectedOnePhotonImaging=ProcessedImagingInterface,
     )
 
     def __init__(self, source_data: Dict[str, dict], ophys_metadata: Dict[str, dict], verbose: bool = True):
