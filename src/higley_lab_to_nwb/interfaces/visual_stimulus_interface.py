@@ -81,7 +81,7 @@ class VisualStimulusInterface(BaseDataInterface):
 
         n_frames = 100 if stub_test else len(start_times)
 
-        for frame in range(n_frames):
+        for frame in range(n_frames - 1):
             intervals_table.add_row(
                 start_time=start_times[frame],
                 stop_time=stop_times[frame],

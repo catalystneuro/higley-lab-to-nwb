@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Tuple, Literal
 import numpy as np
+from skimage.exposure import rescale_intensity
 from roiextractors.extraction_tools import PathType, DtypeType, get_package
 from roiextractors.imagingextractor import ImagingExtractor
 
@@ -66,8 +67,17 @@ class ProcessedImagingExtractor(ImagingExtractor):
         else:
             raise f"{process_type} does not exist in {file_path}"
 
+        # Determine the min and max values from the pixels matrix
+        min_val = np.min(self._pixels_matrix)
+        max_val = np.max(self._pixels_matrix)
+
+        # Scale the pixels matrix to range from 0 to 255
+        self._pixels_matrix = np.nan_to_num(self._pixels_matrix)
+        self._pixels_matrix = rescale_intensity(self._pixels_matrix, in_range=(min_val, max_val), out_range=(0, 255))
+
+        del mat
+
         number_of_pixels, self._num_frames = self._pixels_matrix.shape
-        self._raw_video = np.full((self._num_frames, self._num_rows, self._num_columns), np.nan)
 
         if number_of_pixels == self._num_rows * self._num_columns:
             self._mask = None
@@ -82,7 +92,7 @@ class ProcessedImagingExtractor(ImagingExtractor):
                 f"the frame mask {np.count_nonzero(mask)}."
             )
 
-    def get_video(self, start_frame=None, end_frame=None) -> np.ndarray:
+    def get_video(self, start_frame=None, end_frame=None, channel: int = 0) -> np.ndarray:
         """Get the video frames.
 
         Parameters
@@ -97,17 +107,19 @@ class ProcessedImagingExtractor(ImagingExtractor):
         video: numpy.ndarray
             The video frames.
         """
-        video = np.full((self._num_frames, self._num_rows, self._num_columns), np.nan)
+        video = np.zeros((self._num_frames, self._num_rows, self._num_columns))
+
         i = 0
         for c in range(self._num_columns):
             for r in range(self._num_rows):
+                # "dff_blue" and "dff_uv" pixel matrix contains the pixel trace for only the non-zero elements of the
+                # mask (different pixel indexing)
                 if self._mask is not None and self._mask[r, c] != 0:
                     video[start_frame:end_frame, r, c] = self._pixels_matrix[i, start_frame:end_frame]
                     i += 1
                 elif self._mask is None:
                     video[start_frame:end_frame, r, c] = self._pixels_matrix[i, start_frame:end_frame]
                     i += 1
-
         return video
 
     def get_image_size(self) -> Tuple[int, int]:
