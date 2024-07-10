@@ -32,9 +32,9 @@ def get_event_times_from_spike2(file_path: str, stream_id: str, clean_event_time
 
 
 def get_event_times_from_mat(file_path: str, stream_name: str = "diode"):
-    from pymatreader import read_mat
+    pymatreader = get_package(package_name="pymatreader")
 
-    mat = read_mat(str(file_path))
+    mat = pymatreader.read_mat(str(file_path))
     # Check if the DATA group exists
     if "DATA" in mat:
         data_group = mat["DATA"]

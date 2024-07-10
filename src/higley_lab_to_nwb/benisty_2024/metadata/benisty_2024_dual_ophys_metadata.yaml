@@ -8,7 +8,7 @@ Ophys:
       manufacturer: Zeiss
   TwoPhotonSeries:
     - name: TwoPhotonSeries
-      description: Imaging data from Green channel recorded with 2p microscope. Images were acquired at 576x576 resolution after 45x pixel binning with 20ms exposure.
+      description: Imaging data from Green channel recorded with 2p microscope. Images were acquired at 512x512 resolution using a galvo-resonant scan system controlled by ScanImage software (Vidrio).
       imaging_plane: TwoPhotonImagingPlane
       unit: n.a.
   OnePhotonSeries:
