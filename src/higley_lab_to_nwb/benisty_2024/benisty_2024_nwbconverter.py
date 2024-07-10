@@ -6,7 +6,6 @@ from neuroconv.utils import DeepDict
 
 from neuroconv.datainterfaces import ScanImageMultiFileImagingInterface, Suite2pSegmentationInterface
 from higley_lab_to_nwb.interfaces import (
-    Spike2SignalsInterface,
     VisualStimulusInterface,
     Spike2SignalsInterface,
     CidanSegmentationInterface,
@@ -61,7 +60,6 @@ class Benisty2024NWBConverter(NWBConverter):
         metadata["Ophys"]["ImagingPlane"] = self.ophys_metadata["Ophys"]["ImagingPlane"]
 
         return metadata
-
 
     def temporally_align_data_interfaces(self):
         ttlsignal_interface = self.data_interface_objects["Spike2Signals"]

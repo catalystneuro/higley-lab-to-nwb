@@ -71,38 +71,39 @@ def session_to_nwb(
     sampling_frequency = 10.0
     photon_series_index = 0
 
-    # Define a dictonary that for each excitation type associate the starting frame index
+    # Define a dictionary that for each excitation type associate the starting frame index
     excitation_type_to_start_frame_index_mapping = dict(Blue=0, Violet=1, Green=2)
-    # Define a dictonary that for each optical channel/filter associate the frame side
+    # Define a dictionary that for each optical channel/filter associate the frame side
     channel_to_frame_side_mapping = dict(Green="right", Red="left")
+    # Define the excitation-channel combinations
+    excitation_type_channel_comb = dict(Blue="Green", Violet="Green", Green="Red")
 
-    for excitation_type in excitation_type_to_start_frame_index_mapping:
-        for channel in channel_to_frame_side_mapping:
-            start_frame_index = excitation_type_to_start_frame_index_mapping[excitation_type]
-            frame_side = channel_to_frame_side_mapping[channel]
-            tif_file_path = str(folder_path) + f"/{session_id}_channel{start_frame_index}_{frame_side}.tiff"
-            if not os.path.exists(tif_file_path):
-                create_tiff_stack(
-                    folder_path=folder_path,
-                    output_file_path=tif_file_path,
-                    start_frame_index=start_frame_index,
-                    frame_side=frame_side,
-                    stub_test=stub_test,
-                )
+    for excitation_type, channel in excitation_type_channel_comb.items():
+        start_frame_index = excitation_type_to_start_frame_index_mapping[excitation_type]
+        frame_side = channel_to_frame_side_mapping[channel]
+        tif_file_path = str(folder_path) + f"/{session_id}_channel{start_frame_index}_{frame_side}.tiff"
+        if not os.path.exists(tif_file_path):
+            create_tiff_stack(
+                folder_path=folder_path,
+                output_file_path=tif_file_path,
+                start_frame_index=start_frame_index,
+                frame_side=frame_side,
+                stub_test=stub_test,
+            )
 
-            suffix = f"{excitation_type}Excitation{channel}Channel"
-            interface_name = f"Imaging{suffix}"
-            source_data[interface_name] = {
-                "file_path": tif_file_path,
-                "sampling_frequency": sampling_frequency,
-                "photon_series_type": "OnePhotonSeries",
-            }
-            conversion_options[interface_name] = {
-                "stub_test": stub_test,
-                "photon_series_index": photon_series_index,
-                "photon_series_type": "OnePhotonSeries",
-            }
-            photon_series_index += 1
+        suffix = f"{excitation_type}Excitation{channel}Channel"
+        interface_name = f"Imaging{suffix}"
+        source_data[interface_name] = {
+            "file_path": tif_file_path,
+            "sampling_frequency": sampling_frequency,
+            "photon_series_type": "OnePhotonSeries",
+        }
+        conversion_options[interface_name] = {
+            "stub_test": stub_test,
+            "photon_series_index": photon_series_index,
+            "photon_series_type": "OnePhotonSeries",
+        }
+        photon_series_index += 1
 
     # Add Behavioral Video Recording
     avi_files = glob.glob(os.path.join(folder_path, f"{search_pattern}*.avi"))
@@ -110,7 +111,7 @@ def session_to_nwb(
     source_data.update(dict(Video=dict(file_paths=[video_file_path], verbose=False)))
     conversion_options.update(dict(Video=dict(stub_test=stub_test)))
 
-    # Add Facemap outpt
+    # Add Facemap output
     mat_files = glob.glob(os.path.join(folder_path, f"{search_pattern}*_proc.mat"))
     mat_file_path = mat_files[0]
     source_data.update(
@@ -124,9 +125,8 @@ def session_to_nwb(
 
     converter = Lohani2022NWBConverter(
         source_data=source_data,
-        excitation_types=excitation_type_to_start_frame_index_mapping.keys(),
-        channels=channel_to_frame_side_mapping.keys(),
-        ophys_metadata = ophys_metadata,
+        excitation_type_channel_comb=excitation_type_channel_comb,
+        ophys_metadata=ophys_metadata,
     )
 
     # Add datetime to conversion
@@ -151,12 +151,11 @@ def session_to_nwb(
 if __name__ == "__main__":
 
     # Parameters for conversion
-    root_path = Path("/media/amtra/Samsung_T5/CN_data")
+    root_path = Path("E:\CN_data")
     data_dir_path = root_path / "Higley-CN-data-share"
-    output_dir_path = root_path / "Higley-conversion_nwb/"
+    output_dir_path = root_path / "Higley-conversion_nwb"
     stub_test = True
-    session_ids = os.listdir(data_dir_path)
-    session_id = "11222019_grabAM06_spont"
+    session_id = "11222019_grabAM06_vis_stim"
     folder_path = data_dir_path / Path(session_id)
     session_to_nwb(
         folder_path=folder_path,

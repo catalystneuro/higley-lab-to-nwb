@@ -144,7 +144,6 @@ class VisualStimulusInterface(BaseDataInterface):
         spatial_frequencies = self.get_stimulus_feature(column_index=[3])
         intervals_table.add_column(name="stimulus_size", description="Size of the visual stimulus, in degrees.")
         sizes = self.get_stimulus_feature(column_index=[4])
-        # TODO add a more descriptive text as description for "screen_coordinates" column
         intervals_table.add_column(
             name="screen_coordinates",
             description="Screen coordinates that define the position of the stimulus on the monitor, i.e. [x1,y1,x2,y2]."
