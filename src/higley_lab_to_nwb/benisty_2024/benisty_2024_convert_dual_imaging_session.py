@@ -59,7 +59,7 @@ def dual_imaging_session_to_nwb(
     csv_file_paths = glob.glob(os.path.join(folder_path, f"{session_id}*.csv"))
     if csv_file_paths:
         csv_file_path = csv_file_paths[0]
-        mat_file_path = os.path.splitext(csv_file_path)[0] + ".mat"
+        mat_file_path = f"{csv_file_path.stem}.mat"
         start_times, stop_times = get_event_times_from_mat(file_path=mat_file_path, stream_name="diode")
         source_data.update(
             dict(
