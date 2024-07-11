@@ -16,6 +16,18 @@ Ophys:
       description: Imaging data from Red channel recorded with Green excitation.
       imaging_plane: ImagingPlaneGreenExcitationRedChannel
       unit: n.a.
+    - name: DFFOnePhotonSeriesBlue
+      description: Processed Imaging data from Green channel recorded with Blue excitation. Raw images are detrended and baseline corrected to calculate DF/F images. Specifically, for each pixel, a 100th-order fir filter with 0.001-Hz frequency cutoff was applied to extract the low-pass-filtered signal. This low-pass signal was used as baseline (F0), and DF/F for each pixel was calculated as (F − F0)/F0, where F is the raw unfiltered signal.
+      imaging_plane: ImagingPlaneBlueExcitationGreenChannel
+      unit: n.a.
+    - name: DFFOnePhotonSeriesViolet
+      description: Processed Imaging data from Green channel recorded with Violet excitation. Raw images are detrended and baseline corrected to calculate DF/F images. Specifically, for each pixel, a 100th-order fir filter with 0.001-Hz frequency cutoff was applied to extract the low-pass-filtered signal. This low-pass signal was used as baseline (F0), and DF/F for each pixel was calculated as (F − F0)/F0, where F is the raw unfiltered signal.
+      imaging_plane: ImagingPlaneVioletExcitationGreenChannel
+      unit: n.a.
+    - name: DFFOnePhotonSeriesGreen
+      description: Processed Imaging data from Red channel recorded with Green excitation. Raw images are detrended and baseline corrected to calculate DF/F images. Specifically, for each pixel, a 100th-order fir filter with 0.001-Hz frequency cutoff was applied to extract the low-pass-filtered signal. This low-pass signal was used as baseline (F0), and DF/F for each pixel was calculated as (F − F0)/F0, where F is the raw unfiltered signal.
+      imaging_plane: ImagingPlaneGreenExcitationRedChannel
+      unit: n.a.
   ImagingPlane:
     - name: ImagingPlaneBlueExcitationGreenChannel
       description: Imaging plane for the Green channel recorded with Blue excitation.

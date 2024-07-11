@@ -109,6 +109,25 @@ def session_to_nwb(
             "photon_series_type": "OnePhotonSeries",
         }
         photon_series_index += 1
+    # Add processed imaging data
+    processed_imaging_path = parcellation_folder_path / "final_dFoF.mat"
+    for excitation_type, channel in excitation_type_channel_comb.items():
+        process_type = excitation_type.lower() if not excitation_type == "Violet" else "uv"
+        suffix = f"{excitation_type}Excitation{channel}Channel"
+        interface_name = f"DFFImaging{suffix}"
+        source_data[interface_name] = {
+            "file_path": processed_imaging_path,
+            "sampling_frequency": sampling_frequency,
+            "photon_series_type": "OnePhotonSeries",
+            "process_type": process_type,
+        }
+        conversion_options[interface_name] = {
+            "stub_test": stub_test,
+            "photon_series_index": photon_series_index,
+            "photon_series_type": "OnePhotonSeries",
+            "parent_container": "processing/ophys",
+        }
+        photon_series_index += 1
 
     # Add Behavioral Video Recording
     avi_files = glob.glob(os.path.join(folder_path, f"{search_pattern}*.avi"))

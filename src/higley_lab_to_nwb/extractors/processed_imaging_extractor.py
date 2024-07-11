@@ -4,6 +4,39 @@ import numpy as np
 from skimage.exposure import rescale_intensity
 from roiextractors.extraction_tools import PathType, DtypeType, get_package
 from roiextractors.imagingextractor import ImagingExtractor
+import h5py
+
+
+from datetime import datetime
+
+
+def _load_data_from_dual_imaging_configuration(file_path: str, process_type: str) -> np.ndarray:
+    """Load pixels matrix from MATLab file generated processing imaging data in dual imaging configuration."""
+
+    with h5py.File(file_path, "r") as file:
+        pixels_matrix = file[process_type][:]
+
+        num_rows, num_columns = file["mask"][:].shape
+
+    return np.nan_to_num(pixels_matrix), num_rows, num_columns
+
+
+def _load_data_from_1p_imaging_configuration(file_path: str, process_type: str) -> np.ndarray:
+    """Load pixels matrix from MATLab file generated processing imaging data in 1p-imaging only configuration."""
+
+    with h5py.File(file_path, "r") as file:
+        pixels_matrix = file["dFoF"][process_type][:]
+
+        num_rows = int(file["R"][:])
+        num_columns = int(file["C"][:])
+
+    return np.nan_to_num(pixels_matrix), num_rows, num_columns
+
+
+def _get_mask_from_dual_imaging_configuration(file_path: str) -> np.ndarray:
+    with h5py.File(file_path, "r") as file:
+        mask = file["mask"][:]
+    return mask
 
 
 class ProcessedImagingExtractor(ImagingExtractor):
@@ -33,51 +66,24 @@ class ProcessedImagingExtractor(ImagingExtractor):
         Notes
         -----
         """
-
         super().__init__()
         self.file_path = Path(file_path)
         self._sampling_frequency = sampling_frequency
         self._times = None
 
-        pymatreader = get_package(package_name="pymatreader")
-        mat = pymatreader.read_mat(str(file_path))
+        self._channel_names = process_type
 
-        dual_configuration_streams = {
-            "dff_final": "HemodynamicCorrection",
-            "dff_blue": "DFFBlueExcitation",
-            "dff_uv": "DFFVioletExcitation",
-        }
-        only_1p_configuration_streams = {
-            "blue": "DFFBlueExcitation",
-            "uv": "DFFVioletExcitation",
-            "green": "DFFGreenExcitation",
-        }
+        if process_type in ["dff_final", "dff_blue", "dff_uv"]:
+            self._pixels_matrix, self._num_rows, self._num_columns = _load_data_from_dual_imaging_configuration(
+                file_path=file_path, process_type=process_type
+            )
+            mask = _get_mask_from_dual_imaging_configuration(file_path=file_path)
+        elif process_type in ["blue", "uv", "green"]:
+            self._pixels_matrix, self._num_rows, self._num_columns = _load_data_from_1p_imaging_configuration(
+                file_path=file_path, process_type=process_type
+            )
 
-        if process_type in dual_configuration_streams.keys():
-            self._pixels_matrix = mat[process_type]
-            mask = mat["mask"]
-            self._num_rows, self._num_columns = mask.shape
-            self._channel_names = [dual_configuration_streams[process_type]]
-
-        elif process_type in only_1p_configuration_streams.keys():
-            self._pixels_matrix = mat["dFoF"][process_type]
-            self._num_rows = int(mat["R"])
-            self._num_columns = int(mat["C"])
-            self._channel_names = [only_1p_configuration_streams[process_type]]
-        else:
-            raise f"{process_type} does not exist in {file_path}"
-
-        # Determine the min and max values from the pixels matrix
-        min_val = np.min(self._pixels_matrix)
-        max_val = np.max(self._pixels_matrix)
-
-        # Scale the pixels matrix to range from 0 to 255
-        self._pixels_matrix = np.nan_to_num(self._pixels_matrix)
-        self._pixels_matrix = rescale_intensity(self._pixels_matrix, in_range=(min_val, max_val), out_range=(0, 255))
-
-        del mat
-
-        number_of_pixels, self._num_frames = self._pixels_matrix.shape
+        self._num_frames, number_of_pixels = self._pixels_matrix.shape
 
         if number_of_pixels == self._num_rows * self._num_columns:
             self._mask = None
@@ -86,11 +92,26 @@ class ProcessedImagingExtractor(ImagingExtractor):
             self._mask = mask
 
         else:
-            raise (
+            raise ValueError(
                 f"Can't reconstruct frame from pixel matrix. The total number of pixels {number_of_pixels} does "
                 f"not match the frame dimension {self._num_rows} * {self._num_columns} or the non-zero elements in "
                 f"the frame mask {np.count_nonzero(mask)}."
             )
+
+    def _get_single_frame(self, frame_idx: int) -> np.ndarray:
+        frame = np.zeros((self._num_rows, self._num_columns))
+        i = 0
+        for c in range(self._num_columns):
+            for r in range(self._num_rows):
+                # "dff_blue" and "dff_uv" pixel matrix contains the pixel trace for only the non-zero elements of the
+                # mask (different pixel indexing)
+                if self._mask is not None and self._mask[r, c] != 0:
+                    frame[r, c] = self._pixels_matrix[frame_idx, i]
+                    i += 1
+                elif self._mask is None:
+                    frame[r, c] = self._pixels_matrix[frame_idx, i]
+                    i += 1
+        return frame
 
     def get_video(self, start_frame=None, end_frame=None, channel: int = 0) -> np.ndarray:
         """Get the video frames.
@@ -107,19 +128,26 @@ class ProcessedImagingExtractor(ImagingExtractor):
         video: numpy.ndarray
             The video frames.
         """
-        video = np.zeros((self._num_frames, self._num_rows, self._num_columns))
 
+        if start_frame is None:
+            start_frame = 0
+        if end_frame is None:
+            end_frame = self._num_frames
+        num_frames = end_frame - start_frame
+
+        video = np.zeros((num_frames, self._num_rows, self._num_columns))
         i = 0
         for c in range(self._num_columns):
             for r in range(self._num_rows):
                 # "dff_blue" and "dff_uv" pixel matrix contains the pixel trace for only the non-zero elements of the
                 # mask (different pixel indexing)
                 if self._mask is not None and self._mask[r, c] != 0:
-                    video[start_frame:end_frame, r, c] = self._pixels_matrix[i, start_frame:end_frame]
+                    video[:, r, c] = self._pixels_matrix[start_frame:end_frame, i]
                     i += 1
                 elif self._mask is None:
-                    video[start_frame:end_frame, r, c] = self._pixels_matrix[i, start_frame:end_frame]
+                    video[:, r, c] = self._pixels_matrix[start_frame:end_frame, i]
                     i += 1
+
         return video
 
     def get_image_size(self) -> Tuple[int, int]:

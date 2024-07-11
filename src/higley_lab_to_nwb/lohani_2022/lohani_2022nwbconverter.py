@@ -9,6 +9,7 @@ from neuroconv.tools.nwb_helpers import make_or_load_nwbfile
 from higley_lab_to_nwb.interfaces import (
     Spike2SignalsInterface,
     VisualStimulusInterface,
+    ProcessedImagingInterface,
 )
 
 
@@ -34,6 +35,8 @@ class Lohani2022NWBConverter(NWBConverter):
             suffix = f"{excitation_type}Excitation{channel}Channel"
             interface_name = f"Imaging{suffix}"
             self.data_interface_classes[interface_name] = TiffImagingInterface
+            interface_name = f"DFFImaging{suffix}"
+            self.data_interface_classes[interface_name] = ProcessedImagingInterface
 
         self.verbose = verbose
         self._validate_source_data(source_data=source_data, verbose=self.verbose)
@@ -55,13 +58,13 @@ class Lohani2022NWBConverter(NWBConverter):
 
         return metadata
 
-    def run_conversion( # until [Issue #908](https://github.com/catalystneuro/neuroconv/issues/908) is fixed
+    def run_conversion(  # until [Issue #908](https://github.com/catalystneuro/neuroconv/issues/908) is fixed
         self,
-        nwbfile_path: str  = None,
-        nwbfile: NWBFile  = None,
-        metadata: Dict  = None,
+        nwbfile_path: str = None,
+        nwbfile: NWBFile = None,
+        metadata: Dict = None,
         overwrite: bool = False,
-        conversion_options: Dict  = None,
+        conversion_options: Dict = None,
     ) -> None:
         if metadata is None:
             metadata = self.get_metadata()
@@ -85,7 +88,7 @@ class Lohani2022NWBConverter(NWBConverter):
 
     def temporally_align_data_interfaces(self):
         ttlsignal_interface = self.data_interface_objects["Spike2Signals"]
-        
+
         # Synch imaging
         for excitation_type, channel in self.excitation_type_channel_comb.items():
             imaging_interface = self.data_interface_objects[f"Imaging{excitation_type}Excitation{channel}Channel"]
