@@ -25,7 +25,7 @@ class Lohani2022NWBConverter(NWBConverter):
 
     def __init__(
         self,
-        excitation_type_channel_comb: dict,
+        excitation_type_channel_combination: dict,
         source_data: Dict[str, dict],
         ophys_metadata: Dict[str, dict],
         verbose: bool = True,

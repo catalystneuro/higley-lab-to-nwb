@@ -6,7 +6,7 @@ from neuroconv.utils import load_dict_from_file, dict_deep_update
 from higley_lab_to_nwb.benisty_2024 import Benisty2024NWBConverter
 from higley_lab_to_nwb.interfaces.spike2signals_interface import get_streams
 import os
-import glob
+
 
 def _get_sampling_frequency_and_image_size(folder_path: Union[str, Path]):
     from roiextractors.extractors.tiffimagingextractors.scanimagetiff_utils import (
@@ -28,6 +28,7 @@ def _get_sampling_frequency_and_image_size(folder_path: Union[str, Path]):
     image_size = [_num_rows, _num_columns]
     return parsed_metadata["sampling_frequency"], image_size
 
+
 def session_to_nwb(
     folder_path: Union[str, Path], output_dir_path: Union[str, Path], session_id: str, stub_test: bool = False
 ):
@@ -45,7 +46,7 @@ def session_to_nwb(
     search_pattern = "_".join(session_id.split("_")[:2])
 
     # Add Analog signals from Spike2
-    file_path = glob.glob(os.path.join(folder_path, f"{search_pattern}*.smrx"))[0]
+    file_path = list(folder_path.glob(f"{search_pattern}*.smrx"))[0]
     stream_ids, stream_names = get_streams(file_path=file_path)
 
     # Define each smrx signal name
@@ -69,7 +70,7 @@ def session_to_nwb(
     conversion_options.update(dict(Spike2Signals=dict(stub_test=stub_test)))
 
     if "vis_stim" in session_id:
-        csv_file_path = glob.glob(os.path.join(folder_path, f"{search_pattern}*.csv"))[0]
+        csv_file_path = list(folder_path.glob(f"{search_pattern}*.csv"))[0]
         source_data.update(
             dict(
                 VisualStimulusInterface=dict(
@@ -124,13 +125,13 @@ def session_to_nwb(
     )
 
     # Add Behavioral Video Recording
-    avi_files = glob.glob(os.path.join(folder_path, f"{search_pattern}*.avi"))
+    avi_files = list(folder_path.glob(f"{search_pattern}*.avi"))
     video_file_path = avi_files[0]
     source_data.update(dict(Video=dict(file_paths=[video_file_path], verbose=False)))
     conversion_options.update(dict(Video=dict(stub_test=stub_test)))
 
     # Add Facemap outpt
-    # mat_files = glob.glob(os.path.join(folder_path, f"{search_pattern}*_proc.mat"))
+    # mat_files = list(folder_path.glob(f"{search_pattern}*_proc.mat"))
     # mat_file_path = mat_files[0]
     # source_data.update(
     #     dict(

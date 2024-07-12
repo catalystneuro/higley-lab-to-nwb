@@ -6,8 +6,6 @@ from neuroconv.utils import load_dict_from_file, dict_deep_update
 from higley_lab_to_nwb.interfaces.spike2signals_interface import get_streams
 from higley_lab_to_nwb.benisty_2024 import Benisty2024NWBConverter
 from higley_lab_to_nwb.benisty_2024.utils import get_event_times_from_mat
-import os
-import glob
 
 
 def dual_imaging_session_to_nwb(
@@ -30,7 +28,7 @@ def dual_imaging_session_to_nwb(
 
     # Add Analog signals from Spike2
     folder_path = data_dir_path / f"{subject_id}_1p"
-    file_path = glob.glob(os.path.join(folder_path, f"{session_id}*.smr"))[0]
+    file_path = list(folder_path.glob(f"{session_id}*.smr"))[0]
     stream_ids, stream_names = get_streams(file_path=file_path)
 
     # Define each smr signal name
@@ -56,12 +54,11 @@ def dual_imaging_session_to_nwb(
     )
     conversion_options.update(dict(Spike2Signals=dict(stub_test=stub_test)))
 
-    # Add Visual Stimulus
-    csv_file_paths = glob.glob(os.path.join(folder_path, f"{session_id}*.csv"))
+    csv_file_paths = list(folder_path.glob(f"{session_id}*.csv"))
     if csv_file_paths:
         csv_file_path = csv_file_paths[0]
-        mat_file_path = os.path.splitext(csv_file_path)[0] + ".mat"
-        start_times, stop_times = get_event_times_from_mat(file_path=mat_file_path, stream_name="diode")
+        mat_file_path = folder_path / f"{csv_file_path.stem}.mat"
+        start_times, stop_times = get_event_times_from_mat(file_path=str(mat_file_path), stream_name="diode")
         source_data.update(
             dict(
                 VisualStimulusInterface=dict(
