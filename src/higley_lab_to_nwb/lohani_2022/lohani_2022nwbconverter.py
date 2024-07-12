@@ -30,8 +30,8 @@ class Lohani2022NWBConverter(NWBConverter):
         ophys_metadata: Dict[str, dict],
         verbose: bool = True,
     ):
-        self.excitation_type_channel_comb = excitation_type_channel_comb
-        for excitation_type, channel in self.excitation_type_channel_comb.items():
+        self.excitation_type_channel_combination = excitation_type_channel_combination
+        for excitation_type, channel in self.excitation_type_channel_combination.items():
             suffix = f"{excitation_type}Excitation{channel}Channel"
             interface_name = f"Imaging{suffix}"
             self.data_interface_classes[interface_name] = TiffImagingInterface
@@ -90,8 +90,11 @@ class Lohani2022NWBConverter(NWBConverter):
         ttlsignal_interface = self.data_interface_objects["Spike2Signals"]
 
         # Synch imaging
-        for excitation_type, channel in self.excitation_type_channel_comb.items():
+        for excitation_type, channel in self.excitation_type_channel_combination.items():
             imaging_interface = self.data_interface_objects[f"Imaging{excitation_type}Excitation{channel}Channel"]
+            dff_imaging_interface = self.data_interface_objects[
+                f"DFFImaging{excitation_type}Excitation{channel}Channel"
+            ]
             stream_id = next(
                 (
                     stream_id
@@ -102,6 +105,7 @@ class Lohani2022NWBConverter(NWBConverter):
             )
             ttl_times = ttlsignal_interface.get_event_times_from_ttl(stream_id=stream_id)
             imaging_interface.set_aligned_starting_time(ttl_times[0])
+            dff_imaging_interface.set_aligned_starting_time(ttl_times[0])
 
         # Synch behaviour
         video_interface = self.data_interface_objects["Video"]

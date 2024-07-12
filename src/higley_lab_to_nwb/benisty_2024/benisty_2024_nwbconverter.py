@@ -79,16 +79,22 @@ class Benisty2024NWBConverter(NWBConverter):
         # Synch 1p imaging
         if "OnePhotonImaging" in self.data_interface_objects.keys():
             one_photon_imaging_interface = self.data_interface_objects["OnePhotonImaging"]
+            dff_one_photon_imaging_interface = self.data_interface_objects["DffOnePhotonImaging"]
+            hemo_one_photon_imaging_interface = self.data_interface_objects["HemodynamicCorrectedOnePhotonImaging"]
             channel_name = "TTLSignalBlueLED"
             ttl_times = ttlsignal_interface.get_event_times_from_ttl_channel_name(channel_name=channel_name)
             one_photon_imaging_interface.set_aligned_starting_time(ttl_times[0])
+            dff_one_photon_imaging_interface.set_aligned_starting_time(ttl_times[0])
+            hemo_one_photon_imaging_interface.set_aligned_starting_time(ttl_times[0])
 
         # Synch 1p isosbestic imaging
         if "OnePhotonImagingIsosbestic" in self.data_interface_objects.keys():
             one_photon_imaging_interface = self.data_interface_objects["OnePhotonImagingIsosbestic"]
+            dff_one_photon_imaging_interface = self.data_interface_objects["DffOnePhotonImagingIsosbestic"]
             channel_name = "TTLSignalVioletLED"
             ttl_times = ttlsignal_interface.get_event_times_from_ttl_channel_name(channel_name=channel_name)
             one_photon_imaging_interface.set_aligned_starting_time(ttl_times[0])
+            dff_one_photon_imaging_interface.set_aligned_starting_time(ttl_times[0])
 
         # Synch behaviour
         if "Video" in self.data_interface_objects.keys():

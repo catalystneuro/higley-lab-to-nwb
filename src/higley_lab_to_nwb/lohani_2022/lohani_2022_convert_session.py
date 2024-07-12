@@ -81,9 +81,9 @@ def session_to_nwb(
     # Define a dictionary that for each optical channel/filter associate the frame side
     channel_to_frame_side_mapping = dict(Green="right", Red="left")
     # Define the excitation-channel combinations
-    excitation_type_channel_comb = dict(Blue="Green", Violet="Green", Green="Red")
+    excitation_type_channel_combination = dict(Blue="Green", Violet="Green", Green="Red")
 
-    for excitation_type, channel in excitation_type_channel_comb.items():
+    for excitation_type, channel in excitation_type_channel_combination.items():
         start_frame_index = excitation_type_to_start_frame_index_mapping[excitation_type]
         frame_side = channel_to_frame_side_mapping[channel]
         tif_file_path = str(folder_path) + f"/{session_id}_channel{start_frame_index}_{frame_side}.tiff"
@@ -111,7 +111,7 @@ def session_to_nwb(
         photon_series_index += 1
     # Add processed imaging data
     processed_imaging_path = parcellation_folder_path / "final_dFoF.mat"
-    for excitation_type, channel in excitation_type_channel_comb.items():
+    for excitation_type, channel in excitation_type_channel_combination.items():
         process_type = excitation_type.lower() if not excitation_type == "Violet" else "uv"
         suffix = f"{excitation_type}Excitation{channel}Channel"
         interface_name = f"DFFImaging{suffix}"
@@ -149,7 +149,7 @@ def session_to_nwb(
 
     converter = Lohani2022NWBConverter(
         source_data=source_data,
-        excitation_type_channel_comb=excitation_type_channel_comb,
+        excitation_type_channel_combination=excitation_type_channel_combination,
         ophys_metadata=ophys_metadata,
     )
 

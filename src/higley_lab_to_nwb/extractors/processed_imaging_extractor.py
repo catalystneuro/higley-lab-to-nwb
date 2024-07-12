@@ -101,8 +101,8 @@ class ProcessedImagingExtractor(ImagingExtractor):
     def _get_single_frame(self, frame_idx: int) -> np.ndarray:
         frame = np.zeros((self._num_rows, self._num_columns))
         i = 0
-        for c in range(self._num_columns):
-            for r in range(self._num_rows):
+        for r in range(self._num_rows):
+            for c in range(self._num_columns):
                 # "dff_blue" and "dff_uv" pixel matrix contains the pixel trace for only the non-zero elements of the
                 # mask (different pixel indexing)
                 if self._mask is not None and self._mask[r, c] != 0:
@@ -137,8 +137,8 @@ class ProcessedImagingExtractor(ImagingExtractor):
 
         video = np.zeros((num_frames, self._num_rows, self._num_columns))
         i = 0
-        for c in range(self._num_columns):
-            for r in range(self._num_rows):
+        for r in range(self._num_rows):
+            for c in range(self._num_columns):
                 # "dff_blue" and "dff_uv" pixel matrix contains the pixel trace for only the non-zero elements of the
                 # mask (different pixel indexing)
                 if self._mask is not None and self._mask[r, c] != 0:
