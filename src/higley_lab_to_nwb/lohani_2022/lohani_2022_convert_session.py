@@ -30,7 +30,7 @@ def session_to_nwb(
     search_pattern = "_".join(session_id.split("_")[:2])
 
     # Add Analog signals from Spike2
-    file_path = glob.glob(os.path.join(folder_path, f"{search_pattern}*.smrx"))[0]
+    file_path = list(folder_path.glob(f"{search_pattern}*.smrx"))[0]
     stream_ids, stream_names = get_streams(file_path=file_path)
 
     # Define each smrx signal name
@@ -49,7 +49,7 @@ def session_to_nwb(
     source_data.update(
         dict(
             Spike2Signals=dict(
-                file_path=file_path,
+                file_path=str(file_path),
                 ttl_stream_ids_to_names_map=TTLsignals_name_map,
                 behavioral_stream_ids_to_names_map=behavioral_name_map,
             )
@@ -58,7 +58,7 @@ def session_to_nwb(
     conversion_options.update(dict(Spike2Signals=dict(stub_test=stub_test)))
 
     if "vis_stim" in session_id:
-        csv_file_path = glob.glob(os.path.join(folder_path, f"{search_pattern}*.csv"))[0]
+        csv_file_path = list(folder_path.glob(f"{search_pattern}*.csv"))[0]
         mat_file_path = parcellation_folder_path / "smrx_signals.mat"
         start_times, stop_times = get_event_times_from_mat(file_path=str(mat_file_path))
         source_data.update(
@@ -111,13 +111,13 @@ def session_to_nwb(
         photon_series_index += 1
 
     # Add Behavioral Video Recording
-    avi_files = glob.glob(os.path.join(folder_path, f"{search_pattern}*.avi"))
+    avi_files = list(folder_path.glob(f"{search_pattern}*.avi"))
     video_file_path = avi_files[0]
     source_data.update(dict(Video=dict(file_paths=[video_file_path], verbose=False)))
     conversion_options.update(dict(Video=dict(stub_test=stub_test)))
 
     # Add Facemap output
-    mat_files = glob.glob(os.path.join(folder_path, f"{search_pattern}*_proc.mat"))
+    mat_files = list(folder_path.glob(f"{search_pattern}*_proc.mat"))
     mat_file_path = mat_files[0]
     source_data.update(
         dict(
