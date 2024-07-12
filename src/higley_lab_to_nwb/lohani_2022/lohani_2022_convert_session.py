@@ -1,19 +1,22 @@
 """Primary script to run to convert an entire session for of data using the NWBConverter."""
 
 from pathlib import Path
-from typing import Union
+from typing import Union, Dict, Any
 from neuroconv.utils import load_dict_from_file, dict_deep_update
 from higley_lab_to_nwb.lohani_2022 import Lohani2022NWBConverter
 from higley_lab_to_nwb.interfaces.spike2signals_interface import get_streams
-from higley_lab_to_nwb.lohani_2022.utils.lohani_2022_utils import create_tiff_stack, read_session_start_time
+from higley_lab_to_nwb.lohani_2022.utils import create_tiff_stack, read_session_start_time, get_event_times_from_mat
 import os
 import glob
 
 
 def session_to_nwb(
-    folder_path: Union[str, Path], output_dir_path: Union[str, Path], session_id: str, stub_test: bool = False
+    folder_path: Union[str, Path],
+    parcellation_folder_path: Union[str, Path],
+    output_dir_path: Union[str, Path],
+    session_id: str,
+    stub_test: bool = False,
 ):
-
     output_dir_path = Path(output_dir_path)
     if stub_test:
         output_dir_path = output_dir_path / "nwb_stub"
@@ -27,7 +30,7 @@ def session_to_nwb(
     search_pattern = "_".join(session_id.split("_")[:2])
 
     # Add Analog signals from Spike2
-    file_path = glob.glob(os.path.join(folder_path, f"{search_pattern}*.smrx"))[0]
+    file_path = list(folder_path.glob(f"{search_pattern}*.smrx"))[0]
     stream_ids, stream_names = get_streams(file_path=file_path)
 
     # Define each smrx signal name
@@ -46,7 +49,7 @@ def session_to_nwb(
     source_data.update(
         dict(
             Spike2Signals=dict(
-                file_path=file_path,
+                file_path=str(file_path),
                 ttl_stream_ids_to_names_map=TTLsignals_name_map,
                 behavioral_stream_ids_to_names_map=behavioral_name_map,
             )
@@ -55,13 +58,15 @@ def session_to_nwb(
     conversion_options.update(dict(Spike2Signals=dict(stub_test=stub_test)))
 
     if "vis_stim" in session_id:
-        csv_file_path = glob.glob(os.path.join(folder_path, f"{search_pattern}*.csv"))[0]
+        csv_file_path = list(folder_path.glob(f"{search_pattern}*.csv"))[0]
+        mat_file_path = parcellation_folder_path / "smrx_signals.mat"
+        start_times, stop_times = get_event_times_from_mat(file_path=str(mat_file_path))
         source_data.update(
             dict(
                 VisualStimulusInterface=dict(
-                    spike2_file_path=file_path,
                     csv_file_path=csv_file_path,
-                    stream_id=stream_ids[stream_names == "Vis"][0],
+                    start_times=start_times,
+                    stop_times=stop_times,
                 )
             )
         )
@@ -106,13 +111,13 @@ def session_to_nwb(
         photon_series_index += 1
 
     # Add Behavioral Video Recording
-    avi_files = glob.glob(os.path.join(folder_path, f"{search_pattern}*.avi"))
+    avi_files = list(folder_path.glob(f"{search_pattern}*.avi"))
     video_file_path = avi_files[0]
     source_data.update(dict(Video=dict(file_paths=[video_file_path], verbose=False)))
     conversion_options.update(dict(Video=dict(stub_test=stub_test)))
 
     # Add Facemap output
-    mat_files = glob.glob(os.path.join(folder_path, f"{search_pattern}*_proc.mat"))
+    mat_files = list(folder_path.glob(f"{search_pattern}*_proc.mat"))
     mat_file_path = mat_files[0]
     source_data.update(
         dict(
@@ -149,16 +154,21 @@ def session_to_nwb(
 
 
 if __name__ == "__main__":
-
     # Parameters for conversion
-    root_path = Path("E:\CN_data")
+    root_path = Path("E:/CN_data")
     data_dir_path = root_path / "Higley-CN-data-share"
     output_dir_path = root_path / "Higley-conversion_nwb"
     stub_test = True
-    session_id = "11222019_grabAM06_vis_stim"
-    folder_path = data_dir_path / Path(session_id)
+    date = "11222019"
+    animal_number = "05"
+    session_id = f"{date}_grabAM{animal_number}_vis_stim"
+    folder_path = data_dir_path / session_id
+    parcellation_folder_path = (
+        data_dir_path / "parcellation" / f"grab{animal_number}" / "imaging with 575 excitation" / session_id
+    )
     session_to_nwb(
         folder_path=folder_path,
+        parcellation_folder_path=parcellation_folder_path,
         output_dir_path=output_dir_path,
         session_id=session_id,
         stub_test=stub_test,

@@ -5,8 +5,7 @@ from typing import Union
 from neuroconv.utils import load_dict_from_file, dict_deep_update
 from higley_lab_to_nwb.interfaces.spike2signals_interface import get_streams
 from higley_lab_to_nwb.benisty_2024 import Benisty2024NWBConverter
-import os
-import glob
+from higley_lab_to_nwb.benisty_2024.utils import get_event_times_from_mat
 
 
 def dual_imaging_session_to_nwb(
@@ -29,7 +28,7 @@ def dual_imaging_session_to_nwb(
 
     # Add Analog signals from Spike2
     folder_path = data_dir_path / f"{subject_id}_1p"
-    file_path = glob.glob(os.path.join(folder_path, f"{session_id}*.smr"))[0]
+    file_path = list(folder_path.glob(f"{session_id}*.smr"))[0]
     stream_ids, stream_names = get_streams(file_path=file_path)
 
     # Define each smr signal name
@@ -55,16 +54,17 @@ def dual_imaging_session_to_nwb(
     )
     conversion_options.update(dict(Spike2Signals=dict(stub_test=stub_test)))
 
-    csv_file_paths = glob.glob(os.path.join(folder_path, f"{session_id}*.csv"))
+    csv_file_paths = list(folder_path.glob(f"{session_id}*.csv"))
     if csv_file_paths:
         csv_file_path = csv_file_paths[0]
-        mat_file_path = os.path.splitext(csv_file_path)[0] + '.mat'
+        mat_file_path = folder_path / f"{csv_file_path.stem}.mat"
+        start_times, stop_times = get_event_times_from_mat(file_path=str(mat_file_path), stream_name="diode")
         source_data.update(
             dict(
                 VisualStimulusInterface=dict(
-                    mat_file_path=mat_file_path,
                     csv_file_path=csv_file_path,
-                    stream_id=stream_ids[stream_names == "diode"][0],
+                    start_times=start_times,
+                    stop_times=stop_times,
                 )
             )
         )
@@ -101,11 +101,7 @@ def dual_imaging_session_to_nwb(
         )
     )
     conversion_options.update(
-        dict(
-            OnePhotonImaging=dict(
-                stub_test=stub_test, photon_series_type="OnePhotonSeries", photon_series_index=0
-            )
-        )
+        dict(OnePhotonImaging=dict(stub_test=stub_test, photon_series_type="OnePhotonSeries", photon_series_index=0))
     )
 
     channel_first_frame_index = 1
@@ -154,7 +150,7 @@ def dual_imaging_session_to_nwb(
 if __name__ == "__main__":
 
     # Parameters for conversion
-    root_path = Path("/media/amtra/Samsung_T5/CN_data")
+    root_path = Path("E:/CN_data")
     data_dir_path = root_path / "Higley-CN-data-share/Dual 2p Meso data"
     output_dir_path = root_path / "Higley-conversion_nwb/"
     stub_test = True
