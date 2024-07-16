@@ -77,7 +77,7 @@ class ProcessedImagingExtractor(ImagingExtractor):
             )
 
         self._num_frames, number_of_pixels = self._pixels_matrix.shape
-
+        self._dtype = self._pixels_matrix[0].dtype
         if number_of_pixels == self._num_rows * self._num_columns:
             self._mask = None
 
@@ -160,4 +160,4 @@ class ProcessedImagingExtractor(ImagingExtractor):
         return self._channel_names
 
     def get_dtype(self) -> DtypeType:
-        return self.get_frames([0]).dtype
+        return self._dtype
