@@ -129,21 +129,21 @@ def session_to_nwb(
         }
         photon_series_index += 1
 
-    # Add Behavioral Video Recording
-    avi_files = list(folder_path.glob(f"{search_pattern}*.avi"))
-    video_file_path = avi_files[0]
-    source_data.update(dict(Video=dict(file_paths=[video_file_path], verbose=False)))
-    conversion_options.update(dict(Video=dict(stub_test=stub_test)))
-
-    # Add Facemap output
-    mat_files = list(folder_path.glob(f"{search_pattern}*_proc.mat"))
-    mat_file_path = mat_files[0]
-    source_data.update(
-        dict(
-            FacemapInterface=dict(mat_file_path=str(mat_file_path), video_file_path=str(video_file_path), verbose=False)
-        )
-    )
-
+    # # Add Behavioral Video Recording
+    # avi_files = list(folder_path.glob(f"{search_pattern}*.avi"))
+    # video_file_path = avi_files[0]
+    # source_data.update(dict(Video=dict(file_paths=[video_file_path], verbose=False)))
+    # conversion_options.update(dict(Video=dict(stub_test=stub_test)))
+    #
+    # # Add Facemap output
+    # mat_files = list(folder_path.glob(f"{search_pattern}*_proc.mat"))
+    # mat_file_path = mat_files[0]
+    # source_data.update(
+    #     dict(
+    #         FacemapInterface=dict(mat_file_path=str(mat_file_path), video_file_path=str(video_file_path), verbose=False)
+    #     )
+    # )
+    #
     ophys_metadata_path = Path(__file__).parent / "metadata" / "lohani_2022_ophys_metadata.yaml"
     ophys_metadata = load_dict_from_file(ophys_metadata_path)
 
@@ -177,7 +177,7 @@ if __name__ == "__main__":
     root_path = Path("E:/CN_data")
     data_dir_path = root_path / "Higley-CN-data-share"
     output_dir_path = root_path / "Higley-conversion_nwb"
-    stub_test = True
+    stub_test = False
     date = "11222019"
     animal_number = "05"
     session_id = f"{date}_grabAM{animal_number}_vis_stim"
