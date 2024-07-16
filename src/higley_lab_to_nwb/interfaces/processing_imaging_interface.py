@@ -41,6 +41,3 @@ class ProcessedImagingInterface(BaseImagingExtractorInterface):
             photon_series_type=photon_series_type,
         )
 
-    def get_metadata(self) -> DeepDict:
-        metadata = super().get_metadata()
-        return metadata
