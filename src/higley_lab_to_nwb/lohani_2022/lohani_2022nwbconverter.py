@@ -108,18 +108,19 @@ class Lohani2022NWBConverter(NWBConverter):
             dff_imaging_interface.set_aligned_starting_time(ttl_times[0])
 
         # Synch behaviour
-        video_interface = self.data_interface_objects["Video"]
-        video_interface._timestamps = video_interface.get_timestamps()
-        stream_id = next(
-            (
-                stream_id
-                for stream_id, stream_name in ttlsignal_interface.ttl_stream_ids_to_names_map.items()
-                if stream_name == "TTLSignalPupilCamera"
-            ),
-            None,
-        )
-        ttl_times = ttlsignal_interface.get_event_times_from_ttl(stream_id=stream_id)
-        video_interface.set_aligned_starting_time(ttl_times[0])
+        if "Video" in self.data_interface_objects.keys():
+            video_interface = self.data_interface_objects["Video"]
+            video_interface._timestamps = video_interface.get_timestamps()
+            stream_id = next(
+                (
+                    stream_id
+                    for stream_id, stream_name in ttlsignal_interface.ttl_stream_ids_to_names_map.items()
+                    if stream_name == "TTLSignalPupilCamera"
+                ),
+                None,
+            )
+            ttl_times = ttlsignal_interface.get_event_times_from_ttl(stream_id=stream_id)
+            video_interface.set_aligned_starting_time(ttl_times[0])
 
         if "FacemapInterface" in self.data_interface_objects.keys():
             facemap_interface = self.data_interface_objects["FacemapInterface"]

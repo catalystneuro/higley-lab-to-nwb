@@ -166,4 +166,4 @@ class ProcessedImagingExtractor(ImagingExtractor):
         return self._channel_names
 
     def get_dtype(self) -> DtypeType:
-        return self.get_frames(0).dtype
+        return self.get_frames([0]).dtype
