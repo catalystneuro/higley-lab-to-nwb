@@ -6,8 +6,7 @@ from neuroconv.utils import load_dict_from_file, dict_deep_update
 from higley_lab_to_nwb.lohani_2022 import Lohani2022NWBConverter
 from higley_lab_to_nwb.interfaces.spike2signals_interface import get_streams
 from higley_lab_to_nwb.lohani_2022.utils import create_tiff_stack, read_session_start_time, get_event_times_from_mat
-import os
-import glob
+import time
 
 
 def session_to_nwb(
@@ -84,22 +83,15 @@ def session_to_nwb(
     excitation_type_channel_combination = dict(Blue="Green", Violet="Green", Green="Red")
 
     for excitation_type, channel in excitation_type_channel_combination.items():
-        start_frame_index = excitation_type_to_start_frame_index_mapping[excitation_type]
-        frame_side = channel_to_frame_side_mapping[channel]
-        tif_file_path = str(folder_path) + f"/{session_id}_channel{start_frame_index}_{frame_side}.tiff"
-        if not os.path.exists(tif_file_path):
-            create_tiff_stack(
-                folder_path=folder_path,
-                output_file_path=tif_file_path,
-                start_frame_index=start_frame_index,
-                frame_side=frame_side,
-                stub_test=stub_test,
-            )
 
         suffix = f"{excitation_type}Excitation{channel}Channel"
         interface_name = f"Imaging{suffix}"
         source_data[interface_name] = {
-            "file_path": tif_file_path,
+            "folder_path": folder_path,
+            "file_pattern": session_id,
+            "frame_side": channel_to_frame_side_mapping[channel],
+            "number_of_channels": 3,
+            "channel_first_frame_index": excitation_type_to_start_frame_index_mapping[excitation_type],
             "sampling_frequency": sampling_frequency,
             "photon_series_type": "OnePhotonSeries",
         }
@@ -109,41 +101,41 @@ def session_to_nwb(
             "photon_series_type": "OnePhotonSeries",
         }
         photon_series_index += 1
-    # Add processed imaging data
-    processed_imaging_path = parcellation_folder_path / "final_dFoF.mat"
-    for excitation_type, channel in excitation_type_channel_combination.items():
-        process_type = excitation_type.lower() if not excitation_type == "Violet" else "uv"
-        suffix = f"{excitation_type}Excitation{channel}Channel"
-        interface_name = f"DFFImaging{suffix}"
-        source_data[interface_name] = {
-            "file_path": processed_imaging_path,
-            "sampling_frequency": sampling_frequency,
-            "photon_series_type": "OnePhotonSeries",
-            "process_type": process_type,
-        }
-        conversion_options[interface_name] = {
-            "stub_test": stub_test,
-            "photon_series_index": photon_series_index,
-            "photon_series_type": "OnePhotonSeries",
-            "parent_container": "processing/ophys",
-        }
-        photon_series_index += 1
+    # # Add processed imaging data
+    # processed_imaging_path = parcellation_folder_path / "final_dFoF.mat"
+    # for excitation_type, channel in excitation_type_channel_combination.items():
+    #     process_type = excitation_type.lower() if not excitation_type == "Violet" else "uv"
+    #     suffix = f"{excitation_type}Excitation{channel}Channel"
+    #     interface_name = f"DFFImaging{suffix}"
+    #     source_data[interface_name] = {
+    #         "file_path": processed_imaging_path,
+    #         "sampling_frequency": sampling_frequency,
+    #         "photon_series_type": "OnePhotonSeries",
+    #         "process_type": process_type,
+    #     }
+    #     conversion_options[interface_name] = {
+    #         "stub_test": stub_test,
+    #         "photon_series_index": photon_series_index,
+    #         "photon_series_type": "OnePhotonSeries",
+    #         "parent_container": "processing/ophys",
+    #     }
+    #     photon_series_index += 1
 
-    # Add Behavioral Video Recording
-    avi_files = list(folder_path.glob(f"{search_pattern}*.avi"))
-    video_file_path = avi_files[0]
-    source_data.update(dict(Video=dict(file_paths=[video_file_path], verbose=False)))
-    conversion_options.update(dict(Video=dict(stub_test=stub_test)))
-
-    # Add Facemap output
-    mat_files = list(folder_path.glob(f"{search_pattern}*_proc.mat"))
-    mat_file_path = mat_files[0]
-    source_data.update(
-        dict(
-            FacemapInterface=dict(mat_file_path=str(mat_file_path), video_file_path=str(video_file_path), verbose=False)
-        )
-    )
-
+    # # Add Behavioral Video Recording
+    # avi_files = list(folder_path.glob(f"{search_pattern}*.avi"))
+    # video_file_path = avi_files[0]
+    # source_data.update(dict(Video=dict(file_paths=[video_file_path], verbose=False)))
+    # conversion_options.update(dict(Video=dict(stub_test=stub_test)))
+    #
+    # # Add Facemap output
+    # mat_files = list(folder_path.glob(f"{search_pattern}*_proc.mat"))
+    # mat_file_path = mat_files[0]
+    # source_data.update(
+    #     dict(
+    #         FacemapInterface=dict(mat_file_path=str(mat_file_path), video_file_path=str(video_file_path), verbose=False)
+    #     )
+    # )
+    #
     ophys_metadata_path = Path(__file__).parent / "metadata" / "lohani_2022_ophys_metadata.yaml"
     ophys_metadata = load_dict_from_file(ophys_metadata_path)
 
@@ -185,6 +177,8 @@ if __name__ == "__main__":
     parcellation_folder_path = (
         data_dir_path / "parcellation" / f"grab{animal_number}" / "imaging with 575 excitation" / session_id
     )
+    start = time.time()
+
     session_to_nwb(
         folder_path=folder_path,
         parcellation_folder_path=parcellation_folder_path,
@@ -192,3 +186,6 @@ if __name__ == "__main__":
         session_id=session_id,
         stub_test=stub_test,
     )
+
+    end = time.time()
+    print(end - start)
