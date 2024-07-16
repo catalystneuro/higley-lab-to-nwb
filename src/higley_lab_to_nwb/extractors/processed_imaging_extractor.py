@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import Tuple, Literal
 import numpy as np
-from skimage.exposure import rescale_intensity
 from roiextractors.extraction_tools import PathType, DtypeType, get_package
 from roiextractors.imagingextractor import ImagingExtractor
 import h5py
