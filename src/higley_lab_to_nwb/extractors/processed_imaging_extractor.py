@@ -66,6 +66,10 @@ class ProcessedImagingExtractor(ImagingExtractor):
 
         self._channel_names = process_type
 
+        accepted_process_types = ["dff_final", "dff_blue", "dff_uv", "blue", "uv", "green"]
+        assert (
+            process_type in accepted_process_types
+        ), f"{process_type} must be one of the following values: {accepted_process_types}"
         if process_type in ["dff_final", "dff_blue", "dff_uv"]:
             self._pixels_matrix, self._num_rows, self._num_columns, self.mask = (
                 _load_data_from_dual_imaging_configuration(file_path=file_path, process_type=process_type)
@@ -86,10 +90,6 @@ class ProcessedImagingExtractor(ImagingExtractor):
                 f"not match the frame dimension {self._num_rows} * {self._num_columns} or the non-zero elements in "
                 f"the frame mask {np.count_nonzero(self.mask)}."
             )
-        accepted_process_types = ["dff_final", "dff_blue", "dff_uv", "blue", "uv", "green"]
-        assert (
-            process_type in accepted_process_types
-        ), f"{process_type} must be one of the following values: {accepted_process_types}"
 
     def _get_single_frame(self, frame_idx: int) -> np.ndarray:
         frame = np.zeros((self._num_rows, self._num_columns))
