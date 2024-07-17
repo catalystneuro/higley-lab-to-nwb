@@ -9,6 +9,7 @@ from neuroconv.tools.nwb_helpers import make_or_load_nwbfile
 from higley_lab_to_nwb.interfaces import (
     Spike2SignalsInterface,
     VisualStimulusInterface,
+    ProcessedImagingInterface,
 )
 
 
@@ -29,11 +30,13 @@ class Lohani2022NWBConverter(NWBConverter):
         ophys_metadata: Dict[str, dict],
         verbose: bool = True,
     ):
-        self.excitation_type_channel_comb = excitation_type_channel_comb
-        for excitation_type, channel in self.excitation_type_channel_comb.items():
+        self.excitation_type_channel_combination = excitation_type_channel_combination
+        for excitation_type, channel in self.excitation_type_channel_combination.items():
             suffix = f"{excitation_type}Excitation{channel}Channel"
             interface_name = f"Imaging{suffix}"
             self.data_interface_classes[interface_name] = TiffImagingInterface
+            interface_name = f"DFFImaging{suffix}"
+            self.data_interface_classes[interface_name] = ProcessedImagingInterface
 
         self.verbose = verbose
         self._validate_source_data(source_data=source_data, verbose=self.verbose)
@@ -55,13 +58,13 @@ class Lohani2022NWBConverter(NWBConverter):
 
         return metadata
 
-    def run_conversion( # until [Issue #908](https://github.com/catalystneuro/neuroconv/issues/908) is fixed
+    def run_conversion(  # until [Issue #908](https://github.com/catalystneuro/neuroconv/issues/908) is fixed
         self,
-        nwbfile_path: str  = None,
-        nwbfile: NWBFile  = None,
-        metadata: Dict  = None,
+        nwbfile_path: str = None,
+        nwbfile: NWBFile = None,
+        metadata: Dict = None,
         overwrite: bool = False,
-        conversion_options: Dict  = None,
+        conversion_options: Dict = None,
     ) -> None:
         if metadata is None:
             metadata = self.get_metadata()
@@ -85,10 +88,13 @@ class Lohani2022NWBConverter(NWBConverter):
 
     def temporally_align_data_interfaces(self):
         ttlsignal_interface = self.data_interface_objects["Spike2Signals"]
-        
+
         # Synch imaging
-        for excitation_type, channel in self.excitation_type_channel_comb.items():
+        for excitation_type, channel in self.excitation_type_channel_combination.items():
             imaging_interface = self.data_interface_objects[f"Imaging{excitation_type}Excitation{channel}Channel"]
+            dff_imaging_interface = self.data_interface_objects[
+                f"DFFImaging{excitation_type}Excitation{channel}Channel"
+            ]
             stream_id = next(
                 (
                     stream_id
@@ -99,20 +105,22 @@ class Lohani2022NWBConverter(NWBConverter):
             )
             ttl_times = ttlsignal_interface.get_event_times_from_ttl(stream_id=stream_id)
             imaging_interface.set_aligned_starting_time(ttl_times[0])
+            dff_imaging_interface.set_aligned_starting_time(ttl_times[0])
 
         # Synch behaviour
-        video_interface = self.data_interface_objects["Video"]
-        video_interface._timestamps = video_interface.get_timestamps()
-        stream_id = next(
-            (
-                stream_id
-                for stream_id, stream_name in ttlsignal_interface.ttl_stream_ids_to_names_map.items()
-                if stream_name == "TTLSignalPupilCamera"
-            ),
-            None,
-        )
-        ttl_times = ttlsignal_interface.get_event_times_from_ttl(stream_id=stream_id)
-        video_interface.set_aligned_starting_time(ttl_times[0])
+        if "Video" in self.data_interface_objects.keys():
+            video_interface = self.data_interface_objects["Video"]
+            video_interface._timestamps = video_interface.get_timestamps()
+            stream_id = next(
+                (
+                    stream_id
+                    for stream_id, stream_name in ttlsignal_interface.ttl_stream_ids_to_names_map.items()
+                    if stream_name == "TTLSignalPupilCamera"
+                ),
+                None,
+            )
+            ttl_times = ttlsignal_interface.get_event_times_from_ttl(stream_id=stream_id)
+            video_interface.set_aligned_starting_time(ttl_times[0])
 
         if "FacemapInterface" in self.data_interface_objects.keys():
             facemap_interface = self.data_interface_objects["FacemapInterface"]

@@ -10,6 +10,7 @@ from higley_lab_to_nwb.interfaces import (
     Spike2SignalsInterface,
     CidanSegmentationInterface,
     MesoscopicImagingMultiTiffStackInterface,
+    ProcessedImagingInterface,
 )
 from neuroconv.datainterfaces import VideoInterface, FacemapInterface
 
@@ -27,6 +28,9 @@ class Benisty2024NWBConverter(NWBConverter):
         VisualStimulusInterface=VisualStimulusInterface,
         OnePhotonImaging=MesoscopicImagingMultiTiffStackInterface,
         OnePhotonImagingIsosbestic=MesoscopicImagingMultiTiffStackInterface,
+        DffOnePhotonImaging=ProcessedImagingInterface,
+        DffOnePhotonImagingIsosbestic=ProcessedImagingInterface,
+        HemodynamicCorrectedOnePhotonImaging=ProcessedImagingInterface,
     )
 
     def __init__(self, source_data: Dict[str, dict], ophys_metadata: Dict[str, dict], verbose: bool = True):
@@ -75,16 +79,22 @@ class Benisty2024NWBConverter(NWBConverter):
         # Synch 1p imaging
         if "OnePhotonImaging" in self.data_interface_objects.keys():
             one_photon_imaging_interface = self.data_interface_objects["OnePhotonImaging"]
+            dff_one_photon_imaging_interface = self.data_interface_objects["DffOnePhotonImaging"]
+            hemo_one_photon_imaging_interface = self.data_interface_objects["HemodynamicCorrectedOnePhotonImaging"]
             channel_name = "TTLSignalBlueLED"
             ttl_times = ttlsignal_interface.get_event_times_from_ttl_channel_name(channel_name=channel_name)
             one_photon_imaging_interface.set_aligned_starting_time(ttl_times[0])
+            dff_one_photon_imaging_interface.set_aligned_starting_time(ttl_times[0])
+            hemo_one_photon_imaging_interface.set_aligned_starting_time(ttl_times[0])
 
         # Synch 1p isosbestic imaging
         if "OnePhotonImagingIsosbestic" in self.data_interface_objects.keys():
             one_photon_imaging_interface = self.data_interface_objects["OnePhotonImagingIsosbestic"]
+            dff_one_photon_imaging_interface = self.data_interface_objects["DffOnePhotonImagingIsosbestic"]
             channel_name = "TTLSignalVioletLED"
             ttl_times = ttlsignal_interface.get_event_times_from_ttl_channel_name(channel_name=channel_name)
             one_photon_imaging_interface.set_aligned_starting_time(ttl_times[0])
+            dff_one_photon_imaging_interface.set_aligned_starting_time(ttl_times[0])
 
         # Synch behaviour
         if "Video" in self.data_interface_objects.keys():

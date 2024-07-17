@@ -1,11 +1,3 @@
-"""Specialized extractor for reading TIFF files produced via ScanImage.
-
-Classes
--------
-ScanImageTiffImagingExtractor
-    Specialized extractor for reading TIFF files produced via ScanImage.
-"""
-
 from pathlib import Path
 from typing import Tuple
 from warnings import warn
@@ -13,6 +5,7 @@ import numpy as np
 from roiextractors.extraction_tools import PathType, ArrayType, DtypeType, get_package
 from roiextractors.imagingextractor import ImagingExtractor
 from roiextractors.multiimagingextractor import MultiImagingExtractor
+
 
 class MesoscopicImagingMultiTiffStackExtractor(MultiImagingExtractor):
     """Specialized extractor for reading multi-file (buffered) TIFF files."""  # TODO add description
@@ -101,7 +94,7 @@ class MesoscopicImagingTiffStackExtractor(ImagingExtractor):
         self._num_channels = number_of_channels
         self.channel_first_frame_index = channel_first_frame_index
         self._channel_names = [f"Channel{i}" for i in range(number_of_channels)]
-        
+
         try:
             self._raw_video = tifffile.memmap(self.file_path, mode="r")
         except ValueError:
@@ -159,7 +152,7 @@ class MesoscopicImagingTiffStackExtractor(ImagingExtractor):
         """
         self.check_frame_inputs(frame)
         raw_index = self.frame_to_raw_index(frame)
-        return self._raw_video[raw_index:raw_index + 1]
+        return self._raw_video[raw_index : raw_index + 1]
 
     def get_video(self, start_frame=None, end_frame=None) -> np.ndarray:
         """Get the video frames.
@@ -186,7 +179,7 @@ class MesoscopicImagingTiffStackExtractor(ImagingExtractor):
         raw_start = self.frame_to_raw_index(start_frame)
         raw_end_inclusive = self.frame_to_raw_index(end_frame_inclusive)
         raw_end = raw_end_inclusive + 1
-        video = self._raw_video[raw_start:raw_end:self._num_channels, ...]
+        video = self._raw_video[raw_start : raw_end : self._num_channels, ...]
         return video
 
     def get_image_size(self) -> Tuple[int, int]:

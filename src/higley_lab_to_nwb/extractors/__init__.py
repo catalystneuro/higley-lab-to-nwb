@@ -1,2 +1,3 @@
 from .cidansegmentation_extractor import CidanSegmentationExtractor
 from .mesoscopic_imaging_extractor import MesoscopicImagingMultiTiffStackExtractor
+from .processed_imaging_extractor import ProcessedImagingExtractor

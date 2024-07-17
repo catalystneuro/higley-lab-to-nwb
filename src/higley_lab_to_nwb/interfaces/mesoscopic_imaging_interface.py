@@ -1,8 +1,3 @@
-from dateutil.parser import parse as dateparse
-import datetime
-from pathlib import Path
-from natsort import natsorted
-
 from neuroconv.datainterfaces.ophys.baseimagingextractorinterface import BaseImagingExtractorInterface
 from neuroconv.utils import FolderPathType
 from neuroconv.utils.dict import DeepDict
@@ -51,7 +46,6 @@ class MesoscopicImagingMultiTiffStackInterface(BaseImagingExtractorInterface):
             verbose=verbose,
             photon_series_type=photon_series_type,
         )
-
 
     def get_metadata(self) -> DeepDict:
         metadata = super().get_metadata()
