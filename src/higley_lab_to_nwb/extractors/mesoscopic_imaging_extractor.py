@@ -10,7 +10,7 @@ import tifffile
 
 
 class MesoscopicImagingMultiTiffStackExtractor(MultiImagingExtractor):
-    """Specialized extractor for reading multi-file (buffered) TIFF files."""  # TODO add description
+    """Specialized extractor for reading multi-file (buffered) TIFF files."""
 
     extractor_name = "MesoscopicImagingTiffStackExtractor"
     is_writable = True
@@ -35,7 +35,7 @@ class MesoscopicImagingMultiTiffStackExtractor(MultiImagingExtractor):
         number_of_channels: int
             Number of channels alternating in the acquisition cycle.
         channel_first_frame_index: int
-            The frame index corresponding to the first acuisition of the desired channel
+            The frame index corresponding to the first acquisition of the desired channel
         sampling_frequency : float
             The frequency at which the frames were sampled, in Hz.
         """
@@ -57,7 +57,7 @@ class MesoscopicImagingMultiTiffStackExtractor(MultiImagingExtractor):
 
 
 class MesoscopicImagingTiffStackExtractor(ImagingExtractor):
-    """Specialized extractor for reading a TIFF file."""  # TODO add description
+    """Specialized extractor for reading a TIFF file."""
 
     extractor_name = "MesoscopicImagingTiffStackExtractor"
     is_writable = True
@@ -82,7 +82,7 @@ class MesoscopicImagingTiffStackExtractor(ImagingExtractor):
         number_of_channels: int
             Number of channels alternating in the acquisition cycle.
         channel_first_frame_index: int
-            The frame index corresponding to the first acuisition of the desired channel
+            The frame index corresponding to the first acquisition of the desired channel
         sampling_frequency : float
             The frequency at which the frames were sampled, in Hz.
         Notes
@@ -238,7 +238,7 @@ class MesoscopicImagingTiffStackExtractor(ImagingExtractor):
 
 
 class MesoscopicImagingMultiTiffSingleFrameExtractor(ImagingExtractor):
-    """Specialized extractor for reading a single frame TIFF file with split FOV."""  # TODO add description
+    """Specialized extractor for reading a single frame TIFF file with split FOV."""
 
     extractor_name = "MesoscopicImagingMultiTiffSingleFrameExtractor"
     is_writable = True
@@ -265,9 +265,11 @@ class MesoscopicImagingMultiTiffSingleFrameExtractor(ImagingExtractor):
         number_of_channels: int
             Number of channels alternating in the acquisition cycle.
         channel_first_frame_index: int
-            The frame index corresponding to the first acuisition of the desired channel
+            The frame index corresponding to the first acquisition of the desired channel
         sampling_frequency : float
             The frequency at which the frames were sampled, in Hz.
+        frame_side : str
+            Side of the acquisition frame to keep. Accepted values: "left", "right".
         Notes
         -----
         """
@@ -303,8 +305,6 @@ class MesoscopicImagingMultiTiffSingleFrameExtractor(ImagingExtractor):
         else:
             return self.get_video(start_frame=frame_idxs[0], end_frame=frame_idxs[-1] + 1)
 
-    # Data accessed through an open ScanImageTiffReader io gets scrambled if there are multiple calls.
-    # Thus, open fresh io in context each time something is needed.
     def _get_single_frame(self, frame: int) -> np.ndarray:
         """Get a single frame of data from the TIFF file.
 

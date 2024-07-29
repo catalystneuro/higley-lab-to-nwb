@@ -84,6 +84,8 @@ class MesoscopicImagingMultiTiffSingleFrameInterface(BaseImagingExtractorInterfa
             The frame index corresponding to the first acuisition of the desired channel
         sampling_frequency : float
             The frequency at which the frames were sampled, in Hz.
+        frame_side : str
+            Side of the acquisition frame to keep. Accepted values: "left", "right".
         """
         super().__init__(
             folder_path=folder_path,

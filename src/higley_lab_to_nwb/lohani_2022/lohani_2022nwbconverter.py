@@ -3,7 +3,7 @@
 from typing import Dict, List
 from pynwb import NWBFile
 from neuroconv import NWBConverter
-from neuroconv.datainterfaces import VideoInterface, FacemapInterface, TiffImagingInterface
+from neuroconv.datainterfaces import VideoInterface, FacemapInterface
 from neuroconv.utils import DeepDict
 from neuroconv.tools.nwb_helpers import make_or_load_nwbfile
 from higley_lab_to_nwb.interfaces import (
@@ -93,9 +93,9 @@ class Lohani2022NWBConverter(NWBConverter):
         # Synch imaging
         for excitation_type, channel in self.excitation_type_channel_combination.items():
             imaging_interface = self.data_interface_objects[f"Imaging{excitation_type}Excitation{channel}Channel"]
-            # dff_imaging_interface = self.data_interface_objects[
-            #     f"DFFImaging{excitation_type}Excitation{channel}Channel"
-            # ]
+            dff_imaging_interface = self.data_interface_objects[
+                f"DFFImaging{excitation_type}Excitation{channel}Channel"
+            ]
             stream_id = next(
                 (
                     stream_id
@@ -106,7 +106,7 @@ class Lohani2022NWBConverter(NWBConverter):
             )
             ttl_times = ttlsignal_interface.get_event_times_from_ttl(stream_id=stream_id)
             imaging_interface.set_aligned_starting_time(ttl_times[0])
-            # dff_imaging_interface.set_aligned_starting_time(ttl_times[0])
+            dff_imaging_interface.set_aligned_starting_time(ttl_times[0])
 
         # Synch behaviour
         if "Video" in self.data_interface_objects.keys():
