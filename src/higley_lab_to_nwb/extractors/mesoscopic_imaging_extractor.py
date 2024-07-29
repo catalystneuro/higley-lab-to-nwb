@@ -357,11 +357,11 @@ class MesoscopicImagingMultiTiffSingleFrameExtractor(ImagingExtractor):
                 ]
             )
 
-        return video
+        return video.transpose((0, 2, 1))
 
     def get_image_size(self) -> tuple[int, int]:
         frame = self._get_single_frame(frame=0)
-        return frame.shape
+        return frame.shape[1], frame.shape[2]
 
     def get_num_frames(self) -> int:
         return self._num_frames
