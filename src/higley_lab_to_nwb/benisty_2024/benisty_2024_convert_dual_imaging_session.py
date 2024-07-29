@@ -216,7 +216,7 @@ def dual_imaging_session_to_nwb(
 if __name__ == "__main__":
 
     # Parameters for conversion
-    root_path = Path("E:/CN_data")
+    root_path = Path("F:/CN_data")
     data_dir_path = root_path / "Higley-CN-data-share/Dual 2p Meso data"
     output_dir_path = root_path / "Higley-conversion_nwb/"
     stub_test = True

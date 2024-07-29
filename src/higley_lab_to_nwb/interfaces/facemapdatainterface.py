@@ -3,6 +3,7 @@ import sys
 from typing import Literal, Optional
 
 import h5py
+import scipy.io
 import numpy as np
 from pynwb.base import TimeSeries
 from pynwb.behavior import EyeTracking, PupilTracking, SpatialSeries
@@ -64,6 +65,23 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
         self.original_timestamps = None
         self.timestamps = None
         self.svd_mask_names = svd_mask_names
+
+        try:
+            # Try opening the file with h5py
+            with h5py.File(mat_file_path, "r") as file:
+                print("Facemap output opened successfully with h5py")
+                self.older_matlab_version = False
+        except OSError as e:
+            print(f"Failed to open file with h5py: {e}")
+            # Check if the file is an older MATLAB .mat file
+
+            try:
+                mat_data = scipy.io.loadmat(mat_file_path)
+                self.older_matlab_version = True
+            except NotImplementedError:
+                print("The .mat file is not in HDF5 format")
+            except Exception as e:
+                print(f"An error occurred with scipy.io.loadmat: {e}")
 
     def get_metadata_schema(self) -> dict:
         metadata_schema = super().get_metadata_schema()
@@ -130,8 +148,12 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
         if self.timestamps is None:
             self.timestamps = self.get_timestamps()
 
-        with h5py.File(self.source_data["mat_file_path"], "r") as file:
-            data = file["proc"]["pupil"]["com"][:].T
+        if self.older_matlab_version:
+            mat_data = scipy.io.loadmat(self.source_data["mat_file_path"])
+            data = mat_data["proc"]["pupil"][0, 0]["com"][0, 0].T
+        else:
+            with h5py.File(self.source_data["mat_file_path"], "r") as file:
+                data = file["proc"]["pupil"]["com"][:].T
 
         behavior_module = get_module(nwbfile=nwbfile, name="behavior", description="behavioral data")
         eye_tracking_metadata = metadata["Behavior"]["EyeTracking"][0]
@@ -152,9 +174,12 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
     def add_pupil_data(
         self, nwbfile: NWBFile, metadata: DeepDict, pupil_trace_type: Literal["area_raw", "area"] = "area"
     ):
-
-        with h5py.File(self.source_data["mat_file_path"], "r") as file:
-            data = file["proc"]["pupil"][pupil_trace_type][:].T
+        if self.older_matlab_version:
+            mat_data = scipy.io.loadmat(self.source_data["mat_file_path"])
+            data = mat_data["proc"]["pupil"][0, 0][pupil_trace_type][0, 0].T
+        else:
+            with h5py.File(self.source_data["mat_file_path"], "r") as file:
+                data = file["proc"]["pupil"][pupil_trace_type][:].T
 
         behavior_module = get_module(nwbfile=nwbfile, name="behavior", description="behavioral data")
 
@@ -205,56 +230,70 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
         motion_series_name = metadata["Behavior"]["MotionSVDSeries"]["name"]
         motion_series_description = metadata["Behavior"]["MotionSVDSeries"]["description"]
 
-        with h5py.File(self.source_data["mat_file_path"], "r") as file:
+        behavior_module = get_module(nwbfile=nwbfile, name="behavior", description="behavioral data")
 
-            behavior_module = get_module(nwbfile=nwbfile, name="behavior", description="behavioral data")
+        if self.older_matlab_version:
+            mat_data = scipy.io.loadmat(self.source_data["mat_file_path"])
+            mask_coordinates = mat_data["proc"]["ROI"][0, 0][0, 0][0, 0].T
 
-            # Extract mask_coordinates
-            mask_coordinates = file[file[file["proc"]["ROI"][0][0]][0][0]]
-            y1 = int(np.round(mask_coordinates[0][0]) - 1)  # correct matlab indexing
-            x1 = int(np.round(mask_coordinates[1][0]) - 1)  # correct matlab indexing
-            y2 = y1 + int(np.round(mask_coordinates[2][0]))
-            x2 = x1 + int(np.round(mask_coordinates[3][0]))
-            mask_coordinates = [x1, y1, x2, y2]
+        else:
+            # Try opening the file with h5py
+            with h5py.File(self.source_data["mat_file_path"], "r") as file:
+                mask_coordinates = np.array(file[file[file["proc"]["ROI"][0][0]][0][0]])
 
-            # store face motion mask and motion series
-            motion_masks_table = MotionSVDMasks(
-                name=f"{motion_mask_name}Face",
-                description=f"{motion_mask_description} for face components.",
-                mask_coordinates=mask_coordinates,
-                downsampling_factor=self._get_downsamplig_factor(),
-                processed_frame_dimension=self._get_processed_frame_dimension(),
-            )
+        y1 = int(np.round(mask_coordinates[0][0]) - 1)  # correct matlab indexing
+        x1 = int(np.round(mask_coordinates[1][0]) - 1)  # correct matlab indexing
+        y2 = y1 + int(np.round(mask_coordinates[2][0]))
+        x2 = x1 + int(np.round(mask_coordinates[3][0]))
 
+        mask_coordinates = [x1, y1, x2, y2]
+
+        # store face motion mask and motion series
+        motion_masks_table = MotionSVDMasks(
+            name=f"{motion_mask_name}Face",
+            description=f"{motion_mask_description} for face components.",
+            mask_coordinates=mask_coordinates,
+            downsampling_factor=self._get_downsamplig_factor(),
+            processed_frame_dimension=self._get_processed_frame_dimension(),
+        )
+        if self.older_matlab_version:
+            pass  # TODO add motion_masks_table for older matlab version file
+        else:
             # add face mask
-            mask_ref = file["proc"]["uMotMask"][0][0]
-            for c, component in enumerate(file[mask_ref]):
-                if c == self.first_n_components:
-                    break
-                componendt_2d = component.reshape((y2 - y1, x2 - x1))
-                motion_masks_table.add_row(image_mask=componendt_2d.T, check_ragged=False)
+            with h5py.File(self.source_data["mat_file_path"], "r") as file:
+                mask_ref = file["proc"]["uMotMask"][0][0]
+                for c, component in enumerate(file[mask_ref]):
+                    if c == self.first_n_components:
+                        break
+                    componendt_2d = component.reshape((y2 - y1, x2 - x1))
+                    motion_masks_table.add_row(image_mask=componendt_2d.T, check_ragged=False)
 
-            motion_masks = DynamicTableRegion(
-                name="motion_masks",
-                data=list(range(len(file["proc"]["motSVD"][:]))),
-                description="all the face motion mask",
-                table=motion_masks_table,
-            )
+        motion_masks = DynamicTableRegion(
+            name="motion_masks",
+            data=list(range(self.first_n_components)),
+            description="all the face motion mask",
+            table=motion_masks_table,
+        )
 
-            series_ref = file["proc"]["motSVD"][0][0]
-            data = np.array(file[series_ref])
-            data = data[: self.first_n_components, :]
+        if self.older_matlab_version:
+            pass  # TODO add motion series data for older matlab version file
+        else:
+            with h5py.File(self.source_data["mat_file_path"], "r") as file:
+                series_ref = file["proc"]["motSVD"][0][0]
+                data = np.array(file[series_ref])
 
-            motion_series = MotionSVDSeries(
-                name=f"{motion_series_name}Face",
-                description=f"{motion_series_description} for face components.",
-                data=data.T,
-                motion_masks=motion_masks,
-                unit="unknown",
-                timestamps=self.timestamps,
-            )
-            behavior_module.add(motion_masks_table)
-            behavior_module.add(motion_series)
+        data = data[: self.first_n_components, :]
+
+        motion_series = MotionSVDSeries(
+            name=f"{motion_series_name}Face",
+            description=f"{motion_series_description} for face components.",
+            data=data.T,
+            motion_masks=motion_masks,
+            unit="unknown",
+            timestamps=self.timestamps,
+        )
+        behavior_module.add(motion_masks_table)
+        behavior_module.add(motion_series)
 
         return
 
@@ -281,60 +320,70 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
         motion_series_name = metadata["Behavior"]["MotionSVDSeries"]["name"]
         motion_series_description = metadata["Behavior"]["MotionSVDSeries"]["description"]
 
-        with h5py.File(self.source_data["mat_file_path"], "r") as file:
+        behavior_module = get_module(nwbfile=nwbfile, name="behavior", description="behavioral data")
 
-            behavior_module = get_module(nwbfile=nwbfile, name="behavior", description="behavioral data")
+        if self.older_matlab_version:
+            pass  # TODO add mask_coordinates
+        else:
+            # Try opening the file with h5py
+            with h5py.File(self.source_data["mat_file_path"], "r") as file:
+                mask_coordinates = np.array(file[file["proc"]["locROI"][ROI_index][0]])
 
-            downsampling_factor = self._get_downsamplig_factor()
-            processed_frame_dimension = self._get_processed_frame_dimension()
+        y1 = int(np.round(mask_coordinates[0][0]) - 1)  # correct matlab indexing
+        x1 = int(np.round(mask_coordinates[1][0]) - 1)  # correct matlab indexing
+        y2 = y1 + int(np.round(mask_coordinates[2][0]))
+        x2 = x1 + int(np.round(mask_coordinates[3][0]))
+        mask_coordinates = [x1, y1, x2, y2]
 
-            # store ROIs motion mask and motion series
+        downsampling_factor = self._get_downsamplig_factor()
+        processed_frame_dimension = self._get_processed_frame_dimension()
 
-            series_ref = file["proc"]["motSVD"][ROI_index][0]
-            mask_ref = file["proc"]["uMotMask"][ROI_index][0]
+        motion_masks_table = MotionSVDMasks(
+            name=f"{motion_mask_name}{ROI_name}",
+            description=f"{motion_mask_description} for {ROI_name} components.",
+            mask_coordinates=mask_coordinates,
+            downsampling_factor=downsampling_factor,
+            processed_frame_dimension=processed_frame_dimension,
+        )
 
-            # skipping the first ROI because it refers to "running" mask, from Facemap doc
-            mask_coordinates = file[file["proc"]["locROI"][ROI_index][0]]
-            y1 = int(np.round(mask_coordinates[0][0]) - 1)  # correct matlab indexing
-            x1 = int(np.round(mask_coordinates[1][0]) - 1)  # correct matlab indexing
-            y2 = y1 + int(np.round(mask_coordinates[2][0]))
-            x2 = x1 + int(np.round(mask_coordinates[3][0]))
-            mask_coordinates = [x1, y1, x2, y2]
+        if self.older_matlab_version:
+            pass  # TODO add motion series data for older matlab version file
+        else:
+            with h5py.File(self.source_data["mat_file_path"], "r") as file:
+                mask_ref = file["proc"]["uMotMask"][ROI_index][0]
 
-            motion_masks_table = MotionSVDMasks(
-                name=f"{motion_mask_name}{ROI_name}",
-                description=f"{motion_mask_description} for {ROI_name} components.",
-                mask_coordinates=mask_coordinates,
-                downsampling_factor=downsampling_factor,
-                processed_frame_dimension=processed_frame_dimension,
-            )
+                for c, component in enumerate(file[mask_ref]):
+                    if c == self.first_n_components:
+                        break
+                    motion_masks_table.add_row(image_mask=component.T, check_ragged=False)
 
-            for c, component in enumerate(file[mask_ref]):
-                if c == self.first_n_components:
-                    break
-                motion_masks_table.add_row(image_mask=component.T, check_ragged=False)
+        motion_masks = DynamicTableRegion(
+            name="motion_masks",
+            data=list(range(self.first_n_components)),
+            description="all the ROIs motion mask",
+            table=motion_masks_table,
+        )
 
-            motion_masks = DynamicTableRegion(
-                name="motion_masks",
-                data=list(range(self.first_n_components)),
-                description="all the ROIs motion mask",
-                table=motion_masks_table,
-            )
+        if self.older_matlab_version:
+            pass  # TODO add motion series data for older matlab version file
+        else:
+            with h5py.File(self.source_data["mat_file_path"], "r") as file:
+                series_ref = file["proc"]["motSVD"][ROI_index][0]
+                data = np.array(file[series_ref])
 
-            data = np.array(file[series_ref])
-            data = data[: self.first_n_components, :]
+        data = data[: self.first_n_components, :]
 
-            motion_series = MotionSVDSeries(
-                name=f"{motion_series_name}{ROI_name}",
-                description=f"{motion_series_description} for {ROI_name} components.",
-                data=data.T,
-                motion_masks=motion_masks,
-                unit="unknown",
-                timestamps=self.timestamps,
-            )
+        motion_series = MotionSVDSeries(
+            name=f"{motion_series_name}{ROI_name}",
+            description=f"{motion_series_description} for {ROI_name} components.",
+            data=data.T,
+            motion_masks=motion_masks,
+            unit="unknown",
+            timestamps=self.timestamps,
+        )
 
-            behavior_module.add(motion_masks_table)
-            behavior_module.add(motion_series)
+        behavior_module.add(motion_masks_table)
+        behavior_module.add(motion_series)
 
         return
 
@@ -353,15 +402,21 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
         self.timestamps = aligned_timestamps
 
     def _get_downsamplig_factor(self) -> float:
-        with h5py.File(self.source_data["mat_file_path"], "r") as file:
-            downsamplig_factor = file["proc"]["sc"][0][0]
+        if self.older_matlab_version:
+            pass  # TODO add downsamplig_factor for older matlab version file
+        else:
+            with h5py.File(self.source_data["mat_file_path"], "r") as file:
+                downsamplig_factor = file["proc"]["sc"][0][0]
         return downsamplig_factor
 
     def _get_processed_frame_dimension(self) -> np.ndarray:
-        with h5py.File(self.source_data["mat_file_path"], "r") as file:
-            processed_frame_ref = file["proc"]["wpix"][0][0]
-            frame = file[processed_frame_ref]
-            return [frame.shape[1], frame.shape[0]]
+        if self.older_matlab_version:
+            pass  # TODO add frame_dimension for older matlab version file
+        else:
+            with h5py.File(self.source_data["mat_file_path"], "r") as file:
+                processed_frame_ref = file["proc"]["wpix"][0][0]
+                frame = file[processed_frame_ref]
+                return [frame.shape[1], frame.shape[0]]
 
     def add_to_nwbfile(
         self,
@@ -384,7 +439,7 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
         compression_opts : int, optional
             Compression options.
         """
-        # self.add_eye_tracking(nwbfile=nwbfile, metadata=metadata)
+        self.add_eye_tracking(nwbfile=nwbfile, metadata=metadata)
         self.add_pupil_data(nwbfile=nwbfile, metadata=metadata, pupil_trace_type="area_raw")
         self.add_pupil_data(nwbfile=nwbfile, metadata=metadata, pupil_trace_type="area")
         self.add_face_motion_SVD(nwbfile=nwbfile, metadata=metadata)
