@@ -14,6 +14,7 @@ from neuroconv.utils.dict import DeepDict
 from neuroconv import BaseTemporalAlignmentInterface
 from neuroconv.tools import get_module
 from neuroconv.utils import FilePathType, get_base_schema, get_schema_from_hdmf_class
+from neuroconv.datainterfaces.behavior.video.video_utils import get_video_timestamps
 
 
 def install_package(package):
@@ -37,7 +38,7 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
     def __init__(
         self,
         mat_file_path: FilePathType,
-        original_timestamps: list,
+        video_file_path: FilePathType,
         first_n_components: int = 500,
         svd_mask_names: list = ["Face"],
         verbose: bool = True,
@@ -58,9 +59,9 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
         verbose : bool, default: True
             Allows verbose.
         """
-        super().__init__(mat_file_path=mat_file_path, verbose=verbose)
+        super().__init__(mat_file_path=mat_file_path, video_file_path=video_file_path, verbose=verbose)
         self.first_n_components = first_n_components
-        self.original_timestamps = original_timestamps
+        self.original_timestamps = None
         self.timestamps = None
         self.svd_mask_names = svd_mask_names
 
@@ -128,6 +129,7 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
 
         if self.timestamps is None:
             self.timestamps = self.get_timestamps()
+
         with h5py.File(self.source_data["mat_file_path"], "r") as file:
             data = file["proc"]["pupil"]["com"][:].T
 
@@ -152,33 +154,34 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
     ):
 
         with h5py.File(self.source_data["mat_file_path"], "r") as file:
+            data = file["proc"]["pupil"][pupil_trace_type][:].T
 
-            behavior_module = get_module(nwbfile=nwbfile, name="behavior", description="behavioral data")
+        behavior_module = get_module(nwbfile=nwbfile, name="behavior", description="behavioral data")
 
-            pupil_area_metadata_ind = 0 if pupil_trace_type == "area" else 1
-            pupil_area_metadata = metadata["Behavior"]["PupilTracking"][pupil_area_metadata_ind]
+        pupil_area_metadata_ind = 0 if pupil_trace_type == "area" else 1
+        pupil_area_metadata = metadata["Behavior"]["PupilTracking"][pupil_area_metadata_ind]
 
-            if "EyeTracking" not in behavior_module.data_interfaces:
-                self.add_eye_tracking(nwbfile=nwbfile, metadata=metadata)
+        if "EyeTracking" not in behavior_module.data_interfaces:
+            self.add_eye_tracking(nwbfile=nwbfile, metadata=metadata)
 
-            eye_tracking_name = metadata["Behavior"]["EyeTracking"][0]["name"]
-            eye_com = behavior_module.data_interfaces["EyeTracking"].spatial_series[eye_tracking_name]
+        eye_tracking_name = metadata["Behavior"]["EyeTracking"][0]["name"]
+        eye_com = behavior_module.data_interfaces["EyeTracking"].spatial_series[eye_tracking_name]
 
-            pupil_trace = TimeSeries(
-                name=pupil_area_metadata["name"],
-                description=pupil_area_metadata["description"],
-                data=file["proc"]["pupil"][pupil_trace_type][:].T,
-                unit=pupil_area_metadata["unit"],
-                timestamps=eye_com,
-            )
+        pupil_trace = TimeSeries(
+            name=pupil_area_metadata["name"],
+            description=pupil_area_metadata["description"],
+            data=data,
+            unit=pupil_area_metadata["unit"],
+            timestamps=eye_com,
+        )
 
-            if "PupilTracking" not in behavior_module.data_interfaces:
-                pupil_tracking = PupilTracking(name="PupilTracking")
-                behavior_module.add(pupil_tracking)
-            else:
-                pupil_tracking = behavior_module.data_interfaces["PupilTracking"]
+        if "PupilTracking" not in behavior_module.data_interfaces:
+            pupil_tracking = PupilTracking(name="PupilTracking")
+            behavior_module.add(pupil_tracking)
+        else:
+            pupil_tracking = behavior_module.data_interfaces["PupilTracking"]
 
-            pupil_tracking.add_timeseries(pupil_trace)
+        pupil_tracking.add_timeseries(pupil_trace)
 
     def add_face_motion_SVD(self, nwbfile: NWBFile, metadata: DeepDict):
         """
@@ -217,7 +220,7 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
             # store face motion mask and motion series
             motion_masks_table = MotionSVDMasks(
                 name=f"{motion_mask_name}Face",
-                description=f"{motion_mask_description} for face.",
+                description=f"{motion_mask_description} for face components.",
                 mask_coordinates=mask_coordinates,
                 downsampling_factor=self._get_downsamplig_factor(),
                 processed_frame_dimension=self._get_processed_frame_dimension(),
@@ -244,7 +247,7 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
 
             motion_series = MotionSVDSeries(
                 name=f"{motion_series_name}Face",
-                description=f"{motion_series_description} for face.",
+                description=f"{motion_series_description} for face components.",
                 data=data.T,
                 motion_masks=motion_masks,
                 unit="unknown",
@@ -300,7 +303,7 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
 
             motion_masks_table = MotionSVDMasks(
                 name=f"{motion_mask_name}{ROI_name}",
-                description=f"{motion_mask_description} for {ROI_name}",
+                description=f"{motion_mask_description} for {ROI_name} components.",
                 mask_coordinates=mask_coordinates,
                 downsampling_factor=downsampling_factor,
                 processed_frame_dimension=processed_frame_dimension,
@@ -323,7 +326,7 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
 
             motion_series = MotionSVDSeries(
                 name=f"{motion_series_name}{ROI_name}",
-                description=f"{motion_series_description} for {ROI_name}",
+                description=f"{motion_series_description} for {ROI_name} components.",
                 data=data.T,
                 motion_masks=motion_masks,
                 unit="unknown",
@@ -336,6 +339,8 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
         return
 
     def get_original_timestamps(self) -> np.ndarray:
+        if self.original_timestamps is None:
+            self.original_timestamps = get_video_timestamps(self.source_data["video_file_path"])
         return self.original_timestamps
 
     def get_timestamps(self) -> np.ndarray:
@@ -386,4 +391,4 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
 
         if len(self.svd_mask_names) > 1:
             for mask_index, mask_name in enumerate(self.svd_mask_names[1:]):
-                self.add_motion_SVD(nwbfile=nwbfile, metadata=metadata, ROI_index=mask_index, ROI_name=mask_name)
+                self.add_motion_SVD(nwbfile=nwbfile, metadata=metadata, ROI_index=mask_index + 1, ROI_name=mask_name)

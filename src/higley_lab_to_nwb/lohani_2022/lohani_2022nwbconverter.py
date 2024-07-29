@@ -3,13 +3,14 @@
 from typing import Dict, List
 from pynwb import NWBFile
 from neuroconv import NWBConverter
-from neuroconv.datainterfaces import VideoInterface, FacemapInterface, TiffImagingInterface
-from neuroconv.utils import DeepDict
+from neuroconv.datainterfaces import VideoInterface, TiffImagingInterface
+from neuroconv.utils import FilePathType, DeepDict
 from neuroconv.tools.nwb_helpers import make_or_load_nwbfile
 from higley_lab_to_nwb.interfaces import (
     Spike2SignalsInterface,
     VisualStimulusInterface,
     ProcessedImagingInterface,
+    FacemapInterface,
 )
 
 
