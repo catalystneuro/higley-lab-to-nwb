@@ -1,6 +1,6 @@
 NWBFile:
   related_publications:
-    - https://www.nature.com/articles/s41593-022-01202-6
+    - https://doi.org/10.1038/s41593-022-01202-6
     - https://github.com/cardin-higley-lab/Lohani_Moberly_et_al_2022
   keywords: [Dual-color mesoscopic ACh, calcium imaging, visual stimulus, mouse]
   experiment_description: Dual-color mesoscopic imaging of both ACh and calcium across the neocortex of awake mice to investigate their relationships with behavioral variables. We find that higher arousal, categorized by diferent motor behaviors, is associated with spatiotemporally dynamic patterns of cholinergic modulation and enhanced large-scale network correlations. Overall, our fndings demonstrate that ACh provides a highly dynamic and spatially heterogeneous signal that links fuctuations in behavior to functional reorganization of cortical networks.
