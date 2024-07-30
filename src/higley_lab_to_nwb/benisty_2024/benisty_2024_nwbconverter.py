@@ -3,7 +3,8 @@
 from typing import Dict
 from neuroconv import NWBConverter
 from neuroconv.utils import DeepDict
-
+from pynwb import NWBFile
+from neuroconv.tools.nwb_helpers import make_or_load_nwbfile
 from neuroconv.datainterfaces import ScanImageMultiFileImagingInterface, Suite2pSegmentationInterface
 from higley_lab_to_nwb.interfaces import (
     VisualStimulusInterface,
@@ -66,6 +67,34 @@ class Benisty2024NWBConverter(NWBConverter):
 
         return metadata
 
+    def run_conversion(  # until [Issue #908](https://github.com/catalystneuro/neuroconv/issues/908) is fixed
+        self,
+        nwbfile_path: str = None,
+        nwbfile: NWBFile = None,
+        metadata: Dict = None,
+        overwrite: bool = False,
+        conversion_options: Dict = None,
+    ) -> None:
+        if metadata is None:
+            metadata = self.get_metadata()
+
+        self.validate_metadata(metadata=metadata)
+
+        self.validate_conversion_options(conversion_options=conversion_options)
+
+        self.temporally_align_data_interfaces()
+
+        with make_or_load_nwbfile(
+            nwbfile_path=nwbfile_path,
+            nwbfile=nwbfile,
+            metadata=metadata,
+            overwrite=overwrite,
+            verbose=self.verbose,
+        ) as nwbfile_out:
+            self.add_to_nwbfile(nwbfile_out, metadata, conversion_options)
+
+        return
+
     def temporally_align_data_interfaces(self):
         ttlsignal_interface = self.data_interface_objects["Spike2Signals"]
 
@@ -100,9 +129,11 @@ class Benisty2024NWBConverter(NWBConverter):
         # Synch behaviour
         if "Video" in self.data_interface_objects.keys():
             video_interface = self.data_interface_objects["Video"]
-            # facemap_interface = self.data_interface_objects["FacemapInterface"]
             video_interface._timestamps = video_interface.get_timestamps()
             channel_name = "TTLSignalPupilCamera"
             ttl_times = ttlsignal_interface.get_event_times_from_ttl_channel_name(channel_name=channel_name)
             video_interface.set_aligned_starting_time(ttl_times[0])
-            # facemap_interface.set_aligned_starting_time(ttl_times[0])
+
+        if "FacemapInterface" in self.data_interface_objects.keys():
+            facemap_interface = self.data_interface_objects["FacemapInterface"]
+            facemap_interface.set_aligned_starting_time(ttl_times[0])
