@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import Tuple, Literal
 import numpy as np
-from skimage.exposure import rescale_intensity
 from roiextractors.extraction_tools import PathType, DtypeType, get_package
 from roiextractors.imagingextractor import ImagingExtractor
 import h5py
@@ -15,10 +14,10 @@ def _load_data_from_dual_imaging_configuration(file_path: str, process_type: str
 
     with h5py.File(file_path, "r") as file:
         pixels_matrix = file[process_type][:]
+        mask = file["mask"][:]
+        num_rows, num_columns = mask.shape
 
-        num_rows, num_columns = file["mask"][:].shape
-
-    return np.nan_to_num(pixels_matrix), num_rows, num_columns
+    return np.nan_to_num(pixels_matrix), num_rows, num_columns, mask
 
 
 def _load_data_from_1p_imaging_configuration(file_path: str, process_type: str) -> np.ndarray:
@@ -31,12 +30,6 @@ def _load_data_from_1p_imaging_configuration(file_path: str, process_type: str) 
         num_columns = int(file["C"][:])
 
     return np.nan_to_num(pixels_matrix), num_rows, num_columns
-
-
-def _get_mask_from_dual_imaging_configuration(file_path: str) -> np.ndarray:
-    with h5py.File(file_path, "r") as file:
-        mask = file["mask"][:]
-    return mask
 
 
 class ProcessedImagingExtractor(ImagingExtractor):
@@ -73,29 +66,29 @@ class ProcessedImagingExtractor(ImagingExtractor):
 
         self._channel_names = process_type
 
+        accepted_process_types = ["dff_final", "dff_blue", "dff_uv", "blue", "uv", "green"]
+        assert (
+            process_type in accepted_process_types
+        ), f"{process_type} must be one of the following values: {accepted_process_types}"
         if process_type in ["dff_final", "dff_blue", "dff_uv"]:
-            self._pixels_matrix, self._num_rows, self._num_columns = _load_data_from_dual_imaging_configuration(
-                file_path=file_path, process_type=process_type
+            self._pixels_matrix, self._num_rows, self._num_columns, self.mask = (
+                _load_data_from_dual_imaging_configuration(file_path=file_path, process_type=process_type)
             )
-            mask = _get_mask_from_dual_imaging_configuration(file_path=file_path)
         elif process_type in ["blue", "uv", "green"]:
             self._pixels_matrix, self._num_rows, self._num_columns = _load_data_from_1p_imaging_configuration(
                 file_path=file_path, process_type=process_type
             )
 
         self._num_frames, number_of_pixels = self._pixels_matrix.shape
-
+        self._dtype = self._pixels_matrix[0].dtype
         if number_of_pixels == self._num_rows * self._num_columns:
             self._mask = None
 
-        elif number_of_pixels == np.count_nonzero(mask):
-            self._mask = mask
-
-        else:
+        elif number_of_pixels != np.count_nonzero(self.mask):
             raise ValueError(
                 f"Can't reconstruct frame from pixel matrix. The total number of pixels {number_of_pixels} does "
                 f"not match the frame dimension {self._num_rows} * {self._num_columns} or the non-zero elements in "
-                f"the frame mask {np.count_nonzero(mask)}."
+                f"the frame mask {np.count_nonzero(self.mask)}."
             )
 
     def _get_single_frame(self, frame_idx: int) -> np.ndarray:
@@ -166,4 +159,4 @@ class ProcessedImagingExtractor(ImagingExtractor):
         return self._channel_names
 
     def get_dtype(self) -> DtypeType:
-        return self.get_frames([0]).dtype
+        return self._dtype

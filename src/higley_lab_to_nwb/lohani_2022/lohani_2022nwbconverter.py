@@ -3,10 +3,11 @@
 from typing import Dict, List
 from pynwb import NWBFile
 from neuroconv import NWBConverter
-from neuroconv.datainterfaces import VideoInterface, TiffImagingInterface
-from neuroconv.utils import FilePathType, DeepDict
+from neuroconv.datainterfaces import VideoInterface
+from neuroconv.utils import DeepDict
 from neuroconv.tools.nwb_helpers import make_or_load_nwbfile
 from higley_lab_to_nwb.interfaces import (
+    MesoscopicImagingMultiTiffSingleFrameInterface,
     Spike2SignalsInterface,
     VisualStimulusInterface,
     ProcessedImagingInterface,
@@ -35,7 +36,7 @@ class Lohani2022NWBConverter(NWBConverter):
         for excitation_type, channel in self.excitation_type_channel_combination.items():
             suffix = f"{excitation_type}Excitation{channel}Channel"
             interface_name = f"Imaging{suffix}"
-            self.data_interface_classes[interface_name] = TiffImagingInterface
+            self.data_interface_classes[interface_name] = MesoscopicImagingMultiTiffSingleFrameInterface
             interface_name = f"DFFImaging{suffix}"
             self.data_interface_classes[interface_name] = ProcessedImagingInterface
 
