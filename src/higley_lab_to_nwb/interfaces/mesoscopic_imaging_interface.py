@@ -33,7 +33,7 @@ class MesoscopicImagingMultiTiffStackInterface(BaseImagingExtractorInterface):
         number_of_channels: int
             Number of channels alternating in the acquisition cycle.
         channel_first_frame_index: int
-            The frame index corresponding to the first acuisition of the desired channel
+            The frame index corresponding to the first acquisition of the desired channel
         sampling_frequency : float
             The frequency at which the frames were sampled, in Hz.
         """
@@ -46,10 +46,6 @@ class MesoscopicImagingMultiTiffStackInterface(BaseImagingExtractorInterface):
             verbose=verbose,
             photon_series_type=photon_series_type,
         )
-
-    def get_metadata(self) -> DeepDict:
-        metadata = super().get_metadata()
-        return metadata
 
 
 class MesoscopicImagingMultiTiffSingleFrameInterface(BaseImagingExtractorInterface):
@@ -81,7 +77,7 @@ class MesoscopicImagingMultiTiffSingleFrameInterface(BaseImagingExtractorInterfa
         number_of_channels: int
             Number of channels alternating in the acquisition cycle.
         channel_first_frame_index: int
-            The frame index corresponding to the first acuisition of the desired channel
+            The frame index corresponding to the first acquisition of the desired channel
         sampling_frequency : float
             The frequency at which the frames were sampled, in Hz.
         frame_side : str
@@ -97,7 +93,3 @@ class MesoscopicImagingMultiTiffSingleFrameInterface(BaseImagingExtractorInterfa
             verbose=verbose,
             photon_series_type=photon_series_type,
         )
-
-    def get_metadata(self) -> DeepDict:
-        metadata = super().get_metadata()
-        return metadata
