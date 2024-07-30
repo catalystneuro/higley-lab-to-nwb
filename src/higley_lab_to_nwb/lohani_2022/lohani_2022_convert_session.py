@@ -5,9 +5,7 @@ from typing import Union, Dict, Any
 from neuroconv.utils import load_dict_from_file, dict_deep_update
 from higley_lab_to_nwb.lohani_2022 import Lohani2022NWBConverter
 from higley_lab_to_nwb.interfaces.spike2signals_interface import get_streams
-from higley_lab_to_nwb.lohani_2022.utils import create_tiff_stack, read_session_start_time, get_event_times_from_mat
-import os
-import glob
+from higley_lab_to_nwb.lohani_2022.utils import read_session_start_time, get_event_times_from_mat
 
 
 def session_to_nwb(
@@ -84,22 +82,15 @@ def session_to_nwb(
     excitation_type_channel_combination = dict(Blue="Green", Violet="Green", Green="Red")
 
     for excitation_type, channel in excitation_type_channel_combination.items():
-        start_frame_index = excitation_type_to_start_frame_index_mapping[excitation_type]
-        frame_side = channel_to_frame_side_mapping[channel]
-        tif_file_path = str(folder_path) + f"/{session_id}_channel{start_frame_index}_{frame_side}.tiff"
-        if not os.path.exists(tif_file_path):
-            create_tiff_stack(
-                folder_path=folder_path,
-                output_file_path=tif_file_path,
-                start_frame_index=start_frame_index,
-                frame_side=frame_side,
-                stub_test=stub_test,
-            )
 
         suffix = f"{excitation_type}Excitation{channel}Channel"
         interface_name = f"Imaging{suffix}"
         source_data[interface_name] = {
-            "file_path": tif_file_path,
+            "folder_path": folder_path,
+            "file_pattern": session_id,
+            "frame_side": channel_to_frame_side_mapping[channel],
+            "number_of_channels": 3,
+            "channel_first_frame_index": excitation_type_to_start_frame_index_mapping[excitation_type],
             "sampling_frequency": sampling_frequency,
             "photon_series_type": "OnePhotonSeries",
         }
@@ -109,6 +100,7 @@ def session_to_nwb(
             "photon_series_type": "OnePhotonSeries",
         }
         photon_series_index += 1
+
     # Add processed imaging data
     processed_imaging_path = parcellation_folder_path / "final_dFoF.mat"
     for excitation_type, channel in excitation_type_channel_combination.items():

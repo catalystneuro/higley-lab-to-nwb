@@ -1,14 +1,16 @@
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, Literal, Optional
 from warnings import warn
 import numpy as np
 from roiextractors.extraction_tools import PathType, ArrayType, DtypeType, get_package
 from roiextractors.imagingextractor import ImagingExtractor
 from roiextractors.multiimagingextractor import MultiImagingExtractor
+from natsort import natsorted
+import tifffile
 
 
 class MesoscopicImagingMultiTiffStackExtractor(MultiImagingExtractor):
-    """Specialized extractor for reading multi-file (buffered) TIFF files."""  # TODO add description
+    """Specialized extractor for reading multi-file (buffered) TIFF files."""
 
     extractor_name = "MesoscopicImagingTiffStackExtractor"
     is_writable = True
@@ -33,7 +35,7 @@ class MesoscopicImagingMultiTiffStackExtractor(MultiImagingExtractor):
         number_of_channels: int
             Number of channels alternating in the acquisition cycle.
         channel_first_frame_index: int
-            The frame index corresponding to the first acuisition of the desired channel
+            The frame index corresponding to the first acquisition of the desired channel
         sampling_frequency : float
             The frequency at which the frames were sampled, in Hz.
         """
@@ -55,7 +57,7 @@ class MesoscopicImagingMultiTiffStackExtractor(MultiImagingExtractor):
 
 
 class MesoscopicImagingTiffStackExtractor(ImagingExtractor):
-    """Specialized extractor for reading a TIFF file."""  # TODO add description
+    """Specialized extractor for reading a TIFF file."""
 
     extractor_name = "MesoscopicImagingTiffStackExtractor"
     is_writable = True
@@ -80,7 +82,7 @@ class MesoscopicImagingTiffStackExtractor(ImagingExtractor):
         number_of_channels: int
             Number of channels alternating in the acquisition cycle.
         channel_first_frame_index: int
-            The frame index corresponding to the first acuisition of the desired channel
+            The frame index corresponding to the first acquisition of the desired channel
         sampling_frequency : float
             The frequency at which the frames were sampled, in Hz.
         Notes
@@ -198,7 +200,7 @@ class MesoscopicImagingTiffStackExtractor(ImagingExtractor):
         return self._channel_names
 
     def get_dtype(self) -> DtypeType:
-        return self.get_frames(0).dtype
+        return self.get_frames([0]).dtype
 
     def check_frame_inputs(self, frame) -> None:
         """Check that the frame index is valid. Raise ValueError if not.
@@ -233,3 +235,163 @@ class MesoscopicImagingTiffStackExtractor(ImagingExtractor):
 
         """
         return (frame * self._num_channels) + self.channel_first_frame_index
+
+
+class MesoscopicImagingMultiTiffSingleFrameExtractor(ImagingExtractor):
+    """Specialized extractor for reading a single frame TIFF file with split FOV."""
+
+    extractor_name = "MesoscopicImagingMultiTiffSingleFrameExtractor"
+    is_writable = True
+    mode = "folder"
+
+    def __init__(
+        self,
+        folder_path: PathType,
+        number_of_channels: int,
+        channel_first_frame_index: int,
+        sampling_frequency: float,
+        frame_side: Literal["left", "right"] = "left",
+        file_pattern: str = None,
+    ) -> None:
+        """Create a MesoscopicImagingTiffStackExtractor instance from a TIFF file.
+
+        The underlying data is stored in a round-robin format collapsed into 3 dimensions (frames, rows, columns).
+        I.e. the first frame of each channel is stored, and then the second frame of each channel, etc.
+
+        Parameters
+        ----------
+        folder_path : PathType
+            Path to the folder containing the TIFF files.
+        number_of_channels: int
+            Number of channels alternating in the acquisition cycle.
+        channel_first_frame_index: int
+            The frame index corresponding to the first acquisition of the desired channel
+        sampling_frequency : float
+            The frequency at which the frames were sampled, in Hz.
+        frame_side : str
+            Side of the acquisition frame to keep. Accepted values: "left", "right".
+        Notes
+        -----
+        """
+
+        super().__init__()
+        tiff_file_paths = natsorted(folder_path.glob(file_pattern + "*.tif"))
+        self._selected_tiff_file_paths = tiff_file_paths[channel_first_frame_index::number_of_channels]
+        self._num_frames = len(self._selected_tiff_file_paths)
+        self.frame_side = frame_side
+        self._sampling_frequency = sampling_frequency
+        self._num_channels = number_of_channels
+        self._channel_names = [f"Channel{i}" for i in range(number_of_channels)]
+
+    def get_frames(self, frame_idxs: ArrayType, channel: Optional[int] = 0) -> np.ndarray:
+        """Get specific video frames from indices (not necessarily continuous).
+
+        Parameters
+        ----------
+        frame_idxs: array-like
+            Indices of frames to return.
+
+        Returns
+        -------
+        frames: numpy.ndarray
+            The video frames.
+        """
+        if isinstance(frame_idxs, int):
+            frame_idxs = [frame_idxs]
+        self.check_frame_inputs(frame_idxs[-1])
+
+        if not all(np.diff(frame_idxs) == 1):
+            return np.concatenate([self._get_single_frame(frame=idx) for idx in frame_idxs])
+        else:
+            return self.get_video(start_frame=frame_idxs[0], end_frame=frame_idxs[-1] + 1)
+
+    def _get_single_frame(self, frame: int) -> np.ndarray:
+        """Get a single frame of data from the TIFF file.
+
+        Parameters
+        ----------
+        frame : int
+            The index of the frame to retrieve.
+
+        Returns
+        -------
+        frame: numpy.ndarray
+            The frame of data.
+        """
+        self.check_frame_inputs(frame)
+
+        return self.get_video(start_frame=frame, end_frame=frame + 1)
+
+    def get_video(self, start_frame=None, end_frame=None, channel: Optional[int] = 0) -> np.ndarray:
+        """Get the video frames.
+
+        Parameters
+        ----------
+        start_frame: int, optional
+            Start frame index (inclusive).
+        end_frame: int, optional
+            End frame index (exclusive).
+
+        Returns
+        -------
+        video: numpy.ndarray
+            The video frames.
+        """
+        if start_frame is None:
+            start_frame = 0
+        if end_frame is None:
+            end_frame = self._num_frames
+
+        if self.frame_side == "left":
+            video = np.stack(
+                [
+                    tifffile.memmap(file_path, mode="r")[:, :512]
+                    for file_path in self._selected_tiff_file_paths[start_frame:end_frame]
+                ]
+            )
+        elif self.frame_side == "right":
+            video = np.stack(
+                [
+                    tifffile.memmap(file_path, mode="r")[:, 512:]
+                    for file_path in self._selected_tiff_file_paths[start_frame:end_frame]
+                ]
+            )
+
+        return video.transpose((0, 2, 1))
+
+    def get_image_size(self) -> tuple[int, int]:
+        frame = self._get_single_frame(frame=0)
+        return frame.shape[1], frame.shape[2]
+
+    def get_num_frames(self) -> int:
+        return self._num_frames
+
+    def get_sampling_frequency(self) -> float:
+        return self._sampling_frequency
+
+    def get_num_channels(self) -> int:
+        return self._num_channels
+
+    def get_channel_names(self) -> list:
+        return self._channel_names
+
+    def get_dtype(self) -> DtypeType:
+        return self.get_frames([0]).dtype
+
+    def check_frame_inputs(self, frame) -> None:
+        """Check that the frame index is valid. Raise ValueError if not.
+
+        Parameters
+        ----------
+        frame : int
+            The index of the frame to retrieve.
+
+        Raises
+        ------
+        ValueError
+            If the frame index is invalid.
+        """
+        if frame >= self._num_frames:
+            raise ValueError(f"Frame index ({frame}) exceeds number of frames ({self._num_frames}).")
+        if frame < 0:
+            raise ValueError(f"Frame index ({frame}) must be greater than or equal to 0.")
