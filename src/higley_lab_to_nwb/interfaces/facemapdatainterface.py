@@ -32,16 +32,17 @@ except ImportError:
 
 class FacemapInterface(BaseTemporalAlignmentInterface):
     display_name = "Facemap"
-    help = "Interface for Facemap output."
+    help = "Interface for Facemap output generated with the Matlab implementation of Facemap software."
 
-    keywords = ["eye tracking"]
+    keywords = ["eye tracking", "pupil area", "face motion"]
 
     def __init__(
         self,
         mat_file_path: FilePathType,
-        video_file_path: FilePathType,
+        video_file_path: FilePathType = None,
         first_n_components: int = 500,
         svd_mask_names: list = ["Face"],
+        original_timestamps: list = None,
         verbose: bool = True,
     ):
         """
@@ -51,8 +52,8 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
         ----------
         mat_file_path : string or Path
             Path to the .mat file.
-        original_timestamps : list
-            The original timestamps from the behavioural video.
+        video_file_path : string or Path
+            Path to the .avi file for the behavioural video.
         first_n_components : int, default: 500
             Number of components to store.
         svd_mask_names : list, default: ["Face", "Whiskers"]
@@ -62,7 +63,7 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
         """
         super().__init__(mat_file_path=mat_file_path, video_file_path=video_file_path, verbose=verbose)
         self.first_n_components = first_n_components
-        self.original_timestamps = None
+        self.original_timestamps = original_timestamps
         self.timestamps = None
         self.svd_mask_names = svd_mask_names
 
@@ -166,9 +167,13 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
             timestamps=self.timestamps,
         )
 
-        eye_tracking = EyeTracking(name="EyeTracking", spatial_series=eye_com)
+        if "EyeTracking" not in behavior_module.data_interfaces:
+            eye_tracking = EyeTracking(name="EyeTracking")
+            behavior_module.add(eye_tracking)
+        else:
+            eye_tracking = behavior_module.data_interfaces["EyeTracking"]
 
-        behavior_module.add(eye_tracking)
+        eye_tracking.add_spatial_series(eye_com)
 
     def add_pupil_data(
         self, nwbfile: NWBFile, metadata: DeepDict, pupil_trace_type: Literal["area_raw", "area"] = "area"
@@ -442,6 +447,9 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
         compression_opts : int, optional
             Compression options.
         """
+        if metadata is None:
+            metadata = self.get_metadata()
+
         self.add_eye_tracking(nwbfile=nwbfile, metadata=metadata)
         self.add_pupil_data(nwbfile=nwbfile, metadata=metadata, pupil_trace_type="area_raw")
         self.add_pupil_data(nwbfile=nwbfile, metadata=metadata, pupil_trace_type="area")
@@ -451,9 +459,10 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
             for mask_index, mask_name in enumerate(self.svd_mask_names[1:]):
                 self.add_motion_SVD(nwbfile=nwbfile, metadata=metadata, ROI_index=mask_index + 1, ROI_name=mask_name)
 
+
 class FacemapPythonInterface(BaseTemporalAlignmentInterface):
     display_name = "FacemapPython"
-    help = "Interface for Facemap output."
+    help = "Interface for Facemap output generated with the Python implementation of Facemap software."  # TODO check with the point person
 
     keywords = ["eye tracking"]
 
@@ -488,8 +497,8 @@ class FacemapPythonInterface(BaseTemporalAlignmentInterface):
         self.svd_mask_names = svd_mask_names
 
         try:
-            face_motion = scipy.io.loadmat(mat_file_path, varaible_names=["motion_0"])
-            self.original_timestamps=list(range(face_motion["motion_0"].shape[1]))
+            face_motion = scipy.io.loadmat(mat_file_path, variable_names=["motion_0"])
+            # self.original_timestamps = list(range(face_motion["motion_0"].shape[1])) # TODO remove this line of code once we cann test it with actual timestamps from the original video
         except NotImplementedError:
             print("The .mat file is not in HDF5 format")
         except Exception as e:
@@ -549,7 +558,7 @@ class FacemapPythonInterface(BaseTemporalAlignmentInterface):
                     description="The preprocessed position of the eye measured in degrees.",
                     reference_frame="unknown",
                     unit="degrees",
-                )
+                ),
             ],
             PupilTracking=[
                 dict(name="pupil_area", description="Area of pupil.", unit="unknown"),
@@ -561,7 +570,9 @@ class FacemapPythonInterface(BaseTemporalAlignmentInterface):
         metadata["Behavior"] = behavior_metadata
         return metadata
 
-    def add_eye_tracking(self, nwbfile: NWBFile, metadata: DeepDict, eye_tracking_trace_type: Literal["com_smooth", "com"] = "com"):
+    def add_eye_tracking(
+        self, nwbfile: NWBFile, metadata: DeepDict, eye_tracking_trace_type: Literal["com_smooth", "com"] = "com"
+    ):
 
         if self.timestamps is None:
             self.timestamps = self.get_timestamps()
@@ -581,10 +592,13 @@ class FacemapPythonInterface(BaseTemporalAlignmentInterface):
             unit=eye_tracking_metadata["unit"],
             timestamps=self.timestamps,
         )
+        if "EyeTracking" not in behavior_module.data_interfaces:
+            eye_tracking = EyeTracking(name="EyeTracking")
+            behavior_module.add(eye_tracking)
+        else:
+            eye_tracking = behavior_module.data_interfaces["EyeTracking"]
 
-        eye_tracking = EyeTracking(name="EyeTracking", spatial_series=eye_com)
-
-        behavior_module.add(eye_tracking)
+        eye_tracking.add_spatial_series(eye_com)
 
     def add_pupil_data(
         self, nwbfile: NWBFile, metadata: DeepDict, pupil_trace_type: Literal["area_smooth", "area"] = "area"
@@ -658,9 +672,9 @@ class FacemapPythonInterface(BaseTemporalAlignmentInterface):
         )
 
         for c in range(self.first_n_components):
-            component = face_motion_masks[:,:,c]
+            component = face_motion_masks[:, :, c]
             motion_masks_table.add_row(image_mask=component.T, check_ragged=False)
-        
+
         motion_masks = DynamicTableRegion(
             name="motion_masks",
             data=list(range(self.first_n_components)),
@@ -701,11 +715,11 @@ class FacemapPythonInterface(BaseTemporalAlignmentInterface):
 
     def _get_downsamplig_factor(self) -> float:
         downsamplig_factor = scipy.io.loadmat(self.source_data["mat_file_path"], variable_names=["sbin"])
-        return float(downsamplig_factor["sbin"][0,0])
+        return float(downsamplig_factor["sbin"][0, 0])
 
     def _get_processed_frame_dimension(self) -> np.ndarray:
         frame_dimension = scipy.io.loadmat(self.source_data["mat_file_path"], variable_names=["LXbin", "LYbin"])
-        return [frame_dimension["LXbin"][0,0], frame_dimension["LYbin"][0,0]]
+        return [frame_dimension["LXbin"][0, 0], frame_dimension["LYbin"][0, 0]]
 
     def add_to_nwbfile(
         self,
@@ -728,6 +742,8 @@ class FacemapPythonInterface(BaseTemporalAlignmentInterface):
         compression_opts : int, optional
             Compression options.
         """
+        if metadata is None:
+            metadata = self.get_metadata()
         self.add_eye_tracking(nwbfile=nwbfile, metadata=metadata, eye_tracking_trace_type="com")
         self.add_pupil_data(nwbfile=nwbfile, metadata=metadata, pupil_trace_type="area")
         self.add_eye_tracking(nwbfile=nwbfile, metadata=metadata, eye_tracking_trace_type="com_smooth")
