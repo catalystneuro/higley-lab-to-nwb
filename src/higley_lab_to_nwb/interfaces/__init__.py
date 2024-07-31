@@ -6,4 +6,4 @@ from .mesoscopic_imaging_interface import (
     MesoscopicImagingMultiTiffSingleFrameInterface,
 )
 from .processing_imaging_interface import ProcessedImagingInterface
-from .facemapdatainterface import FacemapInterface
+from .facemapdatainterface import FacemapInterface, FacemapPythonInterface

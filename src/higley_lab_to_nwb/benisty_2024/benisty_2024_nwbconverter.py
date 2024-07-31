@@ -13,6 +13,7 @@ from higley_lab_to_nwb.interfaces import (
     MesoscopicImagingMultiTiffStackInterface,
     ProcessedImagingInterface,
     FacemapInterface,
+    FacemapPythonInterface,
 )
 from neuroconv.datainterfaces import VideoInterface
 
@@ -27,6 +28,7 @@ class Benisty2024NWBConverter(NWBConverter):
         CIDANSegmentation=CidanSegmentationInterface,
         Video=VideoInterface,
         FacemapInterface=FacemapInterface,
+        FacemapPythonInterface=FacemapPythonInterface,
         VisualStimulusInterface=VisualStimulusInterface,
         OnePhotonImaging=MesoscopicImagingMultiTiffStackInterface,
         OnePhotonImagingIsosbestic=MesoscopicImagingMultiTiffStackInterface,
