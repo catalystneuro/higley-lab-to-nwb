@@ -15,6 +15,7 @@ def dual_imaging_session_to_nwb(
     session_id: str,
     stub_test: bool = False,
 ):
+    folder_path = data_dir_path / f"{subject_id}_1p"
 
     output_dir_path = Path(output_dir_path)
     if stub_test:
@@ -124,92 +125,92 @@ def dual_imaging_session_to_nwb(
         )
     )
 
-    # # Add processed imaging data
-    # processed_imaging_path = meso_imaging_path / f"{session_id}"
-    # # add Df_over_f imaging data from blue excitation
-    # file_path = processed_imaging_path / f"FIR_dff_blue.mat"
-    # source_data.update(
-    #     dict(
-    #         DffOnePhotonImaging=dict(
-    #             file_path=str(file_path),
-    #             sampling_frequency=sampling_frequency,
-    #             process_type="dff_blue",
-    #         )
-    #     )
-    # )
-    # conversion_options.update(
-    #     dict(
-    #         DffOnePhotonImaging=dict(
-    #             stub_test=stub_test,
-    #             photon_series_type="OnePhotonSeries",
-    #             photon_series_index=2,
-    #             parent_container="processing/ophys",
-    #         )
-    #     )
-    # )
-    # # add Df_over_f imaging data from violet excitation (isosbestic control)
-    # file_path = processed_imaging_path / f"FIR_dff_uv.mat"
-    # source_data.update(
-    #     dict(
-    #         DffOnePhotonImagingIsosbestic=dict(
-    #             file_path=str(file_path),
-    #             sampling_frequency=sampling_frequency,
-    #             process_type="dff_uv",
-    #         )
-    #     )
-    # )
-    # conversion_options.update(
-    #     dict(
-    #         DffOnePhotonImagingIsosbestic=dict(
-    #             stub_test=stub_test,
-    #             photon_series_type="OnePhotonSeries",
-    #             photon_series_index=3,
-    #             parent_container="processing/ophys",
-    #         )
-    #     )
-    # )
-    # # add hemodynamic corrected imaging data
-    # file_path = processed_imaging_path / f"FIR_DFF_patch11_final_dFoF.mat"
-    # source_data.update(
-    #     dict(
-    #         HemodynamicCorrectedOnePhotonImaging=dict(
-    #             file_path=str(file_path),
-    #             sampling_frequency=sampling_frequency,
-    #             process_type="dff_final",
-    #         )
-    #     )
-    # )
-    # conversion_options.update(
-    #     dict(
-    #         HemodynamicCorrectedOnePhotonImaging=dict(
-    #             stub_test=stub_test,
-    #             photon_series_type="OnePhotonSeries",
-    #             photon_series_index=4,
-    #             parent_container="processing/ophys",
-    #         )
-    #     )
-    # )
+    # Add processed imaging data
+    processed_imaging_path = meso_imaging_path / f"{session_id}"
+    # add Df_over_f imaging data from blue excitation
+    file_path = processed_imaging_path / f"FIR_dff_blue.mat"
+    source_data.update(
+        dict(
+            DffOnePhotonImaging=dict(
+                file_path=str(file_path),
+                sampling_frequency=sampling_frequency,
+                process_type="dff_blue",
+            )
+        )
+    )
+    conversion_options.update(
+        dict(
+            DffOnePhotonImaging=dict(
+                stub_test=stub_test,
+                photon_series_type="OnePhotonSeries",
+                photon_series_index=2,
+                parent_container="processing/ophys",
+            )
+        )
+    )
+    # add Df_over_f imaging data from violet excitation (isosbestic control)
+    file_path = processed_imaging_path / f"FIR_dff_uv.mat"
+    source_data.update(
+        dict(
+            DffOnePhotonImagingIsosbestic=dict(
+                file_path=str(file_path),
+                sampling_frequency=sampling_frequency,
+                process_type="dff_uv",
+            )
+        )
+    )
+    conversion_options.update(
+        dict(
+            DffOnePhotonImagingIsosbestic=dict(
+                stub_test=stub_test,
+                photon_series_type="OnePhotonSeries",
+                photon_series_index=3,
+                parent_container="processing/ophys",
+            )
+        )
+    )
+    # add hemodynamic corrected imaging data
+    file_path = processed_imaging_path / f"FIR_DFF_patch11_final_dFoF.mat"
+    source_data.update(
+        dict(
+            HemodynamicCorrectedOnePhotonImaging=dict(
+                file_path=str(file_path),
+                sampling_frequency=sampling_frequency,
+                process_type="dff_final",
+            )
+        )
+    )
+    conversion_options.update(
+        dict(
+            HemodynamicCorrectedOnePhotonImaging=dict(
+                stub_test=stub_test,
+                photon_series_type="OnePhotonSeries",
+                photon_series_index=4,
+                parent_container="processing/ophys",
+            )
+        )
+    )
 
     # # Add Behavioral Video Recording
     # avi_files = list(folder_path.glob(f"{session_id}*.avi"))
     # video_file_path = avi_files[0]
     # source_data.update(dict(Video=dict(file_paths=[video_file_path], verbose=False)))
     # conversion_options.update(dict(Video=dict(stub_test=stub_test)))
-    
-    # just for testing the facemap interface
-    video_file_path="/media/amtra/Seagate Expansion Drive/CN_data/Higley-CN-data-share/04072021_am2psi_05_spont/04072021_am2psi_05_spont_facevideo.avi"
+
+    # TODO remove this line of code once actual behavioral video is shared
+    video_file_path = "/media/amtra/Seagate Expansion Drive/CN_data/Higley-CN-data-share/04072021_am2psi_05_spont/04072021_am2psi_05_spont_facevideo.avi"
 
     # Add Facemap outpt
     mat_files = list(folder_path.glob(f"{session_id}*_proc.mat"))
     for mat_file in mat_files:
-        if "inverted" not in mat_file:
+        if "inverted" not in str(mat_file):
             mat_file_path = mat_file
     source_data.update(
         dict(
             FacemapPythonInterface=dict(
                 mat_file_path=str(mat_file_path),
                 video_file_path=str(video_file_path),
-                svd_mask_names=["Face","Whiskers", "Pupil"],
+                svd_mask_names=["Face", "Whiskers", "Pupil"],  # TODO check with the lab point person
                 first_n_components=10 if stub_test else None,
                 verbose=False,
             )
@@ -242,7 +243,7 @@ def dual_imaging_session_to_nwb(
 if __name__ == "__main__":
 
     # Parameters for conversion
-    root_path = Path("/media/amtra/Seagate Expansion Drive/CN_data")
+    root_path = Path("F:/CN_data")
     data_dir_path = root_path / "Higley-CN-data-share/Dual 2p Meso data"
     output_dir_path = root_path / "Higley-conversion_nwb/"
     stub_test = True
