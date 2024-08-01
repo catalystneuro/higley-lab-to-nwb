@@ -13,10 +13,10 @@ from roiextractors.extraction_tools import _image_mask_extractor
 from roiextractors.segmentationextractor import SegmentationExtractor
 
 
-def _get_pixel_coordinate(pixel_num, n_cols: int) -> np.ndarray:
-    row = (pixel_num - 1) // n_cols
-    col = (pixel_num - 1) % n_cols
-    return [row[0], col[0], 1]
+def _get_pixel_coordinate(pixel_num, n_cols: int, n_rows: int) -> np.ndarray:
+    row = (pixel_num - 1) % n_cols
+    col = (pixel_num - 1) // n_cols
+    return [n_rows - row[0], n_cols - col[0], 1]
 
 
 class ParcellsSegmentationExtractor(SegmentationExtractor):
@@ -62,7 +62,10 @@ class ParcellsSegmentationExtractor(SegmentationExtractor):
         self.pixel_masks = []
         for pixel_list in self._pixel_list_per_roi:
             self.pixel_masks.append(
-                [_get_pixel_coordinate(pixel_num=pixel_num, n_cols=self._image_size[1]) for pixel_num in pixel_list]
+                [
+                    _get_pixel_coordinate(pixel_num=pixel_num, n_cols=self._image_size[1], n_rows=self._image_size[0])
+                    for pixel_num in pixel_list
+                ]
             )
 
         self._image_masks = _image_mask_extractor(
