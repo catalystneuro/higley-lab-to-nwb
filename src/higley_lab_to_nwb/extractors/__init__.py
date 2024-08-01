@@ -4,3 +4,4 @@ from .mesoscopic_imaging_extractor import (
     MesoscopicImagingMultiTiffSingleFrameExtractor,
 )
 from .processed_imaging_extractor import ProcessedImagingExtractor
+from .parcells_segmentation_extractor import ParcellsSegmentationExtractor
