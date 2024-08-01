@@ -121,6 +121,28 @@ def session_to_nwb(
         }
         photon_series_index += 1
 
+    # Add parcellation output data
+    mat_file_path = list(parcellation_folder_path.glob(f"green_{session_id}*.mat"))[0]
+    plane_segmentation_name = "ParcellatedPlaneSegmentation"
+    source_data.update(
+        dict(
+            ParcellsSegmentationInterface=dict(
+                mat_file_path=mat_file_path,
+                sampling_frequency=sampling_frequency,
+                image_size=[256, 256],
+                plane_segmentation_name=plane_segmentation_name,
+            )
+        )
+    )
+    conversion_options.update(
+        dict(
+            ParcellsSegmentationInterface=dict(
+                include_roi_acceptance=False,
+                plane_segmentation_name=plane_segmentation_name,
+                stub_test=stub_test,
+            )
+        )
+    )
     # Add Behavioral Video Recording
     avi_files = list(folder_path.glob(f"{search_pattern}*.avi"))
     video_file_path = avi_files[0]
