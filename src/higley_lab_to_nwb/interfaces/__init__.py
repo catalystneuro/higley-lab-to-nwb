@@ -1,5 +1,5 @@
 from .spike2signals_interface import Spike2SignalsInterface
-from .visual_stimulus_interface import VisualStimulusInterface
+from .external_stimuli_interface import ExternalStimuliInterface
 from .cidansegmentation_interface import CidanSegmentationInterface
 from .mesoscopic_imaging_interface import (
     MesoscopicImagingMultiTiffStackInterface,
@@ -7,3 +7,4 @@ from .mesoscopic_imaging_interface import (
 )
 from .processing_imaging_interface import ProcessedImagingInterface
 from .parcells_segmentation_interface import ParcellsSegmentationInterface
+from .behavioral_timestamps_interface import BehavioralTimestampsInterface

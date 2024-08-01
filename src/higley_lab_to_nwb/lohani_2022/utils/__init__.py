@@ -4,4 +4,5 @@ from .lohani_2022_utils import (
     create_tiff_stack,
     get_event_times_from_mat,
     get_event_times_from_spike2,
+    get_channel_trace_from_mat,
 )

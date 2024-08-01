@@ -6,7 +6,7 @@ from neuroconv.utils import DeepDict
 
 from neuroconv.datainterfaces import ScanImageMultiFileImagingInterface, Suite2pSegmentationInterface
 from higley_lab_to_nwb.interfaces import (
-    VisualStimulusInterface,
+    ExternalStimuliInterface,
     Spike2SignalsInterface,
     CidanSegmentationInterface,
     MesoscopicImagingMultiTiffStackInterface,
@@ -25,7 +25,7 @@ class Benisty2024NWBConverter(NWBConverter):
         CIDANSegmentation=CidanSegmentationInterface,
         Video=VideoInterface,
         FacemapInterface=FacemapInterface,
-        VisualStimulusInterface=VisualStimulusInterface,
+        VisualStimulusInterface=ExternalStimuliInterface,
         OnePhotonImaging=MesoscopicImagingMultiTiffStackInterface,
         OnePhotonImagingIsosbestic=MesoscopicImagingMultiTiffStackInterface,
         DffOnePhotonImaging=ProcessedImagingInterface,
