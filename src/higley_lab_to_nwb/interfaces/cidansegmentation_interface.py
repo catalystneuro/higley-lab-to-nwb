@@ -4,7 +4,7 @@ from typing import Optional
 from neuroconv.datainterfaces.ophys.basesegmentationextractorinterface import BaseSegmentationExtractorInterface
 from neuroconv.utils import DeepDict, FilePathType
 
-from ..extractors.cidansegmentation_extractor import CidanSegmentationExtractor
+from ..extractors import CidanSegmentationExtractor
 
 
 def format_string_for_parameters_dict(dict_obj, indent=2):
@@ -23,7 +23,7 @@ def format_string_for_parameters_dict(dict_obj, indent=2):
 
 
 class CidanSegmentationInterface(BaseSegmentationExtractorInterface):
-    """Interface for Suite2p segmentation data."""
+    """Interface for CIDAN segmentation data."""
 
     display_name = "CIDAN Segmentation"
     associated_suffixes = (".json", ".mat")
