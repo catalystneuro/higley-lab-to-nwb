@@ -7,4 +7,4 @@ from .mesoscopic_imaging_interface import (
 )
 from .processing_imaging_interface import ProcessedImagingInterface
 from .parcells_segmentation_interface import ParcellsSegmentationInterface
-from .behavioral_timestamps_interface import BehavioralTimestampsInterface
+from .processed_behavior_interface import ProcessedBehaviorInterface

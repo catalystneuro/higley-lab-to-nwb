@@ -8,7 +8,7 @@ from pynwb.epoch import TimeIntervals
 
 class ExternalStimuliInterface(BaseDataInterface):
     """
-    Data interface class for converting visual stimulus signals from csv file, given start times and stop times of
+    Data interface class for converting external stimuli signals given start times and stop times of
     each stimulus.
     """
 
@@ -29,9 +29,9 @@ class ExternalStimuliInterface(BaseDataInterface):
         stimulus_name : str, values: "Airpuff", "VisualStimulus"
             Name of the data stream.
         start_times : list
-            List of the visual stimulus start times in seconds.
+            External stimulus start times in seconds.
         stop_times : list
-            List of the visual stimulus stop times in seconds.
+            External stimulus stop times in seconds.
         csv_file_path : FilePathType, default: None
             Path to .csv file for visual stimulus characterization.
         verbose : bool, default: True
@@ -91,7 +91,7 @@ class ExternalStimuliInterface(BaseDataInterface):
         start_times = self.source_data["start_times"]
         stop_times = self.source_data["stop_times"]
 
-        n_frames = 100 if stub_test else len(start_times)
+        n_frames = 100 if stub_test and len(start_times) < 100 else len(start_times)
 
         for frame in range(n_frames - 1):
             intervals_table.add_row(
@@ -132,6 +132,12 @@ class ExternalStimuliInterface(BaseDataInterface):
     def add_to_nwbfile(self, nwbfile: NWBFile, metadata: dict, stub_test: bool = False) -> None:
 
         if self.source_data["stimulus_name"] == "VisualStimulus":
-            self.add_visual_stimulus(nwbfile=nwbfile, metadata=metadata, stub_test=stub_test)
+            if len(self.source_data["start_times"]) > 0:
+                self.add_visual_stimulus(nwbfile=nwbfile, metadata=metadata, stub_test=stub_test)
+            else:
+                print("No visual stimulus present")
         if self.source_data["stimulus_name"] == "Airpuff":
-            self.add_airpuff(nwbfile=nwbfile, metadata=metadata, stub_test=stub_test)
+            if len(self.source_data["start_times"]) > 0:
+                self.add_airpuff(nwbfile=nwbfile, metadata=metadata, stub_test=stub_test)
+            else:
+                print("No airpuff present")
