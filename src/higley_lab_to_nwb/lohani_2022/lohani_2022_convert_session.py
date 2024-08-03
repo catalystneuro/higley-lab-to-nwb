@@ -1,11 +1,15 @@
 """Primary script to run to convert an entire session for of data using the NWBConverter."""
 
 from pathlib import Path
-from typing import Union, Dict, Any
+from typing import Union
 from neuroconv.utils import load_dict_from_file, dict_deep_update
 from higley_lab_to_nwb.lohani_2022 import Lohani2022NWBConverter
 from higley_lab_to_nwb.interfaces.spike2signals_interface import get_streams
-from higley_lab_to_nwb.lohani_2022.utils import read_session_start_time, get_event_times_from_mat
+from higley_lab_to_nwb.lohani_2022.utils import (
+    read_session_start_time,
+    get_event_times_from_mat,
+    get_channel_trace_from_mat,
+)
 
 
 def session_to_nwb(
@@ -55,13 +59,36 @@ def session_to_nwb(
     )
     conversion_options.update(dict(Spike2Signals=dict(stub_test=stub_test)))
 
+    # Add Processed Behavioral Signals
+    mat_file_path = parcellation_folder_path / "smrx_signals.mat"
+    wheel_speed_data, sampling_frequency = get_channel_trace_from_mat(
+        file_path=mat_file_path, variable_name="wheelspeed"
+    )
+    wheel_on_times, wheel_off_times = get_event_times_from_mat(
+        file_path=str(mat_file_path), start_time_variable_name="wheelOn", end_time_variable_name="wheelOff"
+    )
+    source_data.update(
+        dict(
+            ProcessedWheelSignalInterface=dict(
+                wheel_speed_data=wheel_speed_data,
+                sampling_frequency=sampling_frequency,
+                wheel_on_times=wheel_on_times,
+                wheel_off_times=wheel_off_times,
+            )
+        )
+    )
+    conversion_options.update(dict(ProcessedWheelSignalInterface=dict(stub_test=stub_test)))
+
+    # Add Visual Stimulus
     if "vis_stim" in session_id:
         csv_file_path = list(folder_path.glob(f"{search_pattern}*.csv"))[0]
-        mat_file_path = parcellation_folder_path / "smrx_signals.mat"
-        start_times, stop_times = get_event_times_from_mat(file_path=str(mat_file_path))
+        start_times, stop_times = get_event_times_from_mat(
+            file_path=str(mat_file_path), start_time_variable_name="stimstart", end_time_variable_name="stimend"
+        )
         source_data.update(
             dict(
                 VisualStimulusInterface=dict(
+                    stimulus_name="VisualStimulus",
                     csv_file_path=csv_file_path,
                     start_times=start_times,
                     stop_times=stop_times,
@@ -69,6 +96,22 @@ def session_to_nwb(
             )
         )
         conversion_options.update(dict(VisualStimulusInterface=dict(stub_test=stub_test)))
+
+    # Add Airpuff Stimulus
+    if "airpuff" in session_id:
+        start_times, stop_times = get_event_times_from_mat(
+            file_path=str(mat_file_path), start_time_variable_name="airpuffstart", end_time_variable_name="airpuffend"
+        )
+        source_data.update(
+            dict(
+                AirpuffInterface=dict(
+                    stimulus_name="Airpuff",
+                    start_times=start_times,
+                    stop_times=stop_times,
+                )
+            )
+        )
+        conversion_options.update(dict(AirpuffInterface=dict(stub_test=stub_test)))
 
     # Add Imaging
     sampling_frequency = 10.0

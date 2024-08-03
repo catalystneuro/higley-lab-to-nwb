@@ -10,7 +10,7 @@ from higley_lab_to_nwb.interfaces import (
     MesoscopicImagingMultiTiffSingleFrameInterface,
     Spike2SignalsInterface,
     ExternalStimuliInterface,
-    BehavioralTimestampsInterface,
+    ProcessedBehaviorInterface,
     ProcessedImagingInterface,
     ParcellsSegmentationInterface,
 )
@@ -24,7 +24,8 @@ class Lohani2022NWBConverter(NWBConverter):
         Video=VideoInterface,
         FacemapInterface=FacemapInterface,
         VisualStimulusInterface=ExternalStimuliInterface,
-        ProcessedWheelSignalInterface=BehavioralTimestampsInterface,
+        AirpuffInterface=ExternalStimuliInterface,
+        ProcessedWheelSignalInterface=ProcessedBehaviorInterface,
         ParcellsSegmentationInterface=ParcellsSegmentationInterface,
     )
 
