@@ -231,13 +231,14 @@ def session_to_nwb(
 
 if __name__ == "__main__":
     # Parameters for conversion
-    root_path = Path("E:/CN_data")
+    root_path = Path("G:")
     data_dir_path = root_path / "Higley-CN-data-share"
     output_dir_path = root_path / "Higley-conversion_nwb"
-    stub_test = True
-    date = "11222019"
+    stub_test = False
+    date = "11232019"
     animal_number = "05"
-    session_id = f"{date}_grabAM{animal_number}_vis_stim"
+    behavior = "airpuffs"
+    session_id = f"{date}_grabAM{animal_number}_{behavior}"
     folder_path = data_dir_path / session_id
     parcellation_folder_path = (
         data_dir_path / "parcellation" / f"grab{animal_number}" / "imaging with 575 excitation" / session_id

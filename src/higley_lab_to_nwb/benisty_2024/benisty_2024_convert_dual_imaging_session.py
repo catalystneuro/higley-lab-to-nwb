@@ -61,12 +61,8 @@ def dual_imaging_session_to_nwb(
     # Add Processed Behavioral Signals
     wheel_timestamps_file_path = folder_path / f"{session_id}_wheelbinary.mat"
     wheel_speed_file_path = folder_path / f"{session_id}_wheelspeed.mat"
-    wheel_speed_data, sampling_frequency = get_wheelspeed_trace_from_mat(
-        file_path=wheel_speed_file_path, variable_name="wheelspeed"
-    )
-    wheel_on_times, wheel_off_times = get_wheel_times_from_mat(
-        file_path=wheel_timestamps_file_path, start_time_variable_name="wheelOn", end_time_variable_name="wheelOff"
-    )
+    wheel_speed_data, sampling_frequency = get_wheelspeed_trace_from_mat(file_path=wheel_speed_file_path)
+    wheel_on_times, wheel_off_times = get_wheel_times_from_mat(file_path=wheel_timestamps_file_path)
     source_data.update(
         dict(
             ProcessedWheelSignalInterface=dict(
@@ -242,7 +238,7 @@ def dual_imaging_session_to_nwb(
 if __name__ == "__main__":
 
     # Parameters for conversion
-    root_path = Path("E:/CN_data")
+    root_path = Path("G:")
     data_dir_path = root_path / "Higley-CN-data-share/Dual 2p Meso data"
     output_dir_path = root_path / "Higley-conversion_nwb/"
     stub_test = True

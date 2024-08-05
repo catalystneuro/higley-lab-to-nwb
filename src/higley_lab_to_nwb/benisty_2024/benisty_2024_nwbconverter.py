@@ -41,14 +41,14 @@ class Benisty2024NWBConverter(NWBConverter):
 
     def get_metadata(self) -> DeepDict:
         metadata = super().get_metadata()
-
-        suite2p_segmentation_metadata = self.data_interface_objects["Suite2pSegmentation"].get_metadata()
-        for segmentation_metadata_ind in range(
-            len(suite2p_segmentation_metadata["Ophys"]["ImageSegmentation"]["plane_segmentations"])
-        ):
-            metadata["Ophys"]["ImageSegmentation"]["plane_segmentations"][segmentation_metadata_ind][
-                "imaging_plane"
-            ] = self.ophys_metadata["Ophys"]["ImagingPlane"][0]["name"]
+        if "Suite2pSegmentation" in self.data_interface_objects.keys():
+            suite2p_segmentation_metadata = self.data_interface_objects["Suite2pSegmentation"].get_metadata()
+            for segmentation_metadata_ind in range(
+                len(suite2p_segmentation_metadata["Ophys"]["ImageSegmentation"]["plane_segmentations"])
+            ):
+                metadata["Ophys"]["ImageSegmentation"]["plane_segmentations"][segmentation_metadata_ind][
+                    "imaging_plane"
+                ] = self.ophys_metadata["Ophys"]["ImagingPlane"][0]["name"]
 
         if "CIDANSegmentation" in self.data_interface_objects.keys():
             cidan_segmentation_metadata = self.data_interface_objects["CIDANSegmentation"].get_metadata()
@@ -71,12 +71,17 @@ class Benisty2024NWBConverter(NWBConverter):
         ttlsignal_interface = self.data_interface_objects["Spike2Signals"]
 
         # Synch 2p imaging
-        two_photon_imaging_interface = self.data_interface_objects["TwoPhotonImaging"]
-        segmentation_interface = self.data_interface_objects["Suite2pSegmentation"]
-        channel_name = "TTLSignal2PExcitation"
-        ttl_times = ttlsignal_interface.get_event_times_from_ttl_channel_name(channel_name=channel_name)
-        two_photon_imaging_interface.set_aligned_starting_time(ttl_times[0])
-        segmentation_interface.set_aligned_starting_time(ttl_times[0])
+        if "TwoPhotonImaging" in self.data_interface_objects.keys():
+            two_photon_imaging_interface = self.data_interface_objects["TwoPhotonImaging"]
+            channel_name = "TTLSignal2PExcitation"
+            ttl_times = ttlsignal_interface.get_event_times_from_ttl_channel_name(channel_name=channel_name)
+            two_photon_imaging_interface.set_aligned_starting_time(ttl_times[0])
+
+        if "Suite2pSegmentation" in self.data_interface_objects.keys():
+            segmentation_interface = self.data_interface_objects["Suite2pSegmentation"]
+            channel_name = "TTLSignal2PExcitation"
+            ttl_times = ttlsignal_interface.get_event_times_from_ttl_channel_name(channel_name=channel_name)
+            segmentation_interface.set_aligned_starting_time(ttl_times[0])
 
         # Synch 1p imaging
         if "OnePhotonImaging" in self.data_interface_objects.keys():
@@ -101,9 +106,13 @@ class Benisty2024NWBConverter(NWBConverter):
         # Synch behaviour
         if "Video" in self.data_interface_objects.keys():
             video_interface = self.data_interface_objects["Video"]
-            # facemap_interface = self.data_interface_objects["FacemapInterface"]
             video_interface._timestamps = video_interface.get_timestamps()
             channel_name = "TTLSignalPupilCamera"
             ttl_times = ttlsignal_interface.get_event_times_from_ttl_channel_name(channel_name=channel_name)
             video_interface.set_aligned_starting_time(ttl_times[0])
-            # facemap_interface.set_aligned_starting_time(ttl_times[0])
+
+        if "FacemapInterface" in self.data_interface_objects.keys():
+            channel_name = "TTLSignalPupilCamera"
+            ttl_times = ttlsignal_interface.get_event_times_from_ttl_channel_name(channel_name=channel_name)
+            facemap_interface = self.data_interface_objects["FacemapInterface"]
+            facemap_interface.set_aligned_starting_time(ttl_times[0])
