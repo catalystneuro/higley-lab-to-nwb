@@ -127,7 +127,7 @@ def session_to_nwb(
     source_data.update(
         dict(
             ParcellsSegmentationInterface=dict(
-                mat_file_path=mat_file_path,
+                file_path=mat_file_path,
                 sampling_frequency=sampling_frequency,
                 image_size=[256, 256],
                 plane_segmentation_name=plane_segmentation_name,
@@ -188,7 +188,7 @@ def session_to_nwb(
 
 if __name__ == "__main__":
     # Parameters for conversion
-    root_path = Path("E:/CN_data")
+    root_path = Path("G:")
     data_dir_path = root_path / "Higley-CN-data-share"
     output_dir_path = root_path / "Higley-conversion_nwb"
     stub_test = True

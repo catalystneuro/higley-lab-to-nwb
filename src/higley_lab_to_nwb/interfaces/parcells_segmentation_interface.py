@@ -32,7 +32,7 @@ class ParcellsSegmentationInterface(BaseSegmentationExtractorInterface):
 
     def __init__(
         self,
-        mat_file_path: FilePathType,
+        file_path: FilePathType,
         sampling_frequency: float,
         image_size: list,
         plane_segmentation_name: Optional[str] = None,
@@ -42,7 +42,7 @@ class ParcellsSegmentationInterface(BaseSegmentationExtractorInterface):
 
         Parameters
         ----------
-        mat_file_path: str or Path
+        file_path: str or Path
             The path to the CIDAN df/f traces .mat file.
         sampling_frequency: float
             The sampling frequency of the fluorescence traces
@@ -53,7 +53,7 @@ class ParcellsSegmentationInterface(BaseSegmentationExtractorInterface):
         """
 
         super().__init__(
-            mat_file_path=mat_file_path,
+            file_path=file_path,
             sampling_frequency=sampling_frequency,
             image_size=image_size,
         )

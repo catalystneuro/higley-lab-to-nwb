@@ -26,7 +26,7 @@ class ParcellsSegmentationExtractor(SegmentationExtractor):
 
     def __init__(
         self,
-        mat_file_path: FilePathType,
+        file_path: FilePathType,
         sampling_frequency: float,
         image_size: list,
     ):
@@ -34,24 +34,24 @@ class ParcellsSegmentationExtractor(SegmentationExtractor):
 
         Parameters
         ----------
-        mat_file_path: str or Path
+        file_path: str or Path
             The path to the parcellation output .mat file.
         sampling_frequency: float
             The sampling frequency for the df/f traces.
         image_size: list
             The frame dimension, [n_rows, n_cols].
         """
-        self.mat_file_path = mat_file_path
+        self.file_path = file_path
         super().__init__()
 
         self._sampling_frequency = sampling_frequency
 
-        parcels_time_trace = loadmat(mat_file_path, variable_names=["parcels_time_trace"])
+        parcels_time_trace = loadmat(file_path, variable_names=["parcels_time_trace"])
         self._roi_response_raw = parcels_time_trace["parcels_time_trace"].T
 
         self._image_size = image_size
 
-        parcels_gal = loadmat(mat_file_path, variable_names=["parcels_gal"])
+        parcels_gal = loadmat(file_path, variable_names=["parcels_gal"])
         self._pixel_list_per_roi = np.array(parcels_gal["parcels_gal"][0]["ROI_list"][0]["pixel_list"][0])
 
         assert len(self._pixel_list_per_roi) == self._roi_response_raw.shape[1], (
