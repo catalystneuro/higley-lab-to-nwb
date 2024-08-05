@@ -64,7 +64,7 @@ class ProcessedBehaviorInterface(BaseDataInterface):
         )
         n_frames = 100 if stub_test and len(self.wheel_on_times) > 100 else len(self.wheel_on_times)
 
-        for frame in range(n_frames - 1):
+        for frame in range(n_frames):
             intervals_table.add_row(
                 start_time=self.wheel_on_times[frame],
                 stop_time=self.wheel_off_times[frame],
