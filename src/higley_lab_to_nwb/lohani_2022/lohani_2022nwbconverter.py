@@ -150,4 +150,4 @@ class Lohani2022NWBConverter(NWBConverter):
 
         if "FacemapInterface" in self.data_interface_objects.keys():
             facemap_interface = self.data_interface_objects["FacemapInterface"]
-            facemap_interface.set_aligned_starting_time(ttl_times[0])
+            facemap_interface.set_aligned_timestamps(video_interface._timestamps[0])  #

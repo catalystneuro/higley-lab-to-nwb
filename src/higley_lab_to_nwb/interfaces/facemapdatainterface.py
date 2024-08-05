@@ -42,7 +42,6 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
         video_file_path: FilePathType = None,
         first_n_components: int = 500,
         svd_mask_names: list = ["Face"],
-        original_timestamps: list = None,
         verbose: bool = True,
     ):
         """
@@ -63,7 +62,7 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
         """
         super().__init__(mat_file_path=mat_file_path, video_file_path=video_file_path, verbose=verbose)
         self.first_n_components = first_n_components
-        self.original_timestamps = original_timestamps
+        self.original_timestamps = None
         self.timestamps = None
         self.svd_mask_names = svd_mask_names
 
@@ -178,6 +177,10 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
     def add_pupil_data(
         self, nwbfile: NWBFile, metadata: DeepDict, pupil_trace_type: Literal["area_raw", "area"] = "area"
     ):
+
+        if self.timestamps is None:
+            self.timestamps = self.get_timestamps()
+
         if self.older_matlab_version:
             data = self._mat_data["proc"]["pupil"][0, 0][pupil_trace_type][0, 0]
         else:
@@ -189,18 +192,12 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
         pupil_area_metadata_ind = 0 if pupil_trace_type == "area" else 1
         pupil_area_metadata = metadata["Behavior"]["PupilTracking"][pupil_area_metadata_ind]
 
-        if "EyeTracking" not in behavior_module.data_interfaces:
-            self.add_eye_tracking(nwbfile=nwbfile, metadata=metadata)
-
-        eye_tracking_name = metadata["Behavior"]["EyeTracking"][0]["name"]
-        eye_com = behavior_module.data_interfaces["EyeTracking"].spatial_series[eye_tracking_name]
-
         pupil_trace = TimeSeries(
             name=pupil_area_metadata["name"],
             description=pupil_area_metadata["description"],
             data=data,
             unit=pupil_area_metadata["unit"],
-            timestamps=eye_com,
+            timestamps=self.timestamps,
         )
 
         if "PupilTracking" not in behavior_module.data_interfaces:
@@ -420,11 +417,13 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
     def _get_processed_frame_dimension(self) -> np.ndarray:
         if self.older_matlab_version:
             frame = self._mat_data["proc"]["wpix"][0, 0][0, 0]
+            frame_dimension = [frame.shape[1], frame.shape[0]]
         else:
             with h5py.File(self.source_data["mat_file_path"], "r") as file:
                 processed_frame_ref = file["proc"]["wpix"][0][0]
                 frame = file[processed_frame_ref]
-        return [frame.shape[1], frame.shape[0]]
+                frame_dimension = [frame.shape[1], frame.shape[0]]
+        return frame_dimension
 
     def add_to_nwbfile(
         self,
@@ -498,7 +497,8 @@ class FacemapPythonInterface(BaseTemporalAlignmentInterface):
 
         try:
             face_motion = scipy.io.loadmat(mat_file_path, variable_names=["motion_0"])
-            # self.original_timestamps = list(range(face_motion["motion_0"].shape[1])) # TODO remove this line of code once we cann test it with actual timestamps from the original video
+            # TODO remove this line of code once we have the actual timestamps from the original video
+            self.original_timestamps = list(range(face_motion["motion_0"].shape[1]))
         except NotImplementedError:
             print("The .mat file is not in HDF5 format")
         except Exception as e:
@@ -603,6 +603,9 @@ class FacemapPythonInterface(BaseTemporalAlignmentInterface):
     def add_pupil_data(
         self, nwbfile: NWBFile, metadata: DeepDict, pupil_trace_type: Literal["area_smooth", "area"] = "area"
     ):
+        if self.timestamps is None:
+            self.timestamps = self.get_timestamps()
+
         pupil_data = scipy.io.loadmat(self.source_data["mat_file_path"], variable_names=["pupil"])
         data = pupil_data["pupil"][0, 0][pupil_trace_type][0, 0].T
 
@@ -611,18 +614,12 @@ class FacemapPythonInterface(BaseTemporalAlignmentInterface):
         pupil_area_metadata_ind = 0 if pupil_trace_type == "area" else 1
         pupil_area_metadata = metadata["Behavior"]["PupilTracking"][pupil_area_metadata_ind]
 
-        if "EyeTracking" not in behavior_module.data_interfaces:
-            self.add_eye_tracking(nwbfile=nwbfile, metadata=metadata)
-
-        eye_tracking_name = metadata["Behavior"]["EyeTracking"][0]["name"]
-        eye_com = behavior_module.data_interfaces["EyeTracking"].spatial_series[eye_tracking_name]
-
         pupil_trace = TimeSeries(
             name=pupil_area_metadata["name"],
             description=pupil_area_metadata["description"],
             data=data,
             unit=pupil_area_metadata["unit"],
-            timestamps=eye_com,
+            timestamps=self.timestamps,
         )
 
         if "PupilTracking" not in behavior_module.data_interfaces:
