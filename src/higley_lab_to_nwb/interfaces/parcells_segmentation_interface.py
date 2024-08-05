@@ -4,7 +4,7 @@ from typing import Optional
 from neuroconv.datainterfaces.ophys.basesegmentationextractorinterface import BaseSegmentationExtractorInterface
 from neuroconv.utils import DeepDict, FilePathType
 
-from ..extractors import CidanSegmentationExtractor
+from ..extractors import ParcellsSegmentationExtractor
 
 
 def format_string_for_parameters_dict(dict_obj, indent=2):
@@ -22,33 +22,27 @@ def format_string_for_parameters_dict(dict_obj, indent=2):
     return format_dict(dict_obj, 0)
 
 
-class CidanSegmentationInterface(BaseSegmentationExtractorInterface):
-    """Interface for CIDAN segmentation data."""
+class ParcellsSegmentationInterface(BaseSegmentationExtractorInterface):
+    """Interface for parcellation algorithm for segmenting imaging data."""
 
-    display_name = "CIDAN Segmentation"
-    associated_suffixes = (".json", ".mat")
-    info = "Interface for CIDAN segmentation."
-    Extractor = CidanSegmentationExtractor
+    display_name = "Parcells Segmentation"
+    associated_suffixes = ".mat"
+    info = "Interface for parcellation algorithm for segmenting imaging data."
+    Extractor = ParcellsSegmentationExtractor
 
     def __init__(
         self,
-        parameters_file_path: FilePathType,
-        roi_list_file_path: FilePathType,
-        mat_file_path: FilePathType,
+        file_path: FilePathType,
         sampling_frequency: float,
         image_size: list,
         plane_segmentation_name: Optional[str] = None,
         verbose: bool = True,
     ):
-        """Create SegmentationExtractor object out of CIDAN data type.
+        """Create SegmentationExtractor object out of Parcells data type.
 
         Parameters
         ----------
-        parameters_file_path: str or Path
-            The path to the CIDAN parameter .json file.
-        roi_list_file_path: str or Path
-            The path to the CIDAN roi_list .json file.
-        mat_file_path: str or Path
+        file_path: str or Path
             The path to the CIDAN df/f traces .mat file.
         sampling_frequency: float
             The sampling frequency of the fluorescence traces
@@ -59,9 +53,7 @@ class CidanSegmentationInterface(BaseSegmentationExtractorInterface):
         """
 
         super().__init__(
-            parameters_file_path=parameters_file_path,
-            roi_list_file_path=roi_list_file_path,
-            mat_file_path=mat_file_path,
+            file_path=file_path,
             sampling_frequency=sampling_frequency,
             image_size=image_size,
         )
@@ -93,13 +85,11 @@ class CidanSegmentationInterface(BaseSegmentationExtractorInterface):
         trace_names = [
             property_name for property_name in fluorescence_metadata_per_plane.keys() if property_name != "name"
         ]
-        comments = format_string_for_parameters_dict(dict_obj=self.segmentation_extractor.parameters_dict)
         for trace_name in trace_names:
             default_traces_name = fluorescence_metadata_per_plane[trace_name]["name"].replace(default_plane_suffix, "")
             fluorescence_metadata_per_plane[trace_name].update(
                 name=default_traces_name + new_plane_name_suffix,
-                description="Fluorescence traces extracted with CIDAN software",
-                comments=comments,
+                description="Fluorescence traces extracted from parcellation algorithm",
             )
 
         return metadata
