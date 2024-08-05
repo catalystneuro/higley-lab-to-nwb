@@ -3,7 +3,8 @@
 from typing import Dict
 from neuroconv import NWBConverter
 from neuroconv.utils import DeepDict
-
+from pynwb import NWBFile
+from neuroconv.tools.nwb_helpers import make_or_load_nwbfile
 from neuroconv.datainterfaces import ScanImageMultiFileImagingInterface, Suite2pSegmentationInterface
 from higley_lab_to_nwb.interfaces import (
     ExternalStimuliInterface,
@@ -12,8 +13,10 @@ from higley_lab_to_nwb.interfaces import (
     MesoscopicImagingMultiTiffStackInterface,
     ProcessedImagingInterface,
     ProcessedBehaviorInterface,
+    FacemapInterface,
+    FacemapPythonInterface,
 )
-from neuroconv.datainterfaces import VideoInterface, FacemapInterface
+from neuroconv.datainterfaces import VideoInterface
 
 
 class Benisty2024NWBConverter(NWBConverter):
@@ -26,6 +29,7 @@ class Benisty2024NWBConverter(NWBConverter):
         CIDANSegmentation=CidanSegmentationInterface,
         Video=VideoInterface,
         FacemapInterface=FacemapInterface,
+        FacemapPythonInterface=FacemapPythonInterface,
         ProcessedWheelSignalInterface=ProcessedBehaviorInterface,
         VisualStimulusInterface=ExternalStimuliInterface,
         OnePhotonImaging=MesoscopicImagingMultiTiffStackInterface,
@@ -66,6 +70,34 @@ class Benisty2024NWBConverter(NWBConverter):
         metadata["Ophys"]["ImagingPlane"] = self.ophys_metadata["Ophys"]["ImagingPlane"]
 
         return metadata
+
+    def run_conversion(  # until [Issue #908](https://github.com/catalystneuro/neuroconv/issues/908) is fixed
+        self,
+        nwbfile_path: str = None,
+        nwbfile: NWBFile = None,
+        metadata: Dict = None,
+        overwrite: bool = False,
+        conversion_options: Dict = None,
+    ) -> None:
+        if metadata is None:
+            metadata = self.get_metadata()
+
+        self.validate_metadata(metadata=metadata)
+
+        self.validate_conversion_options(conversion_options=conversion_options)
+
+        self.temporally_align_data_interfaces()
+
+        with make_or_load_nwbfile(
+            nwbfile_path=nwbfile_path,
+            nwbfile=nwbfile,
+            metadata=metadata,
+            overwrite=overwrite,
+            verbose=self.verbose,
+        ) as nwbfile_out:
+            self.add_to_nwbfile(nwbfile_out, metadata, conversion_options)
+
+        return
 
     def temporally_align_data_interfaces(self):
         ttlsignal_interface = self.data_interface_objects["Spike2Signals"]
@@ -112,7 +144,11 @@ class Benisty2024NWBConverter(NWBConverter):
             video_interface.set_aligned_starting_time(ttl_times[0])
 
         if "FacemapInterface" in self.data_interface_objects.keys():
-            channel_name = "TTLSignalPupilCamera"
-            ttl_times = ttlsignal_interface.get_event_times_from_ttl_channel_name(channel_name=channel_name)
             facemap_interface = self.data_interface_objects["FacemapInterface"]
-            facemap_interface.set_aligned_starting_time(ttl_times[0])
+            # TODO uncomment this line of code once behavioral video is shared
+            # facemap_interface.set_aligned_timestamps(video_interface._timestamps[0])
+
+        if "FacemapPythonInterface" in self.data_interface_objects.keys():
+            facemap_interface = self.data_interface_objects["FacemapPythonInterface"]
+            # TODO uncomment this line of code once behavioral video is shared
+            # facemap_interface.set_aligned_timestamps(video_interface._timestamps[0])

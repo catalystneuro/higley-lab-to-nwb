@@ -19,6 +19,7 @@ def dual_imaging_session_to_nwb(
     session_id: str,
     stub_test: bool = False,
 ):
+    folder_path = data_dir_path / f"{subject_id}_1p"
 
     output_dir_path = Path(output_dir_path)
     if stub_test:
@@ -31,7 +32,6 @@ def dual_imaging_session_to_nwb(
     conversion_options = dict()
 
     # Add Analog signals from Spike2
-    folder_path = data_dir_path / f"{subject_id}_1p"
     file_path = list(folder_path.glob(f"{session_id}*.smr"))[0]
     stream_ids, stream_names = get_streams(file_path=file_path)
 
@@ -212,6 +212,43 @@ def dual_imaging_session_to_nwb(
         )
     )
 
+    # # Add Behavioral Video Recording
+    # avi_files = list(folder_path.glob(f"{session_id}*.avi"))
+    # video_file_path = avi_files[0]
+    # source_data.update(dict(Video=dict(file_paths=[video_file_path], verbose=False)))
+    # conversion_options.update(dict(Video=dict(stub_test=stub_test)))
+
+    # TODO remove this line of code once actual behavioral video is shared
+    video_file_path = "G:/Higley-CN-data-share/04072021_am2psi_05_spont/04072021_am2psi_05_spont_facevideo.avi"
+
+    # Add Facemap outpt
+    mat_files = list(folder_path.glob(f"{session_id}*_proc.mat"))
+    for mat_file in mat_files:
+        if "inverted" in str(mat_file):
+            source_data.update(
+                dict(
+                    FacemapInterface=dict(
+                        mat_file_path=str(mat_file),
+                        video_file_path=str(video_file_path),
+                        svd_mask_names=["Face", "Whiskers"],
+                        first_n_components=10 if stub_test else 500,
+                        verbose=False,
+                    )
+                )
+            )
+        else:
+            source_data.update(
+                dict(
+                    FacemapPythonInterface=dict(
+                        mat_file_path=str(mat_file),
+                        video_file_path=str(video_file_path),
+                        svd_mask_names=["Face", "Whiskers", "Pupil"],  # TODO check with the lab point person
+                        first_n_components=10 if stub_test else None,
+                        verbose=False,
+                    )
+                )
+            )
+
     # Add ophys metadata
     ophys_metadata_path = Path(__file__).parent / "metadata" / "benisty_2024_dual_ophys_metadata.yaml"
     ophys_metadata = load_dict_from_file(ophys_metadata_path)
@@ -243,7 +280,7 @@ if __name__ == "__main__":
     output_dir_path = root_path / "Higley-conversion_nwb/"
     stub_test = True
     subject_id = "dbvdual035"
-    session_id = "20201231_00002"
+    session_id = "20201231_00001"
     dual_imaging_session_to_nwb(
         data_dir_path=data_dir_path,
         output_dir_path=output_dir_path,

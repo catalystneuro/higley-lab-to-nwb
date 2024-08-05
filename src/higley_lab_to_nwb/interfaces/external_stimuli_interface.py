@@ -91,9 +91,9 @@ class ExternalStimuliInterface(BaseDataInterface):
         start_times = self.source_data["start_times"]
         stop_times = self.source_data["stop_times"]
 
-        n_frames = 100 if stub_test and len(start_times) < 100 else len(start_times)
+        n_frames = 100 if stub_test and len(start_times) > 100 else len(start_times)
 
-        for frame in range(n_frames - 1):
+        for frame in range(n_frames):
             intervals_table.add_row(
                 start_time=start_times[frame],
                 stop_time=stop_times[frame],
@@ -118,9 +118,9 @@ class ExternalStimuliInterface(BaseDataInterface):
         start_times = self.source_data["start_times"]
         stop_times = self.source_data["stop_times"]
 
-        n_frames = 100 if stub_test else len(start_times)
+        n_frames = 100 if stub_test and len(start_times) > 100 else len(start_times)
 
-        for frame in range(n_frames - 1):
+        for frame in range(n_frames):
             intervals_table.add_row(
                 start_time=start_times[frame],
                 stop_time=stop_times[frame],

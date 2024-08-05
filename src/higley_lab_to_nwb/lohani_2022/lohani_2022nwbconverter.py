@@ -3,7 +3,7 @@
 from typing import Dict, List
 from pynwb import NWBFile
 from neuroconv import NWBConverter
-from neuroconv.datainterfaces import VideoInterface, FacemapInterface
+from neuroconv.datainterfaces import VideoInterface
 from neuroconv.utils import DeepDict
 from neuroconv.tools.nwb_helpers import make_or_load_nwbfile
 from higley_lab_to_nwb.interfaces import (
@@ -13,6 +13,7 @@ from higley_lab_to_nwb.interfaces import (
     ProcessedBehaviorInterface,
     ProcessedImagingInterface,
     ParcellsSegmentationInterface,
+    FacemapInterface,
 )
 
 
@@ -149,4 +150,4 @@ class Lohani2022NWBConverter(NWBConverter):
 
         if "FacemapInterface" in self.data_interface_objects.keys():
             facemap_interface = self.data_interface_objects["FacemapInterface"]
-            facemap_interface.set_aligned_starting_time(ttl_times[0])
+            facemap_interface.set_aligned_timestamps(video_interface._timestamps[0])  #

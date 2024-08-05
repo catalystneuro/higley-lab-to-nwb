@@ -131,13 +131,19 @@ def session_to_nwb(
     conversion_options.update(dict(Video=dict(stub_test=stub_test)))
 
     # Add Facemap outpt
-    # mat_files = list(folder_path.glob(f"{search_pattern}*_proc.mat"))
-    # mat_file_path = mat_files[0]
-    # source_data.update(
-    #     dict(
-    #         FacemapInterface=dict(mat_file_path=str(mat_file_path), video_file_path=str(video_file_path), verbose=False)
-    #     )
-    # )
+    mat_files = list(folder_path.glob(f"{search_pattern}*_proc.mat"))
+    mat_file_path = mat_files[0]
+    source_data.update(
+        dict(
+            FacemapInterface=dict(
+                mat_file_path=str(mat_file_path),
+                video_file_path=str(video_file_path),
+                svd_mask_names=["Face"],
+                first_n_components=10 if stub_test else 500,
+                verbose=False,
+            )
+        )
+    )
 
     # Add ophys metadata
     ophys_metadata_path = Path(__file__).parent / "metadata" / "benisty_2024_ophys_2p_only_metadata.yaml"
@@ -165,7 +171,7 @@ def session_to_nwb(
 if __name__ == "__main__":
 
     # Parameters for conversion
-    root_path = Path("/media/amtra/Samsung_T5/CN_data")
+    root_path = Path("G:")
     data_dir_path = root_path / "Higley-CN-data-share"
     output_dir_path = root_path / "Higley-conversion_nwb/"
     stub_test = True

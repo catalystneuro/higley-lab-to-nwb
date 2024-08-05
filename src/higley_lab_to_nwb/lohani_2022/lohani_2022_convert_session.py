@@ -197,7 +197,13 @@ def session_to_nwb(
     mat_file_path = mat_files[0]
     source_data.update(
         dict(
-            FacemapInterface=dict(mat_file_path=str(mat_file_path), video_file_path=str(video_file_path), verbose=False)
+            FacemapInterface=dict(
+                mat_file_path=str(mat_file_path),
+                video_file_path=str(video_file_path),
+                svd_mask_names=["Face", "Whiskers"],
+                first_n_components=10 if stub_test else 500,
+                verbose=False,
+            )
         )
     )
 
@@ -234,7 +240,7 @@ if __name__ == "__main__":
     root_path = Path("G:")
     data_dir_path = root_path / "Higley-CN-data-share"
     output_dir_path = root_path / "Higley-conversion_nwb"
-    stub_test = False
+    stub_test = True
     date = "11232019"
     animal_number = "05"
     behavior = "airpuffs"

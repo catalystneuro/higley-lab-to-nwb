@@ -1,6 +1,6 @@
 NWBFile:
   related_publications:
-    - https://www.nature.com/articles/s41593-023-01498-y
+    - https://doi.org/10.1038/s41593-023-01498-y
     - https://github.com/cardin-higley-lab/Benisty_Higley_2023
   keywords: [Dual-color mesoscopic ACh, calcium imaging, visual stimulus, mouse]
   experiment_description: Here, we used wide-field mesoscopic calcium imaging to monitor cortical dynamics in awake mice and developed an approach to quantify rapidly time-varying functional connectivity. We show that spontaneous behaviors are represented by fast changes in both the magnitude and correlational structure of cortical network activity. Combining mesoscopic imaging with simultaneous cellular-resolution two-photon microscopy demonstrated that correlations among neighboring neurons and between local and large-scale networks also encode behavior. Finally, the dynamic functional connectivity of mesoscale signals revealed subnetworks not predicted by traditional anatomical atlas-based parcellation of the cortex. These results provide new insights into how behavioral information is represented across the neocortex and demonstrate an analytical framework for investigating time-varying functional connectivity in neural networks.
