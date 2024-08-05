@@ -1,11 +1,15 @@
 """Primary script to run to convert an entire session for of data using the NWBConverter."""
 
 from pathlib import Path
-from typing import Union, Dict, Any
+from typing import Union
 from neuroconv.utils import load_dict_from_file, dict_deep_update
 from higley_lab_to_nwb.lohani_2022 import Lohani2022NWBConverter
 from higley_lab_to_nwb.interfaces.spike2signals_interface import get_streams
-from higley_lab_to_nwb.lohani_2022.utils import read_session_start_time, get_event_times_from_mat
+from higley_lab_to_nwb.lohani_2022.utils import (
+    read_session_start_time,
+    get_event_times_from_mat,
+    get_channel_trace_from_mat,
+)
 
 
 def session_to_nwb(
@@ -55,13 +59,36 @@ def session_to_nwb(
     )
     conversion_options.update(dict(Spike2Signals=dict(stub_test=stub_test)))
 
+    # Add Processed Behavioral Signals
+    mat_file_path = parcellation_folder_path / "smrx_signals.mat"
+    wheel_speed_data, sampling_frequency = get_channel_trace_from_mat(
+        file_path=mat_file_path, variable_name="wheelspeed"
+    )
+    wheel_on_times, wheel_off_times = get_event_times_from_mat(
+        file_path=str(mat_file_path), start_time_variable_name="wheelOn", end_time_variable_name="wheelOff"
+    )
+    source_data.update(
+        dict(
+            ProcessedWheelSignalInterface=dict(
+                wheel_speed_data=wheel_speed_data,
+                sampling_frequency=sampling_frequency,
+                wheel_on_times=wheel_on_times,
+                wheel_off_times=wheel_off_times,
+            )
+        )
+    )
+    conversion_options.update(dict(ProcessedWheelSignalInterface=dict(stub_test=stub_test)))
+
+    # Add Visual Stimulus
     if "vis_stim" in session_id:
         csv_file_path = list(folder_path.glob(f"{search_pattern}*.csv"))[0]
-        mat_file_path = parcellation_folder_path / "smrx_signals.mat"
-        start_times, stop_times = get_event_times_from_mat(file_path=str(mat_file_path))
+        start_times, stop_times = get_event_times_from_mat(
+            file_path=str(mat_file_path), start_time_variable_name="stimstart", end_time_variable_name="stimend"
+        )
         source_data.update(
             dict(
                 VisualStimulusInterface=dict(
+                    stimulus_name="VisualStimulus",
                     csv_file_path=csv_file_path,
                     start_times=start_times,
                     stop_times=stop_times,
@@ -69,6 +96,22 @@ def session_to_nwb(
             )
         )
         conversion_options.update(dict(VisualStimulusInterface=dict(stub_test=stub_test)))
+
+    # Add Airpuff Stimulus
+    if "airpuff" in session_id:
+        start_times, stop_times = get_event_times_from_mat(
+            file_path=str(mat_file_path), start_time_variable_name="airpuffstart", end_time_variable_name="airpuffend"
+        )
+        source_data.update(
+            dict(
+                AirpuffInterface=dict(
+                    stimulus_name="Airpuff",
+                    start_times=start_times,
+                    stop_times=stop_times,
+                )
+            )
+        )
+        conversion_options.update(dict(AirpuffInterface=dict(stub_test=stub_test)))
 
     # Add Imaging
     sampling_frequency = 10.0
@@ -121,6 +164,28 @@ def session_to_nwb(
         }
         photon_series_index += 1
 
+    # Add parcellation output data
+    mat_file_path = list(parcellation_folder_path.glob(f"green_{session_id}*.mat"))[0]
+    plane_segmentation_name = "ParcellatedPlaneSegmentation"
+    source_data.update(
+        dict(
+            ParcellsSegmentationInterface=dict(
+                file_path=mat_file_path,
+                sampling_frequency=sampling_frequency,
+                image_size=[256, 256],
+                plane_segmentation_name=plane_segmentation_name,
+            )
+        )
+    )
+    conversion_options.update(
+        dict(
+            ParcellsSegmentationInterface=dict(
+                include_roi_acceptance=False,
+                plane_segmentation_name=plane_segmentation_name,
+                stub_test=stub_test,
+            )
+        )
+    )
     # Add Behavioral Video Recording
     avi_files = list(folder_path.glob(f"{search_pattern}*.avi"))
     video_file_path = avi_files[0]
@@ -172,13 +237,14 @@ def session_to_nwb(
 
 if __name__ == "__main__":
     # Parameters for conversion
-    root_path = Path("E:/CN_data")
+    root_path = Path("G:")
     data_dir_path = root_path / "Higley-CN-data-share"
     output_dir_path = root_path / "Higley-conversion_nwb"
-    stub_test = True
-    date = "11222019"
+    stub_test = False
+    date = "11232019"
     animal_number = "05"
-    session_id = f"{date}_grabAM{animal_number}_vis_stim"
+    behavior = "airpuffs"
+    session_id = f"{date}_grabAM{animal_number}_{behavior}"
     folder_path = data_dir_path / session_id
     parcellation_folder_path = (
         data_dir_path / "parcellation" / f"grab{animal_number}" / "imaging with 575 excitation" / session_id

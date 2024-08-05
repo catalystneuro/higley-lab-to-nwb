@@ -1,39 +1,51 @@
 import pandas as pd
-import numpy as np
+from typing import Literal
 from neuroconv import BaseDataInterface
 from neuroconv.utils import FilePathType
 from pynwb import NWBFile
 from pynwb.epoch import TimeIntervals
 
 
-class VisualStimulusInterface(BaseDataInterface):
+class ExternalStimuliInterface(BaseDataInterface):
     """
-    Data interface class for converting visual stimulus signals from csv file, given start times and stop times of
+    Data interface class for converting external stimuli signals given start times and stop times of
     each stimulus.
     """
 
     associated_suffixes = ".csv"
-    display_name = "Visual Stimulus"
+    display_name = "External Stimulus"
 
     def __init__(
         self,
-        csv_file_path: FilePathType,
+        stimulus_name: Literal["Airpuff", "VisualStimulus"],
         start_times: list,
         stop_times: list,
+        csv_file_path: FilePathType = None,
         verbose: bool = True,
     ):
         """
          Parameters
         ----------
-        csv_file_path : FilePathType
-            Path to .csv file for visual stimulus characterization.
+        stimulus_name : str, values: "Airpuff", "VisualStimulus"
+            Name of the data stream.
         start_times : list
-            List of the visual stimulus start times in seconds.
+            External stimulus start times in seconds.
         stop_times : list
-            List of the visual stimulus stop times in seconds.
+            External stimulus stop times in seconds.
+        csv_file_path : FilePathType, default: None
+            Path to .csv file for visual stimulus characterization.
         verbose : bool, default: True
         """
+        accepted_stimulus_name = ["Airpuff", "VisualStimulus"]
+        assert (
+            stimulus_name in accepted_stimulus_name
+        ), f"{stimulus_name} must be one of the following values: {accepted_stimulus_name}"
+
+        if stimulus_name == "VisualStimulus":
+            assert csv_file_path is not None, f"'csv_file_path' must be provided for visual stimulus characterization"
+
         super().__init__(
+            stimulus_name=stimulus_name,
             csv_file_path=csv_file_path,
             start_times=start_times,
             stop_times=stop_times,
@@ -44,7 +56,7 @@ class VisualStimulusInterface(BaseDataInterface):
         feature = pd.read_csv(self.source_data["csv_file_path"], usecols=column_index)
         return feature.to_numpy()
 
-    def add_to_nwbfile(self, nwbfile: NWBFile, metadata: dict, stub_test: bool = False) -> None:
+    def add_visual_stimulus(self, nwbfile: NWBFile, metadata: dict, stub_test: bool = False) -> None:
 
         intervals_table = TimeIntervals(
             name="VisualStimulus",
@@ -79,7 +91,7 @@ class VisualStimulusInterface(BaseDataInterface):
         start_times = self.source_data["start_times"]
         stop_times = self.source_data["stop_times"]
 
-        n_frames = 100 if stub_test else len(start_times)
+        n_frames = 100 if stub_test and len(start_times) < 100 else len(start_times)
 
         for frame in range(n_frames - 1):
             intervals_table.add_row(
@@ -95,3 +107,37 @@ class VisualStimulusInterface(BaseDataInterface):
             )
 
         nwbfile.add_time_intervals(intervals_table)
+
+    def add_airpuff(self, nwbfile: NWBFile, metadata: dict, stub_test: bool = False):
+
+        intervals_table = TimeIntervals(
+            name="Airpuff",
+            description="Intervals for each airpuff presentation",
+        )
+
+        start_times = self.source_data["start_times"]
+        stop_times = self.source_data["stop_times"]
+
+        n_frames = 100 if stub_test else len(start_times)
+
+        for frame in range(n_frames - 1):
+            intervals_table.add_row(
+                start_time=start_times[frame],
+                stop_time=stop_times[frame],
+                check_ragged=False,
+            )
+
+        nwbfile.add_time_intervals(intervals_table)
+
+    def add_to_nwbfile(self, nwbfile: NWBFile, metadata: dict, stub_test: bool = False) -> None:
+
+        if self.source_data["stimulus_name"] == "VisualStimulus":
+            if len(self.source_data["start_times"]) > 0:
+                self.add_visual_stimulus(nwbfile=nwbfile, metadata=metadata, stub_test=stub_test)
+            else:
+                print("No visual stimulus present")
+        if self.source_data["stimulus_name"] == "Airpuff":
+            if len(self.source_data["start_times"]) > 0:
+                self.add_airpuff(nwbfile=nwbfile, metadata=metadata, stub_test=stub_test)
+            else:
+                print("No airpuff present")

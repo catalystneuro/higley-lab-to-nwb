@@ -6,9 +6,11 @@ from zoneinfo import ZoneInfo
 from neuroconv.tools.signal_processing import get_rising_frames_from_ttl, get_falling_frames_from_ttl
 from spikeinterface.extractors import CedRecordingExtractor
 from neuroconv.tools import get_package
+from typing import Union
+from pathlib import Path
 
 
-def read_session_start_time(folder_path):
+def read_session_start_time(folder_path: Union[str, Path]):
     tiff_file_paths = natsorted(folder_path.glob("*.tif"))
     with tifffile.TiffFile(tiff_file_paths[0]) as tif:
         metadata = tif.pages[0].tags["ImageDescription"].value
@@ -22,7 +24,9 @@ def read_session_start_time(folder_path):
     return date_time_obj
 
 
-def get_tiff_file_paths_sorted_by_channel(folder_path: str, start_frame_index: int = 0, stub_test: bool = False):
+def get_tiff_file_paths_sorted_by_channel(
+    folder_path: Union[str, Path], start_frame_index: int = 0, stub_test: bool = False
+):
     tiff_file_paths = natsorted(folder_path.glob("*.tif"))
     if stub_test:
         tiff_file_paths = tiff_file_paths[:100]  # for testing
@@ -32,8 +36,8 @@ def get_tiff_file_paths_sorted_by_channel(folder_path: str, start_frame_index: i
 
 
 def create_tiff_stack(
-    folder_path: str,
-    output_file_path: str,
+    folder_path: Union[str, Path],
+    output_file_path: Union[str, Path],
     start_frame_index: int = 0,
     frame_side: str = "left",
     stub_test: bool = False,
@@ -68,7 +72,7 @@ def _test_sonpy_installation() -> None:
     )
 
 
-def get_event_times_from_spike2(file_path: str, stream_id: str, clean_event_times: bool = False):
+def get_event_times_from_spike2(file_path: Union[str, Path], stream_id: str, clean_event_times: bool = False):
     _test_sonpy_installation()
     extractor = CedRecordingExtractor(file_path=file_path, stream_id=stream_id)
     times = extractor.get_times()
@@ -82,25 +86,45 @@ def get_event_times_from_spike2(file_path: str, stream_id: str, clean_event_time
     return start_times, stop_times
 
 
-def get_event_times_from_mat(
-    file_path: str,
-):
+def get_event_times_from_mat(file_path: Union[str, Path], start_time_variable_name: str, end_time_variable_name: str):
     from pymatreader import read_mat
 
     mat = read_mat(str(file_path))
 
     if "timing" in mat:
         timing_group = mat["timing"]
-        # Check if the stimstart and stimend dataset exists
-        if "stimstart" in timing_group and "stimend" in timing_group:
-            start_times_data = timing_group["stimstart"]
+        # Check if dataset exists
+        if start_time_variable_name in timing_group and end_time_variable_name in timing_group:
+            start_times_data = timing_group[start_time_variable_name]
             start_times = start_times_data[:]
-            stop_times_data = timing_group["stimend"]
+            stop_times_data = timing_group[end_time_variable_name]
             stop_times = stop_times_data[:]
             return start_times, stop_times
-        elif "stimstart" not in timing_group:
-            raise f"stimstart dataset does not exists in {file_path}"
-        elif "stimend" not in timing_group:
-            raise f"stimend dataset does not exists in {file_path}"
+        elif start_time_variable_name not in timing_group:
+            raise f"{start_time_variable_name} dataset does not exists in {file_path}"
+        elif end_time_variable_name not in timing_group:
+            raise f"{end_time_variable_name} dataset does not exists in {file_path}"
     else:
         raise f"timing group does not exists in {file_path}"
+
+
+def get_channel_trace_from_mat(file_path: Union[str, Path], variable_name: str):
+    from pymatreader import read_mat
+
+    mat = read_mat(str(file_path))
+
+    if "params" in mat:
+        sampling_frequency = mat["params"]["fsspike2"]
+    else:
+        sampling_frequency = None
+    if "channels_data" in mat:
+        channel_group = mat["channels_data"]
+        # Check if the variable_name exists
+        if variable_name in channel_group:
+            channel_data = channel_group[variable_name]
+            channel_data = channel_data[:]
+            return channel_data, float(sampling_frequency)
+        elif variable_name not in channel_group:
+            raise f"{variable_name} dataset does not exists in {file_path}"
+    else:
+        raise f"'channels_data' does not exists in {file_path}"

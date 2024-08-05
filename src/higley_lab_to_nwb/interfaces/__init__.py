@@ -1,9 +1,11 @@
 from .spike2signals_interface import Spike2SignalsInterface
-from .visual_stimulus_interface import VisualStimulusInterface
+from .external_stimuli_interface import ExternalStimuliInterface
 from .cidansegmentation_interface import CidanSegmentationInterface
 from .mesoscopic_imaging_interface import (
     MesoscopicImagingMultiTiffStackInterface,
     MesoscopicImagingMultiTiffSingleFrameInterface,
 )
 from .processing_imaging_interface import ProcessedImagingInterface
+from .parcells_segmentation_interface import ParcellsSegmentationInterface
+from .processed_behavior_interface import ProcessedBehaviorInterface
 from .facemapdatainterface import FacemapInterface, FacemapPythonInterface

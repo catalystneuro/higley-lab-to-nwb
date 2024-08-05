@@ -1,7 +1,10 @@
 import numpy as np
 from neuroconv.tools.signal_processing import get_rising_frames_from_ttl, get_falling_frames_from_ttl
-from spikeinterface.extractors import CedRecordingExtractor
 from neuroconv.tools import get_package
+from neuroconv.utils.checks import calculate_regular_series_rate
+from spikeinterface.extractors import CedRecordingExtractor
+from pathlib import Path
+from typing import Union
 
 
 def process_event_times(rising_times: np.ndarray, falling_times: np.ndarray):
@@ -17,7 +20,7 @@ def _test_sonpy_installation() -> None:
     )
 
 
-def get_event_times_from_spike2(file_path: str, stream_id: str, clean_event_times: bool = False):
+def get_event_times_from_spike2(file_path: Union[str, Path], stream_id: str, clean_event_times: bool = False):
     _test_sonpy_installation()
     extractor = CedRecordingExtractor(file_path=file_path, stream_id=stream_id)
     times = extractor.get_times()
@@ -31,7 +34,7 @@ def get_event_times_from_spike2(file_path: str, stream_id: str, clean_event_time
     return start_times, stop_times
 
 
-def get_event_times_from_mat(file_path: str, stream_name: str = "diode"):
+def get_event_times_from_mat(file_path: Union[str, Path], stream_name: str = "diode"):
     pymatreader = get_package(package_name="pymatreader")
 
     mat = pymatreader.read_mat(str(file_path))
@@ -50,3 +53,26 @@ def get_event_times_from_mat(file_path: str, stream_name: str = "diode"):
             raise f"channel_names dataset does not exists in {file_path}"
     else:
         raise f"DATA group does not exists in {file_path}"
+
+
+def get_wheel_times_from_mat(file_path: Union[str, Path]):
+    pymatreader = get_package(package_name="pymatreader")
+
+    mat = pymatreader.read_mat(str(file_path))
+    times = mat["timestamp"]
+    traces = mat["wheel"]
+    rising_times = get_rising_frames_from_ttl(traces)
+    falling_times = get_falling_frames_from_ttl(traces)
+    start_times = times[rising_times]
+    stop_times = times[falling_times]
+    return start_times, stop_times
+
+
+def get_wheelspeed_trace_from_mat(file_path: Union[str, Path]):
+    pymatreader = get_package(package_name="pymatreader")
+
+    mat = pymatreader.read_mat(str(file_path))
+    wheel_speed_trace = mat["wheel_speed"]
+    sampling_frequency = calculate_regular_series_rate(series=mat["timestamp"], tolerance_decimals=3)
+
+    return wheel_speed_trace, sampling_frequency

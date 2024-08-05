@@ -9,8 +9,10 @@ from neuroconv.tools.nwb_helpers import make_or_load_nwbfile
 from higley_lab_to_nwb.interfaces import (
     MesoscopicImagingMultiTiffSingleFrameInterface,
     Spike2SignalsInterface,
-    VisualStimulusInterface,
+    ExternalStimuliInterface,
+    ProcessedBehaviorInterface,
     ProcessedImagingInterface,
+    ParcellsSegmentationInterface,
     FacemapInterface,
 )
 
@@ -22,7 +24,10 @@ class Lohani2022NWBConverter(NWBConverter):
         Spike2Signals=Spike2SignalsInterface,
         Video=VideoInterface,
         FacemapInterface=FacemapInterface,
-        VisualStimulusInterface=VisualStimulusInterface,
+        VisualStimulusInterface=ExternalStimuliInterface,
+        AirpuffInterface=ExternalStimuliInterface,
+        ProcessedWheelSignalInterface=ProcessedBehaviorInterface,
+        ParcellsSegmentationInterface=ParcellsSegmentationInterface,
     )
 
     def __init__(
@@ -57,6 +62,17 @@ class Lohani2022NWBConverter(NWBConverter):
         metadata["Ophys"]["Device"] = self.ophys_metadata["Ophys"]["Device"]
         metadata["Ophys"]["OnePhotonSeries"] = self.ophys_metadata["Ophys"]["OnePhotonSeries"]
         metadata["Ophys"]["ImagingPlane"] = self.ophys_metadata["Ophys"]["ImagingPlane"]
+
+        if "ParcellsSegmentationInterface" in self.data_interface_objects.keys():
+            parcells_segmentation_metadata = self.data_interface_objects["ParcellsSegmentationInterface"].get_metadata()
+            for segmentation_metadata_ind in range(
+                len(parcells_segmentation_metadata["Ophys"]["ImageSegmentation"]["plane_segmentations"])
+            ):
+                metadata["Ophys"]["ImageSegmentation"]["plane_segmentations"][segmentation_metadata_ind][
+                    "imaging_plane"
+                ] = self.ophys_metadata["Ophys"]["ImagingPlane"][0][
+                    "name"
+                ]  # Blue excitation Green Channel
 
         return metadata
 
@@ -94,9 +110,6 @@ class Lohani2022NWBConverter(NWBConverter):
         # Synch imaging
         for excitation_type, channel in self.excitation_type_channel_combination.items():
             imaging_interface = self.data_interface_objects[f"Imaging{excitation_type}Excitation{channel}Channel"]
-            dff_imaging_interface = self.data_interface_objects[
-                f"DFFImaging{excitation_type}Excitation{channel}Channel"
-            ]
             stream_id = next(
                 (
                     stream_id
@@ -107,7 +120,18 @@ class Lohani2022NWBConverter(NWBConverter):
             )
             ttl_times = ttlsignal_interface.get_event_times_from_ttl(stream_id=stream_id)
             imaging_interface.set_aligned_starting_time(ttl_times[0])
-            dff_imaging_interface.set_aligned_starting_time(ttl_times[0])
+
+            # Synch processing imaging
+            if f"DFFImaging{excitation_type}Excitation{channel}Channel" in self.data_interface_objects.keys():
+                dff_imaging_interface = self.data_interface_objects[
+                    f"DFFImaging{excitation_type}Excitation{channel}Channel"
+                ]
+                dff_imaging_interface.set_aligned_starting_time(ttl_times[0])
+
+        # Synch parcellatedoutput
+        if "ParcellsSegmentationInterface" in self.data_interface_objects.keys():
+            parcells_segmentation_interface = self.data_interface_objects["ParcellsSegmentationInterface"]
+            parcells_segmentation_interface.set_aligned_starting_time(ttl_times[0])
 
         # Synch behaviour
         if "Video" in self.data_interface_objects.keys():
