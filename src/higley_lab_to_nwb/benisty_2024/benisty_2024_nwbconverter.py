@@ -145,4 +145,10 @@ class Benisty2024NWBConverter(NWBConverter):
 
         if "FacemapInterface" in self.data_interface_objects.keys():
             facemap_interface = self.data_interface_objects["FacemapInterface"]
-            facemap_interface.set_aligned_timestamps(video_interface._timestamps[0])
+            # TODO uncomment this line of code once behavioral video is shared
+            # facemap_interface.set_aligned_timestamps(video_interface._timestamps[0])
+
+        if "FacemapPythonInterface" in self.data_interface_objects.keys():
+            facemap_interface = self.data_interface_objects["FacemapPythonInterface"]
+            # TODO uncomment this line of code once behavioral video is shared
+            # facemap_interface.set_aligned_timestamps(video_interface._timestamps[0])

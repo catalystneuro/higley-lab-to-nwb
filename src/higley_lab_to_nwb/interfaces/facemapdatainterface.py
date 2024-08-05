@@ -71,6 +71,9 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
             with h5py.File(mat_file_path, "r") as file:
                 print("Facemap output opened successfully with h5py")
                 self.older_matlab_version = False
+                nframes = file["proc"]["nframes"][0, 0]
+                # TODO remove this line of code once we have the actual timestamps from the original video
+                self.original_timestamps = list(range(nframes))
         except OSError as e:
             print(f"Failed to open file with h5py: {e}")
             # Check if the file is an older MATLAB .mat file
@@ -78,6 +81,8 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
             try:
                 self._mat_data = scipy.io.loadmat(mat_file_path)
                 self.older_matlab_version = True
+                # TODO remove this line of code once we have the actual timestamps from the original video
+                self.original_timestamps = list(range(self._mat_data["nframes"]))
             except NotImplementedError:
                 print("The .mat file is not in HDF5 format")
             except Exception as e:
@@ -149,10 +154,18 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
             self.timestamps = self.get_timestamps()
 
         if self.older_matlab_version:
-            data = self._mat_data["proc"]["pupil"][0, 0]["com"][0, 0]
+            try:
+                data = self._mat_data["proc"]["pupil"][0, 0]["com"][0, 0]
+            except NotImplementedError:
+                print("No eye tracking data available in {self.source_data['mat_file_path']}")
+                return
         else:
-            with h5py.File(self.source_data["mat_file_path"], "r") as file:
-                data = file["proc"]["pupil"]["com"][:].T
+            try:
+                with h5py.File(self.source_data["mat_file_path"], "r") as file:
+                    data = file["proc"]["pupil"]["com"][:].T
+            except NotImplementedError:
+                print("No eye tracking data available in {self.source_data['mat_file_path']}")
+                return
 
         behavior_module = get_module(nwbfile=nwbfile, name="behavior", description="behavioral data")
         eye_tracking_metadata = metadata["Behavior"]["EyeTracking"][0]
@@ -182,10 +195,18 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
             self.timestamps = self.get_timestamps()
 
         if self.older_matlab_version:
-            data = self._mat_data["proc"]["pupil"][0, 0][pupil_trace_type][0, 0]
+            try:
+                data = self._mat_data["proc"]["pupil"][0, 0][pupil_trace_type][0, 0]
+            except NotImplementedError:
+                print(f"No pupil {pupil_trace_type} data available in {self.source_data['mat_file_path']}")
+                return
         else:
-            with h5py.File(self.source_data["mat_file_path"], "r") as file:
-                data = file["proc"]["pupil"][pupil_trace_type][:].T
+            try:
+                with h5py.File(self.source_data["mat_file_path"], "r") as file:
+                    data = file["proc"]["pupil"][pupil_trace_type][:].T
+            except NotImplementedError:
+                print(f"No pupil {pupil_trace_type} data available in {self.source_data['mat_file_path']}")
+                return
 
         behavior_module = get_module(nwbfile=nwbfile, name="behavior", description="behavioral data")
 
@@ -233,12 +254,21 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
         behavior_module = get_module(nwbfile=nwbfile, name="behavior", description="behavioral data")
 
         if self.older_matlab_version:
-            mask_coordinates = self._mat_data["proc"]["ROI"][0, 0][0, 0][0, 0].T
-
+            try:
+                mask_coordinates = self._mat_data["proc"]["ROI"][0, 0][0, 0][0, 0].T
+            except NotImplementedError:
+                print("No Face motion components data available in {self.source_data['mat_file_path']}")
+                return
         else:
-            # Try opening the file with h5py
-            with h5py.File(self.source_data["mat_file_path"], "r") as file:
-                mask_coordinates = np.array(file[file[file["proc"]["ROI"][0][0]][0][0]])
+            try:
+                with h5py.File(self.source_data["mat_file_path"], "r") as file:
+                    mask_coordinates = np.array(file[file[file["proc"]["ROI"][0][0]][0][0]])
+            except NotImplementedError:
+                print(f"No Face motion components data available in {self.source_data['mat_file_path']}")
+                return
+        if np.array_equal(mask_coordinates, [0, 0]):
+            print(f"No Face motion components data available in {self.source_data['mat_file_path']}")
+            return
 
         y1 = int(np.round(mask_coordinates[0][0]) - 1)  # correct matlab indexing
         x1 = int(np.round(mask_coordinates[1][0]) - 1)  # correct matlab indexing
@@ -325,11 +355,22 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
         behavior_module = get_module(nwbfile=nwbfile, name="behavior", description="behavioral data")
 
         if self.older_matlab_version:
-            mask_coordinates = self._mat_data["proc"]["locROI"][0, 0][0, ROI_index].T
+            try:
+                mask_coordinates = self._mat_data["proc"]["locROI"][0, 0][0, ROI_index].T
+            except NotImplementedError:
+                print(f"No {ROI_name} motion components data available in {self.source_data['mat_file_path']}")
+                return
         else:
-            # Try opening the file with h5py
-            with h5py.File(self.source_data["mat_file_path"], "r") as file:
-                mask_coordinates = np.array(file[file["proc"]["locROI"][ROI_index][0]])
+            try:
+                with h5py.File(self.source_data["mat_file_path"], "r") as file:
+                    mask_coordinates = np.array(file[file["proc"]["locROI"][ROI_index][0]])
+            except NotImplementedError:
+                print(f"No {ROI_name} motion components data available in {self.source_data['mat_file_path']}")
+                return
+
+        if np.array_equal(mask_coordinates, [0, 0]):
+            print(f"No {ROI_name} motion components data available in {self.source_data['mat_file_path']}")
+            return
 
         y1 = int(np.round(mask_coordinates[0][0]) - 1)  # correct matlab indexing
         x1 = int(np.round(mask_coordinates[1][0]) - 1)  # correct matlab indexing
@@ -349,7 +390,6 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
         )
 
         if self.older_matlab_version:
-            # TODO to be tested
             for c, componendt_2d in enumerate(self._mat_data["proc"]["uMotMask"][0, 0][0, ROI_index]):
                 if c == self.first_n_components:
                     break
@@ -578,6 +618,10 @@ class FacemapPythonInterface(BaseTemporalAlignmentInterface):
             self.timestamps = self.get_timestamps()
 
         pupil_data = scipy.io.loadmat(self.source_data["mat_file_path"], variable_names=["pupil"])
+        if pupil_data["pupil"].size == 0:
+            print(f"No eye tracking data available in {self.source_data['mat_file_path']}")
+            return
+
         data = pupil_data["pupil"][0, 0][eye_tracking_trace_type][0, 0]
 
         behavior_module = get_module(nwbfile=nwbfile, name="behavior", description="behavioral data")
@@ -605,10 +649,12 @@ class FacemapPythonInterface(BaseTemporalAlignmentInterface):
     ):
         if self.timestamps is None:
             self.timestamps = self.get_timestamps()
-
         pupil_data = scipy.io.loadmat(self.source_data["mat_file_path"], variable_names=["pupil"])
-        data = pupil_data["pupil"][0, 0][pupil_trace_type][0, 0].T
+        if pupil_data["pupil"].size == 0:
+            print(f"No pupil area data available in {self.source_data['mat_file_path']}")
+            return
 
+        data = pupil_data["pupil"][0, 0][pupil_trace_type][0, 0].T
         behavior_module = get_module(nwbfile=nwbfile, name="behavior", description="behavioral data")
 
         pupil_area_metadata_ind = 0 if pupil_trace_type == "area" else 1
@@ -657,6 +703,10 @@ class FacemapPythonInterface(BaseTemporalAlignmentInterface):
         mask_variable_name = f"motMask_reshape_{mask_index}"
         face_motion_masks = scipy.io.loadmat(self.source_data["mat_file_path"], variable_names=[mask_variable_name])
         face_motion_masks = face_motion_masks[mask_variable_name]
+        if face_motion_masks.size == 0:
+            print(f"No {mask_name} motion components data available in {self.source_data['mat_file_path']}")
+            return
+
         mask_coordinates = [0, 0, face_motion_masks.shape[1], face_motion_masks.shape[0]]
 
         # store face motion mask and motion series
