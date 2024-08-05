@@ -201,7 +201,7 @@ def session_to_nwb(
                 mat_file_path=str(mat_file_path),
                 video_file_path=str(video_file_path),
                 svd_mask_names=["Face", "Whiskers"],
-                first_n_components=10,
+                first_n_components=10 if stub_test else 500,
                 verbose=False,
             )
         )
