@@ -171,7 +171,7 @@ def session_to_nwb(
 if __name__ == "__main__":
 
     # Parameters for conversion
-    root_path = Path("F:/CN_data")
+    root_path = Path("G:")
     data_dir_path = root_path / "Higley-CN-data-share"
     output_dir_path = root_path / "Higley-conversion_nwb/"
     stub_test = True
