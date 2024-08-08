@@ -18,6 +18,7 @@ def session_to_nwb(
     output_dir_path: Union[str, Path],
     session_id: str,
     stub_test: bool = False,
+    verbose: bool = True,
 ):
     output_dir_path = Path(output_dir_path)
     if stub_test:
@@ -210,10 +211,13 @@ def session_to_nwb(
     ophys_metadata_path = Path(__file__).parent / "metadata" / "lohani_2022_ophys_metadata.yaml"
     ophys_metadata = load_dict_from_file(ophys_metadata_path)
 
+    if verbose:
+        print("Start conversion")
     converter = Lohani2022NWBConverter(
         source_data=source_data,
         excitation_type_channel_combination=excitation_type_channel_combination,
         ophys_metadata=ophys_metadata,
+        verbose=verbose,
     )
 
     # Add datetime to conversion
@@ -238,7 +242,7 @@ def session_to_nwb(
 if __name__ == "__main__":
     # Parameters for conversion
     root_path = Path("G:")
-    data_dir_path = root_path / "Higley-CN-data-share"
+    data_dir_path = root_path / "Higley-CN-data-share/Lohani22"
     output_dir_path = root_path / "Higley-conversion_nwb"
     stub_test = True
     date = "11232019"
