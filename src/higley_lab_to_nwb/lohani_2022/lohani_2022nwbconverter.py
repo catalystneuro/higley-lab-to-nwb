@@ -76,34 +76,6 @@ class Lohani2022NWBConverter(NWBConverter):
 
         return metadata
 
-    def run_conversion(  # until [Issue #908](https://github.com/catalystneuro/neuroconv/issues/908) is fixed
-        self,
-        nwbfile_path: str = None,
-        nwbfile: NWBFile = None,
-        metadata: Dict = None,
-        overwrite: bool = False,
-        conversion_options: Dict = None,
-    ) -> None:
-        if metadata is None:
-            metadata = self.get_metadata()
-
-        self.validate_metadata(metadata=metadata)
-
-        self.validate_conversion_options(conversion_options=conversion_options)
-
-        self.temporally_align_data_interfaces()
-
-        with make_or_load_nwbfile(
-            nwbfile_path=nwbfile_path,
-            nwbfile=nwbfile,
-            metadata=metadata,
-            overwrite=overwrite,
-            verbose=self.verbose,
-        ) as nwbfile_out:
-            self.add_to_nwbfile(nwbfile_out, metadata, conversion_options)
-
-        return
-
     def temporally_align_data_interfaces(self):
         ttlsignal_interface = self.data_interface_objects["Spike2Signals"]
 
