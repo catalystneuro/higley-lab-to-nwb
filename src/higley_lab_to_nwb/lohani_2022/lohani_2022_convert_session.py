@@ -18,6 +18,7 @@ def session_to_nwb(
     output_dir_path: Union[str, Path],
     session_id: str,
     stub_test: bool = False,
+    verbose: bool = True,
 ):
     output_dir_path = Path(output_dir_path)
     if stub_test:
@@ -210,10 +211,13 @@ def session_to_nwb(
     ophys_metadata_path = Path(__file__).parent / "metadata" / "lohani_2022_ophys_metadata.yaml"
     ophys_metadata = load_dict_from_file(ophys_metadata_path)
 
+    if verbose:
+        print("Start conversion")
     converter = Lohani2022NWBConverter(
         source_data=source_data,
         excitation_type_channel_combination=excitation_type_channel_combination,
         ophys_metadata=ophys_metadata,
+        verbose=verbose,
     )
 
     # Add datetime to conversion
@@ -237,7 +241,7 @@ def session_to_nwb(
 
 if __name__ == "__main__":
     # Parameters for conversion
-    root_path = Path("G:")
+    root_path = Path("F:")
     data_dir_path = root_path / "Higley-CN-data-share"
     output_dir_path = root_path / "Higley-conversion_nwb"
     stub_test = True
@@ -245,9 +249,9 @@ if __name__ == "__main__":
     animal_number = "05"
     behavior = "airpuffs"
     session_id = f"{date}_grabAM{animal_number}_{behavior}"
-    folder_path = data_dir_path / session_id
+    folder_path = data_dir_path / "Lohani22 Meso Data" / session_id
     parcellation_folder_path = (
-        data_dir_path / "parcellation" / f"grab{animal_number}" / "imaging with 575 excitation" / session_id
+        data_dir_path / "Lohani22 Parcellated data" / f"grab{animal_number}" / "imaging with 575 excitation" / session_id
     )
     session_to_nwb(
         folder_path=folder_path,
