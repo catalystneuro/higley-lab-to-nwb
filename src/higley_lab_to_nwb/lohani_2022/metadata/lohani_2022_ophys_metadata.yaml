@@ -30,9 +30,9 @@ Ophys:
       unit: n.a.
   ImagingPlane:
     - name: ImagingPlaneBlueExcitationGreenChannel
-      description: Imaging plane for the Green channel recorded with Blue excitation.
+      description: Imaging plane for the Green channel recorded during Blue excitation.
       excitation_lambda: 470.0  # in nm
-      location: Whole Brain
+      location: Neocortex
       device: OnePhotonMicroscope
       optical_channel:
         - name: Green
@@ -40,9 +40,9 @@ Ophys:
           emission_lambda: 525.0
       indicator: ACh3.0
     - name: ImagingPlaneVioletExcitationGreenChannel
-      description: Imaging plane for the Green channel recorded with Violet excitation.
+      description: Imaging plane for the Green channel recorded during Violet excitation.
       excitation_lambda: 395.0  # in nm
-      location: Whole Brain
+      location: Neocortex
       device: OnePhotonMicroscope
       optical_channel:
         - name: Green
@@ -50,9 +50,9 @@ Ophys:
           emission_lambda: 525.0
       indicator: ACh3.0
     - name: ImagingPlaneGreenExcitationRedChannel
-      description: Imaging plane for the Red channel recorded with Green excitation.
+      description: Imaging plane for the Red channel recorded during Green excitation.
       excitation_lambda: 575.0  # in nm
-      location: Whole Brain
+      location: Neocortex
       device: OnePhotonMicroscope
       optical_channel:
         - name: Red
