@@ -126,11 +126,11 @@ def session_to_nwb(
 
     # Add Behavioral Video Recording
     avi_files = list(folder_path.glob(f"{search_pattern}*.avi"))
-    video_file_path = avi_files[0]
+    video_file_path = avi_files[0].resolve()
     source_data.update(dict(Video=dict(file_paths=[video_file_path], verbose=False)))
     conversion_options.update(dict(Video=dict(stub_test=stub_test)))
 
-    # Add Facemap outpt
+    # Add Facemap output
     mat_files = list(folder_path.glob(f"{search_pattern}*_proc.mat"))
     mat_file_path = mat_files[0]
     source_data.update(

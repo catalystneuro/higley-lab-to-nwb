@@ -189,7 +189,7 @@ def session_to_nwb(
     )
     # Add Behavioral Video Recording
     avi_files = list(folder_path.glob(f"{search_pattern}*.avi"))
-    video_file_path = avi_files[0]
+    video_file_path = avi_files[0].resolve()
     source_data.update(dict(Video=dict(file_paths=[video_file_path], verbose=False)))
     conversion_options.update(dict(Video=dict(stub_test=stub_test)))
 
@@ -226,7 +226,7 @@ def session_to_nwb(
     metadata["NWBFile"]["session_start_time"] = date
     subject_id = session_id.split("_")[1]
     metadata["Subject"].update(subject_id=subject_id)
-    metadata["NWBFile"].update(session_id=session_id)
+    metadata["NWBFile"].update(session_id=session_id.replace(f"_{subject_id}", ""))
 
     # Update default metadata with the editable in the corresponding yaml file
     editable_metadata_path = Path(__file__).parent / "lohani_2022_metadata.yaml"
