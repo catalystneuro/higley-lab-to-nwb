@@ -289,8 +289,8 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
             for c, component in enumerate(self._mat_data["proc"]["uMotMask"][0, 0][0, 0].T):
                 if c == self.first_n_components:
                     break
-                componendt_2d = component.reshape((y2 - y1, x2 - x1))
-                motion_masks_table.add_row(image_mask=componendt_2d.T, check_ragged=False)
+                component_2d = component.reshape((y2 - y1, x2 - x1))
+                motion_masks_table.add_row(image_mask=component_2d.T, check_ragged=False)
         else:
             # add face mask
             with h5py.File(self.source_data["mat_file_path"], "r") as file:
@@ -298,8 +298,8 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
                 for c, component in enumerate(file[mask_ref]):
                     if c == self.first_n_components:
                         break
-                    componendt_2d = component.reshape((y2 - y1, x2 - x1))
-                    motion_masks_table.add_row(image_mask=componendt_2d.T, check_ragged=False)
+                    component_2d = component.reshape((y2 - y1, x2 - x1))
+                    motion_masks_table.add_row(image_mask=component_2d.T, check_ragged=False)
 
         motion_masks = DynamicTableRegion(
             name="motion_masks",
@@ -390,18 +390,18 @@ class FacemapInterface(BaseTemporalAlignmentInterface):
         )
 
         if self.older_matlab_version:
-            for c, componendt_2d in enumerate(self._mat_data["proc"]["uMotMask"][0, 0][0, ROI_index]):
+            for c, component_2d in enumerate(self._mat_data["proc"]["uMotMask"][0, 0][0, ROI_index]):
                 if c == self.first_n_components:
                     break
-                motion_masks_table.add_row(image_mask=componendt_2d.T, check_ragged=False)
+                motion_masks_table.add_row(image_mask=component_2d.T, check_ragged=False)
         else:
             with h5py.File(self.source_data["mat_file_path"], "r") as file:
                 mask_ref = file["proc"]["uMotMask"][ROI_index][0]
 
-                for c, componendt_2d in enumerate(file[mask_ref]):
+                for c, component_2d in enumerate(file[mask_ref]):
                     if c == self.first_n_components:
                         break
-                    motion_masks_table.add_row(image_mask=componendt_2d.T, check_ragged=False)
+                    motion_masks_table.add_row(image_mask=component_2d.T, check_ragged=False)
 
         motion_masks = DynamicTableRegion(
             name="motion_masks",
