@@ -2,6 +2,7 @@
 
 from pathlib import Path
 from typing import Union
+import numpy as np
 from neuroconv.utils import load_dict_from_file, dict_deep_update
 from higley_lab_to_nwb.lohani_2022 import Lohani2022NWBConverter
 from higley_lab_to_nwb.interfaces.spike2signals_interface import get_streams
@@ -17,9 +18,16 @@ def session_to_nwb(
     parcellation_folder_path: Union[str, Path],
     output_dir_path: Union[str, Path],
     session_id: str,
+    allen_parcels_file_path: Union[str, Path],
     stub_test: bool = False,
     verbose: bool = True,
 ):
+    """Convert one session.
+
+    allen_parcels_file_path is parcells_updated121519.mat from the lab's code (cardin-higley-lab/
+    Lohani_Moberly_et_al_2022 at commit c337686, Figure3ExtractStatesCorrelation/Functions/), the Allen CCFv3 parcels
+    that final_dFoF_parcels.mat is averaged over.
+    """
     output_dir_path = Path(output_dir_path)
     if stub_test:
         output_dir_path = output_dir_path / "nwb_stub"
@@ -75,6 +83,10 @@ def session_to_nwb(
                 sampling_frequency=sampling_frequency,
                 wheel_on_times=wheel_on_times,
                 wheel_off_times=wheel_off_times,
+                wheel_speed_unit="m/s",
+                wheel_speed_description="Wheel speed, computed by the lab's preprocessing code (wheel_changepoints.m) "
+                "as the differential of the unwrapped wheel distance, smoothed with a Gaussian window 0.5 s long. "
+                "The speed is signed: negative values are backward turns of the wheel.",
             )
         )
     )
@@ -100,15 +112,23 @@ def session_to_nwb(
 
     # Add Airpuff Stimulus
     if "airpuff" in session_id:
+        # All air puffs; "airpuffstart" holds only those without a locomotion onset from 2 s before to 5 s after
         start_times, stop_times = get_event_times_from_mat(
+            file_path=str(mat_file_path),
+            start_time_variable_name="allairpuffstart",
+            end_time_variable_name="allairpuffend",
+        )
+        start_times_without_locomotion, _ = get_event_times_from_mat(
             file_path=str(mat_file_path), start_time_variable_name="airpuffstart", end_time_variable_name="airpuffend"
         )
+        without_locomotion = np.isin(np.atleast_1d(start_times), np.atleast_1d(start_times_without_locomotion))
         source_data.update(
             dict(
                 AirpuffInterface=dict(
                     stimulus_name="Airpuff",
-                    start_times=start_times,
-                    stop_times=stop_times,
+                    start_times=np.atleast_1d(start_times),
+                    stop_times=np.atleast_1d(stop_times),
+                    without_locomotion=without_locomotion.tolist(),
                 )
             )
         )
@@ -187,6 +207,19 @@ def session_to_nwb(
             )
         )
     )
+    # Add the Allen CCFv3 parcel traces, as one more plane segmentation
+    source_data.update(
+        dict(
+            AllenParcels=dict(
+                file_path=parcellation_folder_path / "final_dFoF_parcels.mat",
+                parcels_file_path=allen_parcels_file_path,
+                sampling_frequency=sampling_frequency,
+                image_size=[256, 256],
+            )
+        )
+    )
+    conversion_options.update(dict(AllenParcels=dict(stub_test=stub_test)))
+
     # Add Behavioral Video Recording
     avi_files = list(folder_path.glob(f"{search_pattern}*.avi"))
     video_file_path = avi_files[0].resolve()
@@ -258,5 +291,6 @@ if __name__ == "__main__":
         parcellation_folder_path=parcellation_folder_path,
         output_dir_path=output_dir_path,
         session_id=session_id,
+        allen_parcels_file_path=data_dir_path / "parcells_updated121519.mat",
         stub_test=stub_test,
     )
