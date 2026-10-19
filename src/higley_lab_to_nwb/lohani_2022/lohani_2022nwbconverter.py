@@ -13,6 +13,7 @@ from higley_lab_to_nwb.interfaces import (
     ProcessedBehaviorInterface,
     ProcessedImagingInterface,
     ParcellsSegmentationInterface,
+    AllenParcelsInterface,
     FacemapInterface,
 )
 
@@ -50,6 +51,8 @@ class Lohani2022NWBConverter(NWBConverter):
             self.data_interface_classes[interface_name] = MesoscopicImagingMultiTiffSingleFrameInterface
             interface_name = f"DFFImaging{suffix}"
             self.data_interface_classes[interface_name] = ProcessedImagingInterface
+        # After the imaging interfaces, so that the imaging planes exist when the parcels are added
+        self.data_interface_classes["AllenParcels"] = AllenParcelsInterface
 
         self.verbose = verbose
         self._validate_source_data(source_data=source_data, verbose=self.verbose)
@@ -105,6 +108,13 @@ class Lohani2022NWBConverter(NWBConverter):
                     f"DFFImaging{excitation_type}Excitation{channel}Channel"
                 ]
                 dff_imaging_interface.set_aligned_starting_time(ttl_times[FIRST_DFF_FRAME_INDEX])
+
+            # The Allen parcel traces are averages of the DF/F frames, so they start with them
+            if "AllenParcels" in self.data_interface_objects.keys():
+                channel_name = excitation_type.lower() if excitation_type != "Violet" else "uv"
+                self.data_interface_objects["AllenParcels"].set_aligned_starting_time(
+                    channel=channel_name, starting_time=ttl_times[FIRST_DFF_FRAME_INDEX]
+                )
 
             # Synch parcellated output, which is computed on the Green excitation (calcium) DF/F
             if excitation_type == "Green" and "ParcellsSegmentationInterface" in self.data_interface_objects.keys():

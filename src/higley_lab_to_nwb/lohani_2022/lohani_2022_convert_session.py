@@ -18,9 +18,16 @@ def session_to_nwb(
     parcellation_folder_path: Union[str, Path],
     output_dir_path: Union[str, Path],
     session_id: str,
+    allen_parcels_file_path: Union[str, Path],
     stub_test: bool = False,
     verbose: bool = True,
 ):
+    """Convert one session.
+
+    allen_parcels_file_path is parcells_updated121519.mat from the lab's code (cardin-higley-lab/
+    Lohani_Moberly_et_al_2022 at commit c337686, Figure3ExtractStatesCorrelation/Functions/), the Allen CCFv3 parcels
+    that final_dFoF_parcels.mat is averaged over.
+    """
     output_dir_path = Path(output_dir_path)
     if stub_test:
         output_dir_path = output_dir_path / "nwb_stub"
@@ -200,6 +207,19 @@ def session_to_nwb(
             )
         )
     )
+    # Add the Allen CCFv3 parcel traces, as one more plane segmentation
+    source_data.update(
+        dict(
+            AllenParcels=dict(
+                file_path=parcellation_folder_path / "final_dFoF_parcels.mat",
+                parcels_file_path=allen_parcels_file_path,
+                sampling_frequency=sampling_frequency,
+                image_size=[256, 256],
+            )
+        )
+    )
+    conversion_options.update(dict(AllenParcels=dict(stub_test=stub_test)))
+
     # Add Behavioral Video Recording
     avi_files = list(folder_path.glob(f"{search_pattern}*.avi"))
     video_file_path = avi_files[0].resolve()
@@ -271,5 +291,6 @@ if __name__ == "__main__":
         parcellation_folder_path=parcellation_folder_path,
         output_dir_path=output_dir_path,
         session_id=session_id,
+        allen_parcels_file_path=data_dir_path / "parcells_updated121519.mat",
         stub_test=stub_test,
     )
