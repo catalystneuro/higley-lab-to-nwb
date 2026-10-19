@@ -89,7 +89,9 @@ class ParcellsSegmentationInterface(BaseSegmentationExtractorInterface):
             default_traces_name = fluorescence_metadata_per_plane[trace_name]["name"].replace(default_plane_suffix, "")
             fluorescence_metadata_per_plane[trace_name].update(
                 name=default_traces_name + new_plane_name_suffix,
-                description="Fluorescence traces extracted from parcellation algorithm",
+                description="Mean calcium DF/F (Red channel, Green excitation) over each ROI of a functional "
+                "parcellation of that DF/F (local selective spectral clustering). The ROIs are not the Allen CCFv3 "
+                "parcels analysed in the paper.",
             )
 
         return metadata

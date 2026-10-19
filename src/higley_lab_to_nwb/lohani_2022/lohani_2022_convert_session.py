@@ -2,6 +2,7 @@
 
 from pathlib import Path
 from typing import Union
+import numpy as np
 from neuroconv.utils import load_dict_from_file, dict_deep_update
 from higley_lab_to_nwb.lohani_2022 import Lohani2022NWBConverter
 from higley_lab_to_nwb.interfaces.spike2signals_interface import get_streams
@@ -75,6 +76,10 @@ def session_to_nwb(
                 sampling_frequency=sampling_frequency,
                 wheel_on_times=wheel_on_times,
                 wheel_off_times=wheel_off_times,
+                wheel_speed_unit="m/s",
+                wheel_speed_description="Wheel speed, computed by the lab's preprocessing code (wheel_changepoints.m) "
+                "as the differential of the unwrapped wheel distance, smoothed with a Gaussian window 0.5 s long. "
+                "The speed is signed: negative values are backward turns of the wheel.",
             )
         )
     )
@@ -100,15 +105,23 @@ def session_to_nwb(
 
     # Add Airpuff Stimulus
     if "airpuff" in session_id:
+        # All air puffs; "airpuffstart" holds only those without a locomotion onset from 2 s before to 5 s after
         start_times, stop_times = get_event_times_from_mat(
+            file_path=str(mat_file_path),
+            start_time_variable_name="allairpuffstart",
+            end_time_variable_name="allairpuffend",
+        )
+        start_times_without_locomotion, _ = get_event_times_from_mat(
             file_path=str(mat_file_path), start_time_variable_name="airpuffstart", end_time_variable_name="airpuffend"
         )
+        without_locomotion = np.isin(np.atleast_1d(start_times), np.atleast_1d(start_times_without_locomotion))
         source_data.update(
             dict(
                 AirpuffInterface=dict(
                     stimulus_name="Airpuff",
-                    start_times=start_times,
-                    stop_times=stop_times,
+                    start_times=np.atleast_1d(start_times),
+                    stop_times=np.atleast_1d(stop_times),
+                    without_locomotion=without_locomotion.tolist(),
                 )
             )
         )
