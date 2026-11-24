@@ -1,290 +1,180 @@
-"""Primary script to run to convert an entire session for of data using the NWBConverter."""
+"""Convert one Benisty 2024 dual (2p and mesoscopic) imaging session to NWB."""
 
 from pathlib import Path
-from typing import Union
-from neuroconv.utils import load_dict_from_file, dict_deep_update
-from higley_lab_to_nwb.interfaces.spike2signals_interface import get_streams
+
+from natsort import natsorted
+from neuroconv.datainterfaces import FacemapInterface, ScanImageImagingInterface, Suite2pSegmentationInterface
+from neuroconv.utils import dict_deep_update, load_dict_from_file
+
 from higley_lab_to_nwb.benisty_2024 import Benisty2024NWBConverter
 from higley_lab_to_nwb.benisty_2024.utils import (
     get_event_times_from_mat,
-    get_wheelspeed_trace_from_mat,
     get_wheel_times_from_mat,
+    get_wheelspeed_trace_from_mat,
 )
+from higley_lab_to_nwb.interfaces import (
+    ExternalStimuliInterface,
+    FacemapPythonInterface,
+    MesoscopicImagingMultiTiffStackInterface,
+    ProcessedBehaviorInterface,
+    ProcessedImagingInterface,
+    Spike2SignalsInterface,
+)
+from higley_lab_to_nwb.interfaces.spike2signals_interface import get_streams
+
+ONE_PHOTON_SAMPLING_FREQUENCY = 9.15  # frame rate of each excitation channel, in Hz
 
 
 def dual_imaging_session_to_nwb(
-    data_dir_path: Union[str, Path],
-    output_dir_path: Union[str, Path],
+    data_dir_path: str | Path,
+    output_dir_path: str | Path,
     subject_id: str,
     session_id: str,
     stub_test: bool = False,
 ):
+    data_dir_path = Path(data_dir_path)
     folder_path = data_dir_path / f"{subject_id}_1p"
-
     output_dir_path = Path(output_dir_path)
     if stub_test:
         output_dir_path = output_dir_path / "nwb_stub"
     output_dir_path.mkdir(parents=True, exist_ok=True)
-
     nwbfile_path = output_dir_path / f"{session_id}_{subject_id}.nwb"
 
-    source_data = dict()
+    interfaces = dict()
     conversion_options = dict()
+    date, acquisition = session_id.split("_")[:2]
 
-    # Add Analog signals from Spike2
-    file_path = list(folder_path.glob(f"{session_id}*.smr"))[0]
-    stream_ids, stream_names = get_streams(file_path=file_path)
-
-    # Define each smr signal name
-    # in the .log file 2p acquisition sync with "EyeCam"
-    TTLsignals_name_map = {
-        stream_ids[stream_names == "blue_LED"][0]: "TTLSignalBlueLED",
-        stream_ids[stream_names == "uv_LED"][0]: "TTLSignalVioletLED",
-        stream_ids[stream_names == "Galvo"][0]: "TTLSignal2PExcitation",
-        stream_ids[stream_names == "EyeCam"][0]: "TTLSignalPupilCamera",
+    # Spike2: TTL pulses and the raw wheel signal (in the .log file, the 2p acquisition is synced with "EyeCam")
+    smr_file_path = next(folder_path.glob(f"{session_id}*.smr"))
+    stream_ids, stream_names = get_streams(file_path=smr_file_path)
+    ttl_stream_names = {
+        "blue_LED": "TTLSignalBlueLED",
+        "uv_LED": "TTLSignalVioletLED",
+        "Galvo": "TTLSignal2PExcitation",
+        "EyeCam": "TTLSignalPupilCamera",
     }
-    behavioral_name_map = {
-        stream_ids[stream_names == "Wheel"][0]: "WheelSignal",
-    }
-
-    source_data.update(
-        dict(
-            Spike2Signals=dict(
-                file_path=file_path,
-                ttl_stream_ids_to_names_map=TTLsignals_name_map,
-                behavioral_stream_ids_to_names_map=behavioral_name_map,
-            )
-        )
+    interfaces["Spike2Signals"] = Spike2SignalsInterface(
+        file_path=smr_file_path,
+        ttl_stream_ids_to_names_map={
+            stream_ids[stream_names == stream_name][0]: name for stream_name, name in ttl_stream_names.items()
+        },
+        behavioral_stream_ids_to_names_map={stream_ids[stream_names == "Wheel"][0]: "WheelSignal"},
     )
-    conversion_options.update(dict(Spike2Signals=dict(stub_test=stub_test)))
+    conversion_options["Spike2Signals"] = dict(stub_test=stub_test)
 
-    # Add Processed Behavioral Signals
-    wheel_timestamps_file_path = folder_path / f"{session_id}_wheelbinary.mat"
-    wheel_speed_file_path = folder_path / f"{session_id}_wheelspeed.mat"
-    wheel_speed_data, sampling_frequency = get_wheelspeed_trace_from_mat(file_path=wheel_speed_file_path)
-    wheel_on_times, wheel_off_times = get_wheel_times_from_mat(file_path=wheel_timestamps_file_path)
-    source_data.update(
-        dict(
-            ProcessedWheelSignalInterface=dict(
-                wheel_speed_data=wheel_speed_data,
-                sampling_frequency=sampling_frequency,
-                wheel_on_times=wheel_on_times,
-                wheel_off_times=wheel_off_times,
-            )
-        )
+    # Processed wheel signals
+    wheel_speed_data, wheel_sampling_frequency = get_wheelspeed_trace_from_mat(
+        file_path=folder_path / f"{session_id}_wheelspeed.mat"
     )
-    conversion_options.update(dict(ProcessedWheelSignalInterface=dict(stub_test=stub_test)))
+    wheel_on_times, wheel_off_times = get_wheel_times_from_mat(file_path=folder_path / f"{session_id}_wheelbinary.mat")
+    interfaces["ProcessedWheelSignal"] = ProcessedBehaviorInterface(
+        wheel_speed_data=wheel_speed_data,
+        sampling_frequency=wheel_sampling_frequency,
+        wheel_on_times=wheel_on_times,
+        wheel_off_times=wheel_off_times,
+    )
+    conversion_options["ProcessedWheelSignal"] = dict(stub_test=stub_test)
 
-    mat_file_path = folder_path / f"{session_id}.mat"
-    # Add Visual Stimulus
+    # Visual stimuli
     csv_file_path = folder_path / f"{session_id}.csv"
     if csv_file_path.is_file():
-        start_times, stop_times = get_event_times_from_mat(file_path=str(mat_file_path), stream_name="diode")
-        source_data.update(
-            dict(
-                VisualStimulusInterface=dict(
-                    stimulus_name="VisualStimulus",
-                    csv_file_path=csv_file_path,
-                    start_times=start_times,
-                    stop_times=stop_times,
-                )
-            )
+        start_times, stop_times = get_event_times_from_mat(
+            file_path=folder_path / f"{session_id}.mat", stream_name="diode"
         )
-        conversion_options.update(dict(VisualStimulusInterface=dict(stub_test=stub_test)))
+        interfaces["VisualStimulus"] = ExternalStimuliInterface(
+            stimulus_name="VisualStimulus", csv_file_path=csv_file_path, start_times=start_times, stop_times=stop_times
+        )
+        conversion_options["VisualStimulus"] = dict(stub_test=stub_test)
 
-    # Add 2p Imaging
+    # 2p imaging and its Suite2p segmentation
     imaging_path = data_dir_path / f"{subject_id}_2p"
-    file_pattern = f"{session_id.split('_')[0]}_2p_{session_id.split('_')[1]}*.tif"
-    source_data.update(dict(TwoPhotonImaging=dict(folder_path=str(imaging_path), file_pattern=file_pattern)))
-    conversion_options.update(dict(TwoPhotonImaging=dict(stub_test=stub_test)))
+    interfaces["TwoPhotonImaging"] = ScanImageImagingInterface(
+        file_paths=natsorted(imaging_path.glob(f"{date}_2p_{acquisition}*.tif")), metadata_key="two_photon"
+    )
+    conversion_options["TwoPhotonImaging"] = dict(stub_test=stub_test, photon_series_type="TwoPhotonSeries")
+    interfaces["Suite2pSegmentation"] = Suite2pSegmentationInterface(
+        folder_path=imaging_path / f"{date}_2p_00001a" / "suite2p", metadata_key="suite2p"
+    )
+    conversion_options["Suite2pSegmentation"] = dict(stub_test=stub_test)
 
-    # Add Segmentation
-    suite2p_path = imaging_path / f"{session_id.split('_')[0]}_2p_00001a" / "suite2p"
-    source_data.update(dict(Suite2pSegmentation=dict(folder_path=suite2p_path)))
-    conversion_options.update(dict(Suite2pSegmentation=dict(stub_test=stub_test)))
-
-    # Add 1p Imaging
+    # Mesoscopic imaging: blue and violet (isosbestic) excitation alternate frame by frame
     meso_imaging_path = data_dir_path / f"{subject_id}_1p"
-    file_pattern = f"{session_id.split('_')[0]}_1p_{session_id.split('_')[1]}*.tif"
-    # # ad hoc extractor for 1p imaging to separate strobing blue vs violet excitation
-    sampling_frequency = 9.15
-    number_of_channels = 2
+    for name, first_frame_index, metadata_key in (
+        ("OnePhotonImaging", 0, "raw_blue"),
+        ("OnePhotonImagingIsosbestic", 1, "raw_violet"),
+    ):
+        interfaces[name] = MesoscopicImagingMultiTiffStackInterface(
+            folder_path=meso_imaging_path,
+            file_pattern=f"{date}_1p_{acquisition}*.tif",
+            number_of_channels=2,
+            channel_first_frame_index=first_frame_index,
+            sampling_frequency=ONE_PHOTON_SAMPLING_FREQUENCY,
+            metadata_key=metadata_key,
+        )
+        conversion_options[name] = dict(stub_test=stub_test, photon_series_type="OnePhotonSeries")
 
-    channel_first_frame_index = 0
-    source_data.update(
-        dict(
-            OnePhotonImaging=dict(
-                folder_path=str(meso_imaging_path),
-                file_pattern=file_pattern,
-                number_of_channels=number_of_channels,
-                channel_first_frame_index=channel_first_frame_index,
-                sampling_frequency=sampling_frequency,
-            )
+    # DF/F of each excitation, and the hemodynamic-corrected DF/F
+    processed_imaging_path = meso_imaging_path / session_id
+    for name, file_name, process_type, metadata_key in (
+        ("DffOnePhotonImaging", "FIR_dff_blue.mat", "dff_blue", "dff_blue"),
+        ("DffOnePhotonImagingIsosbestic", "FIR_dff_uv.mat", "dff_uv", "dff_violet"),
+        (
+            "HemodynamicCorrectedOnePhotonImaging",
+            "FIR_DFF_patch11_final_dFoF.mat",
+            "dff_final",
+            "hemodynamic_corrected",
+        ),
+    ):
+        interfaces[name] = ProcessedImagingInterface(
+            file_path=processed_imaging_path / file_name,
+            process_type=process_type,
+            sampling_frequency=ONE_PHOTON_SAMPLING_FREQUENCY,
+            metadata_key=metadata_key,
         )
-    )
-    conversion_options.update(
-        dict(OnePhotonImaging=dict(stub_test=stub_test, photon_series_type="OnePhotonSeries", photon_series_index=0))
-    )
+        conversion_options[name] = dict(
+            stub_test=stub_test, photon_series_type="OnePhotonSeries", parent_container="processing/ophys"
+        )
 
-    channel_first_frame_index = 1
-    source_data.update(
-        dict(
-            OnePhotonImagingIsosbestic=dict(
-                folder_path=str(meso_imaging_path),
-                file_pattern=file_pattern,
-                number_of_channels=number_of_channels,
-                channel_first_frame_index=channel_first_frame_index,
-                sampling_frequency=sampling_frequency,
-            )
-        )
-    )
-    conversion_options.update(
-        dict(
-            OnePhotonImagingIsosbestic=dict(
-                stub_test=stub_test, photon_series_type="OnePhotonSeries", photon_series_index=1
-            )
-        )
-    )
-
-    # Add processed imaging data
-    processed_imaging_path = meso_imaging_path / f"{session_id}"
-    # add Df_over_f imaging data from blue excitation
-    file_path = processed_imaging_path / f"FIR_dff_blue.mat"
-    source_data.update(
-        dict(
-            DffOnePhotonImaging=dict(
-                file_path=str(file_path),
-                sampling_frequency=sampling_frequency,
-                process_type="dff_blue",
-            )
-        )
-    )
-    conversion_options.update(
-        dict(
-            DffOnePhotonImaging=dict(
-                stub_test=stub_test,
-                photon_series_type="OnePhotonSeries",
-                photon_series_index=2,
-                parent_container="processing/ophys",
-            )
-        )
-    )
-    # add Df_over_f imaging data from violet excitation (isosbestic control)
-    file_path = processed_imaging_path / f"FIR_dff_uv.mat"
-    source_data.update(
-        dict(
-            DffOnePhotonImagingIsosbestic=dict(
-                file_path=str(file_path),
-                sampling_frequency=sampling_frequency,
-                process_type="dff_uv",
-            )
-        )
-    )
-    conversion_options.update(
-        dict(
-            DffOnePhotonImagingIsosbestic=dict(
-                stub_test=stub_test,
-                photon_series_type="OnePhotonSeries",
-                photon_series_index=3,
-                parent_container="processing/ophys",
-            )
-        )
-    )
-    # add hemodynamic corrected imaging data
-    file_path = processed_imaging_path / f"FIR_DFF_patch11_final_dFoF.mat"
-    source_data.update(
-        dict(
-            HemodynamicCorrectedOnePhotonImaging=dict(
-                file_path=str(file_path),
-                sampling_frequency=sampling_frequency,
-                process_type="dff_final",
-            )
-        )
-    )
-    conversion_options.update(
-        dict(
-            HemodynamicCorrectedOnePhotonImaging=dict(
-                stub_test=stub_test,
-                photon_series_type="OnePhotonSeries",
-                photon_series_index=4,
-                parent_container="processing/ophys",
-            )
-        )
-    )
-
-    # # Add Behavioral Video Recording
-    # avi_files = list(folder_path.glob(f"{session_id}*.avi"))
-    # video_file_path = avi_files[0].resolve()
-    # source_data.update(dict(Video=dict(file_paths=[video_file_path], verbose=False)))
-    # conversion_options.update(dict(Video=dict(stub_test=stub_test)))
-
-    # TODO remove this line of code once actual behavioral video is shared
+    # TODO add the behavioral video once it is shared, and remove this path
     video_file_path = "G:/Higley-CN-data-share/04072021_am2psi_05_spont/04072021_am2psi_05_spont_facevideo.avi"
 
-    # Add Facemap outpt
-    mat_files = list(folder_path.glob(f"{session_id}*_proc.mat"))
-    for mat_file in mat_files:
-        if "inverted" in str(mat_file):
-            source_data.update(
-                dict(
-                    FacemapInterface=dict(
-                        mat_file_path=str(mat_file),
-                        video_file_path=str(video_file_path),
-                        svd_mask_names=["Face", "Whiskers"],
-                        first_n_components=10 if stub_test else 500,
-                        verbose=False,
-                    )
-                )
+    # FaceMap output: from the MATLAB GUI ("inverted") and from the Python implementation
+    for mat_file_path in folder_path.glob(f"{session_id}*_proc.mat"):
+        if "inverted" in mat_file_path.name:
+            interfaces["Facemap"] = FacemapInterface(
+                file_path=mat_file_path, video_file_path=video_file_path, metadata_key="facemap"
             )
+            conversion_options["Facemap"] = dict(first_n_components=10 if stub_test else 500)
         else:
-            source_data.update(
-                dict(
-                    FacemapPythonInterface=dict(
-                        mat_file_path=str(mat_file),
-                        video_file_path=str(video_file_path),
-                        svd_mask_names=["Face", "Whiskers", "Pupil"],  # TODO check with the lab point person
-                        first_n_components=10 if stub_test else None,
-                        verbose=False,
-                    )
-                )
+            interfaces["FacemapPython"] = FacemapPythonInterface(
+                mat_file_path=str(mat_file_path),
+                video_file_path=str(video_file_path),
+                svd_mask_names=["Face", "Whiskers", "Pupil"],  # TODO check with the lab point person
+                first_n_components=10 if stub_test else None,
             )
 
-    # Add ophys metadata
-    ophys_metadata_path = Path(__file__).parent / "metadata" / "benisty_2024_dual_ophys_metadata.yaml"
-    ophys_metadata = load_dict_from_file(ophys_metadata_path)
-
-    converter = Benisty2024NWBConverter(source_data=source_data, ophys_metadata=ophys_metadata)
-
-    # Add datetime to conversion
+    converter = Benisty2024NWBConverter(data_interfaces=interfaces)
 
     metadata = converter.get_metadata()
-    metadata["Subject"].update(subject_id=subject_id)
-    metadata["NWBFile"].update(session_id=f"{session_id}-{subject_id}")
+    metadata["Subject"]["subject_id"] = subject_id
+    metadata["NWBFile"]["session_id"] = f"{session_id}-{subject_id}"
+    metadata_dir_path = Path(__file__).parent
+    metadata = dict_deep_update(metadata, load_dict_from_file(metadata_dir_path / "benisty_2024_metadata.yaml"))
+    metadata = dict_deep_update(
+        metadata, load_dict_from_file(metadata_dir_path / "metadata" / "benisty_2024_dual_ophys_metadata.yaml")
+    )
 
-    # Update default metadata with the editable in the corresponding yaml file
-    editable_metadata_path = Path(__file__).parent / "benisty_2024_metadata.yaml"
-    editable_metadata = load_dict_from_file(editable_metadata_path)
-    metadata = dict_deep_update(metadata, editable_metadata)
-
-    # Run conversion
     converter.run_conversion(
         metadata=metadata, nwbfile_path=nwbfile_path, conversion_options=conversion_options, overwrite=True
     )
 
 
 if __name__ == "__main__":
-
-    # Parameters for conversion
     root_path = Path("G:")
-    data_dir_path = root_path / "Higley-CN-data-share/Dual 2p Meso data"
-    output_dir_path = root_path / "Higley-conversion_nwb/"
-    stub_test = True
-    subject_id = "dbvdual035"
-    session_id = "20201231_00001"
     dual_imaging_session_to_nwb(
-        data_dir_path=data_dir_path,
-        output_dir_path=output_dir_path,
-        subject_id=subject_id,
-        session_id=session_id,
-        stub_test=stub_test,
+        data_dir_path=root_path / "Higley-CN-data-share/Dual 2p Meso data",
+        output_dir_path=root_path / "Higley-conversion_nwb/",
+        subject_id="dbvdual035",
+        session_id="20201231_00001",
+        stub_test=True,
     )

@@ -1,7 +1,5 @@
-import pandas as pd
-from typing import Optional, Literal
+import numpy as np
 from neuroconv import BaseDataInterface
-from neuroconv.utils import FilePathType
 from pynwb import NWBFile, TimeSeries
 from pynwb.epoch import TimeIntervals
 
@@ -22,7 +20,7 @@ class ProcessedBehaviorInterface(BaseDataInterface):
         sampling_frequency: float = None,
         wheel_speed_unit: str = "unknown",
         wheel_speed_description: str = "Wheel speed",
-        verbose: bool = True,
+        verbose: bool = False,
     ):
         """
          Parameters
@@ -58,7 +56,7 @@ class ProcessedBehaviorInterface(BaseDataInterface):
             TimeSeries(
                 name="WheelSpeed",
                 description=self.wheel_speed_description,
-                data=self.wheel_speed_data[:100] if stub_test else self.wheel_speed_data,
+                data=np.asarray(self.wheel_speed_data[:100] if stub_test else self.wheel_speed_data, dtype="float32"),
                 starting_time=0.0,
                 rate=self.sampling_frequency if self.sampling_frequency is not None else 5000.0,
                 unit=self.wheel_speed_unit,

@@ -8,23 +8,55 @@ Figure3ExtractStatesCorrelation/Functions/parcells_updated121519.mat). That repo
 is not copied here; pass its path.
 """
 
-from typing import Optional
+from pathlib import Path
 
 import h5py
 import numpy as np
 from neuroconv.basedatainterface import BaseDataInterface
 from neuroconv.tools.nwb_helpers import get_module
-from neuroconv.utils import FilePathType
 from pynwb import NWBFile
-from pynwb.ophys import DfOverF, ImageSegmentation, RoiResponseSeries
+from pynwb.ophys import Fluorescence, ImageSegmentation, RoiResponseSeries
 from scipy.io import loadmat
-
-from ..extractors.parcells_segmentation_extractor import _get_pixel_coordinate
 
 # Parcels the paper leaves out of its analyses: "Some medial Allen parcels (PL, ACA, RSPv) were masked out because of
 # prominent vasculature along the midline. Colliculus regions (SC, IC) were also removed, resulting in final 23 Allen
 # CCFv3 parcels per hemisphere."
 EXCLUDED_AREAS = {"PL", "ACA", "RSPv", "SC", "IC"}
+
+# The Allen Mouse Brain Atlas acronym and structure id (structure graph 1, http://api.brain-map.org/api/v2/
+# structure_graph_download/1.json) of each area of parcells_updated121519.mat, keyed by its acronym with the lab's
+# spelling normalized (see _normalize_area). The superior colliculus has no single structure in the atlas, which
+# divides it into SCs and SCm, so it has none here.
+ALLEN_STRUCTURES = {
+    "VISp": 385,
+    "VISpm": 533,
+    "VISam": 394,
+    "VISl": 409,
+    "VISli": 312782574,
+    "VISpl": 425,
+    "VISpor": 312782628,
+    "VISal": 402,
+    "RSPagl": 894,
+    "RSPd": 879,
+    "RSPv": 886,
+    "SC": None,
+    "IC": 4,
+    "TEa": 541,
+    "AUD": 247,
+    "PTLp": 22,
+    "SSp-bfd": 329,
+    "SSs": 378,
+    "SSp-tr": 361,
+    "SSp-n": 353,
+    "SSp-un": 182305689,
+    "SSp-ul": 369,
+    "SSp-ll": 337,
+    "SSp-m": 345,
+    "MOp": 985,
+    "MOs": 993,
+    "ACA": 31,
+    "PL": 972,
+}
 
 # Channel of final_dFoF_parcels.mat -> the imaging plane of its DF/F, and what it measures.
 CHANNELS = {
@@ -34,16 +66,24 @@ CHANNELS = {
 }
 
 
+def _normalize_area(area: str) -> str:
+    """The Allen acronym of an area as the lab spells it: 'VlSp' (lowercase L) is VISp, 'Tea' TEa, 'SSP-m' SSp-m."""
+    if area.startswith("VlS"):
+        area = "VIS" + area[3:]
+    by_upper = {acronym.upper(): acronym for acronym in ALLEN_STRUCTURES}
+    return by_upper[area.upper()]
+
+
 class AllenParcelsInterface(BaseDataInterface):
     """The Allen CCFv3 parcels as one plane segmentation, with the DF/F of each channel averaged over each parcel."""
 
     def __init__(
         self,
-        file_path: FilePathType,
-        parcels_file_path: FilePathType,
+        file_path: str | Path,
+        parcels_file_path: str | Path,
         sampling_frequency: float,
         image_size: list = [256, 256],
-        verbose: bool = True,
+        verbose: bool = False,
     ):
         """
         Parameters
@@ -78,7 +118,7 @@ class AllenParcelsInterface(BaseDataInterface):
         # The plane segmentation belongs to one imaging plane; the three channels are co-registered to the same
         # Allen-aligned frame, so the masks apply to each of them.
         imaging_plane = nwbfile.imaging_planes[CHANNELS["green"][0]]
-        ophys = get_module(nwbfile, name="ophys", description="Processed optical physiology data.")
+        ophys = get_module(nwbfile, name="ophys")
         if "ImageSegmentation" not in ophys.data_interfaces:
             ophys.add(ImageSegmentation(name="ImageSegmentation"))
         plane_segmentation = ophys["ImageSegmentation"].create_plane_segmentation(
@@ -95,6 +135,16 @@ class AllenParcelsInterface(BaseDataInterface):
         plane_segmentation.add_column(name="area_description", description="The parcel's area.")
         plane_segmentation.add_column(name="hemisphere", description="'left' or 'right', from the label's prefix.")
         plane_segmentation.add_column(
+            name="allen_acronym",
+            description="The Allen Mouse Brain Atlas acronym of the parcel's area. The lab's labels spell some of "
+            "them differently (VlSp for VISp, Tea for TEa, SSP for SSp).",
+        )
+        plane_segmentation.add_column(
+            name="allen_structure_id",
+            description="The Allen Mouse Brain Atlas structure id of the parcel's area (structure graph 1), or -1 for "
+            "the superior colliculus, which the atlas divides into SCs and SCm.",
+        )
+        plane_segmentation.add_column(
             name="excluded_in_paper",
             description=(
                 "True for the parcels the paper leaves out of its analyses (PL, ACA and RSPv for midline vasculature, "
@@ -106,22 +156,27 @@ class AllenParcelsInterface(BaseDataInterface):
             hemisphere = {"L": "left", "R": "right"}[hemisphere]
             # The lab's descriptions of L-AUD and L-SSp-un say "Right"; the label decides the hemisphere.
             area_description = " ".join(description.split()).split(" ", 1)[1]
+            allen_acronym = _normalize_area(area)
+            allen_structure_id = ALLEN_STRUCTURES[allen_acronym]
+
+            # pixels2rois.m indexes the parcel pixels column-major, 1-based; the DF/F frames are rotated by 180
+            # degrees (ProcessedImagingExtractor), so the mask is too. NWB stores pixel masks as (x, y) = (column, row).
             rows, cols = np.nonzero(parcels.indicators[:, :, index] > 0)
-            pixel_numbers = rows + cols * n_rows + 1  # MATLAB's 1-based column-major index, as in pixels2rois.m
-            pixel_mask = [
-                _get_pixel_coordinate(pixel_num=np.array([number]), n_cols=n_cols, n_rows=n_rows)
-                for number in pixel_numbers
-            ]
+            frame_rows = n_rows - 1 - cols
+            frame_cols = n_cols - 1 - rows
+            pixel_mask = [(int(col), int(row), 1.0) for row, col in zip(frame_rows, frame_cols)]
             plane_segmentation.add_roi(
                 pixel_mask=pixel_mask,
                 area=label,
                 area_description=f"{hemisphere.capitalize()} {area_description}",
                 hemisphere=hemisphere,
-                excluded_in_paper=area.upper() in {name.upper() for name in EXCLUDED_AREAS},
+                allen_acronym=allen_acronym,
+                allen_structure_id=-1 if allen_structure_id is None else allen_structure_id,
+                excluded_in_paper=allen_acronym in EXCLUDED_AREAS,
             )
 
-        if "DfOverF" not in ophys.data_interfaces:
-            ophys.add(DfOverF(name="DfOverF"))
+        if "Fluorescence" not in ophys.data_interfaces:
+            ophys.add(Fluorescence(name="Fluorescence"))
         rois = plane_segmentation.create_roi_table_region(
             region=list(range(len(parcels.names))), description="All 56 Allen CCFv3 parcels."
         )
@@ -131,7 +186,7 @@ class AllenParcelsInterface(BaseDataInterface):
                     raise ValueError(f"Set the starting time of the '{channel}' channel before adding it.")
                 data = file["dFoF_parcells"][channel]
                 data = data[:100] if stub_test else data[()]
-                ophys["DfOverF"].add_roi_response_series(
+                ophys["Fluorescence"].add_roi_response_series(
                     RoiResponseSeries(
                         name=f"AllenParcelsDfOverF{channel.capitalize()}",
                         description=(
@@ -139,7 +194,7 @@ class AllenParcelsInterface(BaseDataInterface):
                             "A parcel is NaN throughout when fewer than 25% of its pixels are active, as for parcels "
                             "at the edge of the window."
                         ),
-                        data=data,
+                        data=data.astype("float32"),
                         rois=rois,
                         unit="n.a.",
                         starting_time=self.starting_times[channel],

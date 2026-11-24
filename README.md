@@ -16,7 +16,7 @@ We recommend that you install the package inside a [virtual environment](https:/
 ### Running a specific conversion
 Once you have installed the package with pip, you can run any of the conversion scripts in a notebook or a python file:
 
-https://github.com/catalystneuro/higley-lab-to-nwb//tree/main/src/lohani_2022/lohani_2022_conversion_script.py
+https://github.com/catalystneuro/higley-lab-to-nwb/tree/main/src/higley_lab_to_nwb/lohani_2022/lohani_2022_convert_session.py
 
 
 
@@ -54,8 +54,10 @@ pip install -r src/higley_lab_to_nwb/lohani_2022/lohani_2022_requirements.txt
 
 You can run a specific conversion with the following command:
 ```
-python src/higley_lab_to_nwb/lohani_2022/lohani_2022_conversion_script.py
+python src/higley_lab_to_nwb/lohani_2022/lohani_2022_convert_session.py
 ```
+
+The Lohani 2022 conversion needs Python 3.10 or later. It also reads `parcells_updated121519.mat`, the Allen CCFv3 parcels, from the lab's code (https://github.com/cardin-higley-lab/Lohani_Moberly_et_al_2022 at commit c337686, `Figure3ExtractStatesCorrelation/Functions/`). That repository has no license, so the file is not included here; download it and pass its path as `allen_parcels_file_path`.
 
 ## Repository structure
 Each conversion is organized in a directory of its own in the `src` directory:

@@ -1,7 +1,7 @@
 import pandas as pd
 from typing import Literal
 from neuroconv import BaseDataInterface
-from neuroconv.utils import FilePathType
+from pathlib import Path
 from pynwb import NWBFile
 from pynwb.epoch import TimeIntervals
 
@@ -20,9 +20,9 @@ class ExternalStimuliInterface(BaseDataInterface):
         stimulus_name: Literal["Airpuff", "VisualStimulus"],
         start_times: list,
         stop_times: list,
-        csv_file_path: FilePathType = None,
+        csv_file_path: str | Path | None = None,
         without_locomotion: list = None,
-        verbose: bool = True,
+        verbose: bool = False,
     ):
         """
          Parameters
@@ -33,11 +33,11 @@ class ExternalStimuliInterface(BaseDataInterface):
             External stimulus start times in seconds.
         stop_times : list
             External stimulus stop times in seconds.
-        csv_file_path : FilePathType, default: None
+        csv_file_path : str or Path, optional
             Path to .csv file for visual stimulus characterization.
         without_locomotion : list, default: None
             For air puffs, whether each puff has no locomotion onset from 2 s before to 5 s after it.
-        verbose : bool, default: True
+        verbose : bool, default: False
         """
         accepted_stimulus_name = ["Airpuff", "VisualStimulus"]
         assert (

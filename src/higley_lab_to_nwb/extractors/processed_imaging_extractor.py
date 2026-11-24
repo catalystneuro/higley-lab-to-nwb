@@ -1,162 +1,100 @@
 from pathlib import Path
-from typing import Tuple, Literal
-import numpy as np
-from roiextractors.extraction_tools import PathType, DtypeType, get_package
-from roiextractors.imagingextractor import ImagingExtractor
+from typing import Literal
+
 import h5py
+import numpy as np
+from roiextractors.imagingextractor import ImagingExtractor
 
-
-from datetime import datetime
-
-
-def _load_data_from_dual_imaging_configuration(file_path: str, process_type: str) -> np.ndarray:
-    """Load pixels matrix from MATLab file generated processing imaging data in dual imaging configuration."""
-
-    with h5py.File(file_path, "r") as file:
-        pixels_matrix = file[process_type][:]
-        mask = file["mask"][:]
-        num_rows, num_columns = mask.shape
-
-    return np.nan_to_num(pixels_matrix), num_rows, num_columns, mask
-
-
-def _load_data_from_1p_imaging_configuration(file_path: str, process_type: str) -> np.ndarray:
-    """Load pixels matrix from MATLab file generated processing imaging data in 1p-imaging only configuration."""
-
-    with h5py.File(file_path, "r") as file:
-        pixels_matrix = file["dFoF"][process_type][:]
-
-        num_rows = int(file["R"][:])
-        num_columns = int(file["C"][:])
-
-    return np.nan_to_num(pixels_matrix), num_rows, num_columns
+DUAL_IMAGING_PROCESS_TYPES = ("dff_final", "dff_blue", "dff_uv")
+ONE_PHOTON_PROCESS_TYPES = ("blue", "uv", "green")
 
 
 class ProcessedImagingExtractor(ImagingExtractor):
-    """Specialized extractor for reading processed imaging data from a MATLab file."""
+    """Processed (DF/F) imaging data saved by the lab's MATLAB code as a pixels matrix.
+
+    The .mat file holds one row per frame and one column per pixel. The lab's code saves the pixels of the frame
+    rotated by 180 degrees, so frame pixel (r, c) is column (n_rows - 1 - r) * n_cols + (n_cols - 1 - c), counting
+    only the pixels inside the mask when the file has one ("dff_final", "dff_blue", "dff_uv"). Pixels outside the
+    mask and pixels the lab's output leaves as NaN are returned as NaN. Frames are read from the file on request.
+    """
 
     extractor_name = "ProcessedImagingExtractor"
-    is_writable = True
-    mode = "file"
 
     def __init__(
         self,
-        file_path: PathType,
+        file_path: str | Path,
         sampling_frequency: float,
         process_type: Literal["dff_final", "dff_blue", "dff_uv", "blue", "uv", "green"],
     ) -> None:
-        """Create a ProcessedImagingExtractor instance from a MATLab file.
-
+        """
         Parameters
         ----------
-        file_path : PathType
-            Path to the MATLab file.
+        file_path : str or Path
+            Path to the MATLAB (v7.3) file.
         sampling_frequency : float
-            The frequency at which the frames were sampled, in Hz.
+            The frame rate, in Hz.
         process_type : str
-            The type of processed imaging data to extract.
-            Accepted values: "dff_final", "dff_blue", "dff_uv", "blue", "uv",  "green".
-        Notes
-        -----
+            The variable to read: "dff_final", "dff_blue" or "dff_uv" (a pixels matrix and a "mask"), or "blue",
+            "uv" or "green" (fields of "dFoF", with the frame size in "R" and "C").
         """
+        accepted_process_types = DUAL_IMAGING_PROCESS_TYPES + ONE_PHOTON_PROCESS_TYPES
+        if process_type not in accepted_process_types:
+            raise ValueError(f"process_type '{process_type}' must be one of {accepted_process_types}.")
+
         super().__init__()
         self.file_path = Path(file_path)
+        self.process_type = process_type
         self._sampling_frequency = sampling_frequency
-        self._times = None
 
-        self._channel_names = process_type
+        with h5py.File(self.file_path, "r") as file:
+            dataset = self._get_dataset(file)
+            self._num_samples, number_of_pixels = dataset.shape
+            if process_type in DUAL_IMAGING_PROCESS_TYPES:
+                mask = file["mask"][:]
+                self._num_rows, self._num_columns = mask.shape
+            else:
+                mask = None
+                self._num_rows = int(file["R"][()].item())
+                self._num_columns = int(file["C"][()].item())
 
-        accepted_process_types = ["dff_final", "dff_blue", "dff_uv", "blue", "uv", "green"]
-        assert (
-            process_type in accepted_process_types
-        ), f"{process_type} must be one of the following values: {accepted_process_types}"
-        if process_type in ["dff_final", "dff_blue", "dff_uv"]:
-            self._pixels_matrix, self._num_rows, self._num_columns, self.mask = (
-                _load_data_from_dual_imaging_configuration(file_path=file_path, process_type=process_type)
-            )
-        elif process_type in ["blue", "uv", "green"]:
-            self._pixels_matrix, self._num_rows, self._num_columns = _load_data_from_1p_imaging_configuration(
-                file_path=file_path, process_type=process_type
-            )
-
-        self._num_frames, number_of_pixels = self._pixels_matrix.shape
-        self._dtype = self._pixels_matrix[0].dtype
         if number_of_pixels == self._num_rows * self._num_columns:
-            self._mask = None
-
-        elif number_of_pixels != np.count_nonzero(self.mask):
+            flipped_mask = np.ones((self._num_rows, self._num_columns), dtype=bool)
+        elif mask is not None and number_of_pixels == np.count_nonzero(mask):
+            flipped_mask = mask[::-1, ::-1] != 0
+        else:
             raise ValueError(
-                f"Can't reconstruct frame from pixel matrix. The total number of pixels {number_of_pixels} does "
-                f"not match the frame dimension {self._num_rows} * {self._num_columns} or the non-zero elements in "
-                f"the frame mask {np.count_nonzero(self.mask)}."
+                f"Can't reconstruct the frames of {self.file_path}: it has {number_of_pixels} pixels per frame, which "
+                f"is neither the frame size {self._num_rows} x {self._num_columns} nor the number of pixels in its mask."
             )
+        # Row and column, in the 180-degree rotated frame, of each column of the pixels matrix (row-major order)
+        self._flipped_rows, self._flipped_columns = np.nonzero(flipped_mask)
 
-    def _get_single_frame(self, frame_idx: int) -> np.ndarray:
-        frame = np.zeros((self._num_rows, self._num_columns))
-        i = 0
-        for r in range(self._num_rows):
-            for c in range(self._num_columns):
-                # "dff_blue" and "dff_uv" pixel matrix contains the pixel trace for only the non-zero elements of the
-                # mask (different pixel indexing)
-                if self._mask is not None and self._mask[r, c] != 0:
-                    frame[r, c] = self._pixels_matrix[frame_idx, i]
-                    i += 1
-                elif self._mask is None:
-                    frame[r, c] = self._pixels_matrix[frame_idx, i]
-                    i += 1
-        return frame
+    def _get_dataset(self, file: h5py.File) -> h5py.Dataset:
+        if self.process_type in DUAL_IMAGING_PROCESS_TYPES:
+            return file[self.process_type]
+        return file["dFoF"][self.process_type]
 
-    def get_video(self, start_frame=None, end_frame=None, channel: int = 0) -> np.ndarray:
-        """Get the video frames.
+    def get_series(self, start_sample: int | None = None, end_sample: int | None = None) -> np.ndarray:
+        start_sample = 0 if start_sample is None else start_sample
+        end_sample = self._num_samples if end_sample is None else end_sample
+        with h5py.File(self.file_path, "r") as file:
+            pixels = self._get_dataset(file)[start_sample:end_sample].astype("float32")
 
-        Parameters
-        ----------
-        start_frame: int, optional
-            Start frame index (inclusive).
-        end_frame: int, optional
-            End frame index (exclusive).
+        flipped_series = np.full((pixels.shape[0], self._num_rows, self._num_columns), np.nan, dtype="float32")
+        flipped_series[:, self._flipped_rows, self._flipped_columns] = pixels
+        return flipped_series[:, ::-1, ::-1]
 
-        Returns
-        -------
-        video: numpy.ndarray
-            The video frames.
-        """
-
-        if start_frame is None:
-            start_frame = 0
-        if end_frame is None:
-            end_frame = self._num_frames
-        num_frames = end_frame - start_frame
-
-        video = np.zeros((num_frames, self._num_rows, self._num_columns))
-        i = 0
-        for r in np.arange(self._num_rows-1,-1,-1):
-            for c in np.arange(self._num_columns-1,-1,-1):
-                # "dff_blue" and "dff_uv" pixel matrix contains the pixel trace for only the non-zero elements of the
-                # mask (different pixel indexing)
-                if self._mask is not None and self._mask[r, c] != 0:
-                    video[:, r, c] = self._pixels_matrix[start_frame:end_frame, i]
-                    i += 1
-                elif self._mask is None:
-                    video[:, r, c] = self._pixels_matrix[start_frame:end_frame, i]
-                    i += 1
-
-        return video
-
-    def get_image_size(self) -> Tuple[int, int]:
+    def get_image_shape(self) -> tuple[int, int]:
         return (self._num_rows, self._num_columns)
 
-    def get_num_frames(self) -> int:
-        return self._num_frames
+    def get_num_samples(self) -> int:
+        return self._num_samples
 
     def get_sampling_frequency(self) -> float:
         return self._sampling_frequency
 
-    def get_num_channels(self) -> int:
-        return 1
+    def get_dtype(self) -> np.dtype:
+        return np.dtype("float32")
 
-    def get_channel_names(self) -> list:
-        return self._channel_names
-
-    def get_dtype(self) -> DtypeType:
-        return self._dtype
+    def get_native_timestamps(self, start_sample: int | None = None, end_sample: int | None = None) -> None:
+        return None
