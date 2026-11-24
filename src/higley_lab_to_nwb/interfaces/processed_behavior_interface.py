@@ -20,6 +20,8 @@ class ProcessedBehaviorInterface(BaseDataInterface):
         wheel_off_times: list,
         wheel_speed_data: list,
         sampling_frequency: float = None,
+        wheel_speed_unit: str = "unknown",
+        wheel_speed_description: str = "Wheel speed",
         verbose: bool = True,
     ):
         """
@@ -33,6 +35,10 @@ class ProcessedBehaviorInterface(BaseDataInterface):
                 Wheel speed trace.
             sampling_frequency: float = None,
                 Sampling frequency of the wheel speed trace.
+            wheel_speed_unit: str, default: "unknown"
+                Unit of the wheel speed trace.
+            wheel_speed_description: str, default: "Wheel speed"
+                Description of the wheel speed trace.
         """
 
         super().__init__(verbose=verbose)
@@ -40,6 +46,8 @@ class ProcessedBehaviorInterface(BaseDataInterface):
         self.wheel_off_times = wheel_off_times
         self.wheel_speed_data = wheel_speed_data
         self.sampling_frequency = sampling_frequency
+        self.wheel_speed_unit = wheel_speed_unit
+        self.wheel_speed_description = wheel_speed_description
 
     def add_wheel_speed(self, nwbfile: NWBFile, metadata: dict, stub_test: bool = False) -> None:
 
@@ -49,11 +57,11 @@ class ProcessedBehaviorInterface(BaseDataInterface):
         nwbfile.processing["behavior"].add(
             TimeSeries(
                 name="WheelSpeed",
-                description="Wheel speed",
+                description=self.wheel_speed_description,
                 data=self.wheel_speed_data[:100] if stub_test else self.wheel_speed_data,
                 starting_time=0.0,
                 rate=self.sampling_frequency if self.sampling_frequency is not None else 5000.0,
-                unit="unknown",
+                unit=self.wheel_speed_unit,
             )
         )
 

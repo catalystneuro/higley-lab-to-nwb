@@ -101,11 +101,11 @@ def get_event_times_from_mat(file_path: Union[str, Path], start_time_variable_na
             stop_times = stop_times_data[:]
             return start_times, stop_times
         elif start_time_variable_name not in timing_group:
-            raise f"{start_time_variable_name} dataset does not exists in {file_path}"
+            raise ValueError(f"{start_time_variable_name} dataset does not exists in {file_path}")
         elif end_time_variable_name not in timing_group:
-            raise f"{end_time_variable_name} dataset does not exists in {file_path}"
+            raise ValueError(f"{end_time_variable_name} dataset does not exists in {file_path}")
     else:
-        raise f"timing group does not exists in {file_path}"
+        raise ValueError(f"timing group does not exists in {file_path}")
 
 
 def get_channel_trace_from_mat(file_path: Union[str, Path], variable_name: str):
@@ -125,6 +125,6 @@ def get_channel_trace_from_mat(file_path: Union[str, Path], variable_name: str):
             channel_data = channel_data[:]
             return channel_data, float(sampling_frequency)
         elif variable_name not in channel_group:
-            raise f"{variable_name} dataset does not exists in {file_path}"
+            raise ValueError(f"{variable_name} dataset does not exists in {file_path}")
     else:
-        raise f"'channels_data' does not exists in {file_path}"
+        raise ValueError(f"'channels_data' does not exists in {file_path}")

@@ -14,9 +14,11 @@ from roiextractors.segmentationextractor import SegmentationExtractor
 
 
 def _get_pixel_coordinate(pixel_num, n_cols: int, n_rows: int) -> np.ndarray:
-    row = (pixel_num - 1) % n_cols
-    col = (pixel_num - 1) // n_cols
-    return [n_rows - row[0], n_cols - col[0], 1]
+    # pixel_num is a 1-based MATLAB (column-major) linear index. The coordinate follows the orientation of
+    # ProcessedImagingExtractor.get_video, so that the masks overlay the DF/F frames.
+    row = (pixel_num - 1) % n_rows
+    col = (pixel_num - 1) // n_rows
+    return [n_rows - 1 - col[0], n_cols - 1 - row[0], 1]
 
 
 class ParcellsSegmentationExtractor(SegmentationExtractor):

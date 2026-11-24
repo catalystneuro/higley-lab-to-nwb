@@ -21,6 +21,7 @@ class ExternalStimuliInterface(BaseDataInterface):
         start_times: list,
         stop_times: list,
         csv_file_path: FilePathType = None,
+        without_locomotion: list = None,
         verbose: bool = True,
     ):
         """
@@ -34,6 +35,8 @@ class ExternalStimuliInterface(BaseDataInterface):
             External stimulus stop times in seconds.
         csv_file_path : FilePathType, default: None
             Path to .csv file for visual stimulus characterization.
+        without_locomotion : list, default: None
+            For air puffs, whether each puff has no locomotion onset from 2 s before to 5 s after it.
         verbose : bool, default: True
         """
         accepted_stimulus_name = ["Airpuff", "VisualStimulus"]
@@ -49,11 +52,13 @@ class ExternalStimuliInterface(BaseDataInterface):
             csv_file_path=csv_file_path,
             start_times=start_times,
             stop_times=stop_times,
+            without_locomotion=without_locomotion,
             verbose=verbose,
         )
 
     def get_stimulus_feature(self, column_index):
-        feature = pd.read_csv(self.source_data["csv_file_path"], usecols=column_index)
+        # The .csv file has no header row, one row per stimulus presentation
+        feature = pd.read_csv(self.source_data["csv_file_path"], header=None, usecols=column_index)
         return feature.to_numpy()
 
     def add_visual_stimulus(self, nwbfile: NWBFile, metadata: dict, stub_test: bool = False) -> None:
@@ -76,7 +81,12 @@ class ExternalStimuliInterface(BaseDataInterface):
         )
         spatial_frequencies = self.get_stimulus_feature(column_index=[3])
         intervals_table.add_column(name="stimulus_size", description="Size of the visual stimulus, in degrees.")
-        sizes = self.get_stimulus_feature(column_index=[4])
+        intervals_table.add_column(
+            name="stimulus_duration",
+            description="Duration of the visual stimulus, in seconds, as given in the stimulus .csv file.",
+        )
+        durations = self.get_stimulus_feature(column_index=[4])
+        sizes = self.get_stimulus_feature(column_index=[5])
         intervals_table.add_column(
             name="screen_coordinates",
             description="Screen coordinates that define the position of the stimulus on the monitor, i.e. [x1,y1,x2,"
@@ -86,14 +96,19 @@ class ExternalStimuliInterface(BaseDataInterface):
             "Right (x2): The x-coordinate of the right edge of the rectangle."
             "Bottom (y2): The y-coordinate of the bottom edge of the rectangle.",
         )
-        screen_coordinates = self.get_stimulus_feature(column_index=[5, 6, 7, 8])
+        screen_coordinates = self.get_stimulus_feature(column_index=[6, 7, 8, 9])
 
         start_times = self.source_data["start_times"]
         stop_times = self.source_data["stop_times"]
+        if len(contrasts) != len(start_times):
+            raise ValueError(
+                f"The number of stimuli in the .csv file ({len(contrasts)}) does not match the number of stimulus "
+                f"start times ({len(start_times)})."
+            )
 
         n_frames = 100 if stub_test and len(start_times) > 100 else len(start_times)
 
-        for frame in range(n_frames-1):
+        for frame in range(n_frames):
             intervals_table.add_row(
                 start_time=start_times[frame],
                 stop_time=stop_times[frame],
@@ -101,6 +116,7 @@ class ExternalStimuliInterface(BaseDataInterface):
                 orientation=orientations[frame][0],
                 stimulus_frequency=stimulus_frequencies[frame][0],
                 spatial_frequency=spatial_frequencies[frame][0],
+                stimulus_duration=durations[frame][0],
                 stimulus_size=sizes[frame][0],
                 screen_coordinates=screen_coordinates[frame][:],
                 check_ragged=False,
@@ -117,15 +133,21 @@ class ExternalStimuliInterface(BaseDataInterface):
 
         start_times = self.source_data["start_times"]
         stop_times = self.source_data["stop_times"]
+        without_locomotion = self.source_data["without_locomotion"]
+        if without_locomotion is not None:
+            intervals_table.add_column(
+                name="without_locomotion",
+                description="True if no locomotion onset occurs from 2 s before to 5 s after the air puff. The lab's "
+                "analysis code uses only these air puffs.",
+            )
 
         n_frames = 100 if stub_test and len(start_times) > 100 else len(start_times)
 
         for frame in range(n_frames):
-            intervals_table.add_row(
-                start_time=start_times[frame],
-                stop_time=stop_times[frame],
-                check_ragged=False,
-            )
+            row = dict(start_time=start_times[frame], stop_time=stop_times[frame])
+            if without_locomotion is not None:
+                row.update(without_locomotion=without_locomotion[frame])
+            intervals_table.add_row(**row, check_ragged=False)
 
         nwbfile.add_time_intervals(intervals_table)
 
