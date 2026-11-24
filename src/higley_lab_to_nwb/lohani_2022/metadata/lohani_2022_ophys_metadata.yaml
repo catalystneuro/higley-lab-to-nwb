@@ -4,16 +4,17 @@ DeviceModels:
     name: C13440-20C
     manufacturer: Hamamatsu
     model_number: C13440-20C
+    description: sCMOS camera, called Orca-Flash V3 in the paper's Methods.
 Devices:
   mesoscope:
     name: OnePhotonMicroscope
-    description: "Dual-camera widefield mesoscope. Camera Type: DUAL_DCAM, two C13440-20C cameras, S/N 301751 and S/N 300073."
+    description: "Widefield mesoscope: Zeiss Axiozoom with a PlanNeoFluar Z 1x, 0.25 NA objective (56 mm working distance). Excitation from an LED bank (Spectra X Light Engine, Lumencor) at 395/25, 470/24 and 575/25 nm. The emission is split by a dual camera image splitter (TwinCam, Cairn Research) through a 525/50 or a 630/75 emission filter (Chroma) onto two sCMOS cameras (Camera Type: DUAL_DCAM, C13440-20C, S/N 301751 and S/N 300073), with HCImage (Hamamatsu)."
     device_model_metadata_key: hamamatsu_orca_flash
 Ophys:
   ImagingPlanes:
     blue:
       name: ImagingPlaneBlueExcitationGreenChannel
-      description: Imaging plane for the Green channel recorded during Blue excitation.
+      description: Imaging plane for the Green channel recorded during Blue (470/24 nm) excitation.
       device_metadata_key: mesoscope
       excitation_lambda: 470.0  # in nm
       imaging_rate: 10.0  # in Hz, per excitation channel
@@ -21,11 +22,11 @@ Ophys:
       indicator: ACh3.0
       optical_channel:
         - name: Green
-          description: Green channel of the microscope, 525/50 nm filter.
+          description: Green channel of the microscope, 525/50 nm emission filter (Chroma).
           emission_lambda: 525.0
     violet:
       name: ImagingPlaneVioletExcitationGreenChannel
-      description: Imaging plane for the Green channel recorded during Violet excitation.
+      description: Imaging plane for the Green channel recorded during Violet (395/25 nm) excitation.
       device_metadata_key: mesoscope
       excitation_lambda: 395.0  # in nm
       imaging_rate: 10.0  # in Hz, per excitation channel
@@ -33,11 +34,11 @@ Ophys:
       indicator: ACh3.0
       optical_channel:
         - name: Green
-          description: Green channel of the microscope, 525/50 nm filter.
+          description: Green channel of the microscope, 525/50 nm emission filter (Chroma).
           emission_lambda: 525.0
     green:
       name: ImagingPlaneGreenExcitationRedChannel
-      description: Imaging plane for the Red channel recorded during Green excitation.
+      description: Imaging plane for the Red channel recorded during Green (575/25 nm) excitation.
       device_metadata_key: mesoscope
       excitation_lambda: 575.0  # in nm
       imaging_rate: 10.0  # in Hz, per excitation channel
@@ -45,37 +46,43 @@ Ophys:
       indicator: jRCaMP1b
       optical_channel:
         - name: Red
-          description: Red channel of the microscope, 630/75 nm filter.
+          description: Red channel of the microscope, 630/75 nm emission filter (Chroma).
           emission_lambda: 630.0
   MicroscopySeries:
     raw_blue:
       name: OnePhotonSeriesBlueExcitationGreenChannel
-      description: Imaging data from Green channel recorded with Blue excitation.
+      description: Imaging data from Green channel recorded with Blue excitation. The three excitation wavelengths were strobed, so each channel was acquired at 10 Hz with 20 ms exposure, at 512 x 512 pixels after 4x pixel binning.
       imaging_plane_metadata_key: blue
       unit: n.a.
+      binning: 4
+      exposure_time: 0.02  # in s
     raw_violet:
       name: OnePhotonSeriesVioletExcitationGreenChannel
-      description: Imaging data from Green channel recorded with Violet excitation.
+      description: Imaging data from Green channel recorded with Violet excitation. The three excitation wavelengths were strobed, so each channel was acquired at 10 Hz with 20 ms exposure, at 512 x 512 pixels after 4x pixel binning.
       imaging_plane_metadata_key: violet
       unit: n.a.
+      binning: 4
+      exposure_time: 0.02  # in s
     raw_green:
       name: OnePhotonSeriesGreenExcitationRedChannel
-      description: Imaging data from Red channel recorded with Green excitation.
+      description: Imaging data from Red channel recorded with Green excitation. The three excitation wavelengths were strobed, so each channel was acquired at 10 Hz with 20 ms exposure, at 512 x 512 pixels after 4x pixel binning.
       imaging_plane_metadata_key: green
       unit: n.a.
+      binning: 4
+      exposure_time: 0.02  # in s
     dff_blue:
       name: DFFOnePhotonSeriesBlue
-      description: Processed Imaging data from Green channel recorded with Blue excitation. The raw frames were downsampled to 256 x 256 pixels and rotated by 180 degrees, then detrended and baseline corrected to calculate DF/F images. Specifically, for each pixel, a low-pass fir1 filter with 0.001 Hz cutoff was applied to extract the baseline (F0), and DF/F was calculated as (F - F0)/F0, where F is the raw unfiltered signal. The Methods give a 100th-order filter; the lab's preprocessing code uses a filter length of 1000, and the first 499 and last 500 frames are removed to avoid filter edge artifacts, so DF/F frame 0 is raw frame 499. The DF/F images were then registered to the Allen Common Coordinate Framework (CCFv3). They were corrected for hemodynamic artifacts by spatial regression against the Violet excitation DF/F (Methods, Hemodynamic correction). Pixels without data in the lab's output are NaN.
+      description: Processed Imaging data from Green channel recorded with Blue excitation. The raw frames were downsampled to 256 x 256 pixels (and rotated by 180 degrees, in the lab's code), then detrended and baseline corrected to calculate DF/F images. Specifically, for each pixel, a low-pass fir1 filter with 0.001 Hz cutoff was applied to extract the baseline (F0), and DF/F was calculated as (F - F0)/F0, where F is the raw unfiltered signal. The Methods give a 100th-order filter; the lab's preprocessing code uses a filter length of 1000, and the first 499 and last 500 frames are removed to avoid filter edge artifacts, so DF/F frame 0 is raw frame 499. The DF/F images were then registered to the Allen Common Coordinate Framework (CCFv3). They were corrected for hemodynamic artifacts with a spatial linear minimum mean square error estimator on 9 x 9 pixel patches, using the Violet (395 nm) excitation DF/F as the activity-independent reference (Methods, Hemodynamic correction). Pixels without data in the lab's output are NaN.
       imaging_plane_metadata_key: blue
       unit: n.a.
     dff_violet:
       name: DFFOnePhotonSeriesViolet
-      description: Processed Imaging data from Green channel recorded with Violet excitation. The raw frames were downsampled to 256 x 256 pixels and rotated by 180 degrees, then detrended and baseline corrected to calculate DF/F images. Specifically, for each pixel, a low-pass fir1 filter with 0.001 Hz cutoff was applied to extract the baseline (F0), and DF/F was calculated as (F - F0)/F0, where F is the raw unfiltered signal. The Methods give a 100th-order filter; the lab's preprocessing code uses a filter length of 1000, and the first 499 and last 500 frames are removed to avoid filter edge artifacts, so DF/F frame 0 is raw frame 499. The DF/F images were then registered to the Allen Common Coordinate Framework (CCFv3). They were not corrected for hemodynamic artifacts; they are the regressor of that correction for the Blue and Green excitation DF/F. Pixels without data in the lab's output are NaN.
+      description: Processed Imaging data from Green channel recorded with Violet excitation. The raw frames were downsampled to 256 x 256 pixels (and rotated by 180 degrees, in the lab's code), then detrended and baseline corrected to calculate DF/F images. Specifically, for each pixel, a low-pass fir1 filter with 0.001 Hz cutoff was applied to extract the baseline (F0), and DF/F was calculated as (F - F0)/F0, where F is the raw unfiltered signal. The Methods give a 100th-order filter; the lab's preprocessing code uses a filter length of 1000, and the first 499 and last 500 frames are removed to avoid filter edge artifacts, so DF/F frame 0 is raw frame 499. The DF/F images were then registered to the Allen Common Coordinate Framework (CCFv3). They were not corrected for hemodynamic artifacts; they are the regressor of that correction for the Blue and Green excitation DF/F. Pixels without data in the lab's output are NaN.
       imaging_plane_metadata_key: violet
       unit: n.a.
     dff_green:
       name: DFFOnePhotonSeriesGreen
-      description: Processed Imaging data from Red channel recorded with Green excitation. The raw frames were downsampled to 256 x 256 pixels, registered to the Green channel camera images and rotated by 180 degrees, then detrended and baseline corrected to calculate DF/F images. Specifically, for each pixel, a low-pass fir1 filter with 0.001 Hz cutoff was applied to extract the baseline (F0), and DF/F was calculated as (F - F0)/F0, where F is the raw unfiltered signal. The Methods give a 100th-order filter; the lab's preprocessing code uses a filter length of 1000, and the first 499 and last 500 frames are removed to avoid filter edge artifacts, so DF/F frame 0 is raw frame 499. The DF/F images were then registered to the Allen Common Coordinate Framework (CCFv3). They were corrected for hemodynamic artifacts by spatial regression against the Violet excitation DF/F (Methods, Hemodynamic correction). Pixels without data in the lab's output are NaN.
+      description: Processed Imaging data from Red channel recorded with Green excitation. The raw frames were downsampled to 256 x 256 pixels, registered to the Green channel camera images (and rotated by 180 degrees, in the lab's code), then detrended and baseline corrected to calculate DF/F images. Specifically, for each pixel, a low-pass fir1 filter with 0.001 Hz cutoff was applied to extract the baseline (F0), and DF/F was calculated as (F - F0)/F0, where F is the raw unfiltered signal. The Methods give a 100th-order filter; the lab's preprocessing code uses a filter length of 1000, and the first 499 and last 500 frames are removed to avoid filter edge artifacts, so DF/F frame 0 is raw frame 499. The DF/F images were then registered to the Allen Common Coordinate Framework (CCFv3). They were corrected for hemodynamic artifacts with a spatial linear minimum mean square error estimator on 9 x 9 pixel patches, using the Violet (395 nm) excitation DF/F as the activity-independent reference (Methods, Hemodynamic correction). Pixels without data in the lab's output are NaN.
       imaging_plane_metadata_key: green
       unit: n.a.
   PlaneSegmentations:

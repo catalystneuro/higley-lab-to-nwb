@@ -107,7 +107,11 @@ def session_to_nwb(
         wheel_speed_unit="m/s",
         wheel_speed_description="Wheel speed, computed by the lab's preprocessing code (wheel_changepoints.m) "
         "as the differential of the unwrapped wheel distance, smoothed with a Gaussian window 0.5 s long. "
-        "The speed is signed: negative values are backward turns of the wheel.",
+        "The speed is signed: negative values are backward turns of the wheel. The wheel position was read by a "
+        "magnetic angle sensor (Digikey). The paper reports speed in cm/s; the lab's code computes it in m/s.",
+        wheel_activation_description="Locomotion epochs (wheelOn and wheelOff in the lab's smrx_signals.mat). The "
+        "Methods detect locomotion as change points of the wheel speed, from a moving standard deviation in 2 s "
+        "windows with a threshold of 0.005, and remove epochs shorter than 1 s or with a mean speed below 2 cm/s.",
     )
     conversion_options["ProcessedWheelSignal"] = dict(stub_test=stub_test)
 
@@ -207,7 +211,9 @@ def session_to_nwb(
         metadata, load_dict_from_file(metadata_dir_path / "metadata" / "lohani_2022_ophys_metadata.yaml")
     )
     metadata["Behavior"]["ExternalVideos"]["face_video"].update(
-        name="FaceVideo", description="Video of the face, from which FaceMap computed the pupil and motion signals."
+        name="FaceVideo",
+        description="Video of the face, pupil and whiskers, taken with a CMOS camera (Blackfly S USB3, FLIR) at 10 Hz "
+        "under infrared illumination. FaceMap computed the pupil and motion signals from it.",
     )
     facemap_metadata = metadata["Behavior"]["Facemap"]
     for region_metadata_key, region_name in (("facemap_multivideo", "Face"), ("facemap_roi1", "Whiskers")):

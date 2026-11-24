@@ -20,6 +20,7 @@ class ProcessedBehaviorInterface(BaseDataInterface):
         sampling_frequency: float = None,
         wheel_speed_unit: str = "unknown",
         wheel_speed_description: str = "Wheel speed",
+        wheel_activation_description: str = "Intervals for each wheel on-off signal",
         verbose: bool = False,
     ):
         """
@@ -37,6 +38,8 @@ class ProcessedBehaviorInterface(BaseDataInterface):
                 Unit of the wheel speed trace.
             wheel_speed_description: str, default: "Wheel speed"
                 Description of the wheel speed trace.
+            wheel_activation_description: str, default: "Intervals for each wheel on-off signal"
+                Description of the WheelActivation intervals table.
         """
 
         super().__init__(verbose=verbose)
@@ -46,6 +49,7 @@ class ProcessedBehaviorInterface(BaseDataInterface):
         self.sampling_frequency = sampling_frequency
         self.wheel_speed_unit = wheel_speed_unit
         self.wheel_speed_description = wheel_speed_description
+        self.wheel_activation_description = wheel_activation_description
 
     def add_wheel_speed(self, nwbfile: NWBFile, metadata: dict, stub_test: bool = False) -> None:
 
@@ -66,7 +70,7 @@ class ProcessedBehaviorInterface(BaseDataInterface):
     def add_wheel_activation(self, nwbfile: NWBFile, metadata: dict, stub_test: bool = False) -> None:
         intervals_table = TimeIntervals(
             name="WheelActivation",
-            description="Intervals for each wheel on-off signal",
+            description=self.wheel_activation_description,
         )
         n_frames = 100 if stub_test and len(self.wheel_on_times) > 100 else len(self.wheel_on_times)
 
