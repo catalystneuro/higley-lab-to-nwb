@@ -38,6 +38,7 @@ for folder_path in raw_imaging_dir_path.iterdir():
             parcellation_folder_path=parcellation_folder_path,
             output_dir_path=output_dir_path,
             session_id=session_id,
+            allen_parcels_file_path=data_dir_path / "parcells_updated121519.mat",
             stub_test=stub_test,
             verbose=verbose,
         )
