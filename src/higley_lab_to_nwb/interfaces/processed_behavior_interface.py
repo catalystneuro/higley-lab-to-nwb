@@ -1,7 +1,10 @@
 import numpy as np
+from ndx_hed import HedTags
 from neuroconv import BaseDataInterface
 from pynwb import NWBFile, TimeSeries
 from pynwb.epoch import TimeIntervals
+
+from .hed import WHEEL_ACTIVATION_HED, add_hed_schema
 
 
 class ProcessedBehaviorInterface(BaseDataInterface):
@@ -72,15 +75,18 @@ class ProcessedBehaviorInterface(BaseDataInterface):
             name="WheelActivation",
             description=self.wheel_activation_description,
         )
+        intervals_table.add_column(name="HED", description="HED annotation of each interval.", col_cls=HedTags)
         n_frames = 100 if stub_test and len(self.wheel_on_times) > 100 else len(self.wheel_on_times)
 
         for frame in range(n_frames):
             intervals_table.add_row(
                 start_time=self.wheel_on_times[frame],
                 stop_time=self.wheel_off_times[frame],
+                HED=WHEEL_ACTIVATION_HED,
                 check_ragged=False,
             )
 
+        add_hed_schema(nwbfile)
         nwbfile.add_time_intervals(intervals_table)
 
     def add_to_nwbfile(self, nwbfile: NWBFile, metadata: dict, stub_test: bool = False) -> None:
