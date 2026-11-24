@@ -1,8 +1,7 @@
-from typing import Optional
-
+from pathlib import Path
 
 from neuroconv.datainterfaces.ophys.basesegmentationextractorinterface import BaseSegmentationExtractorInterface
-from neuroconv.utils import DeepDict, FilePathType
+from neuroconv.utils import DeepDict
 
 from ..extractors import CidanSegmentationExtractor
 
@@ -28,78 +27,54 @@ class CidanSegmentationInterface(BaseSegmentationExtractorInterface):
     display_name = "CIDAN Segmentation"
     associated_suffixes = (".json", ".mat")
     info = "Interface for CIDAN segmentation."
-    Extractor = CidanSegmentationExtractor
+
+    @classmethod
+    def get_extractor_class(cls):
+        return CidanSegmentationExtractor
 
     def __init__(
         self,
-        parameters_file_path: FilePathType,
-        roi_list_file_path: FilePathType,
-        mat_file_path: FilePathType,
+        parameters_file_path: str | Path,
+        roi_list_file_path: str | Path,
+        mat_file_path: str | Path,
         sampling_frequency: float,
         image_size: list,
-        plane_segmentation_name: Optional[str] = None,
-        verbose: bool = True,
+        metadata_key: str = "cidan",
+        verbose: bool = False,
     ):
-        """Create SegmentationExtractor object out of CIDAN data type.
-
+        """
         Parameters
         ----------
-        parameters_file_path: str or Path
+        parameters_file_path : str or Path
             The path to the CIDAN parameter .json file.
-        roi_list_file_path: str or Path
+        roi_list_file_path : str or Path
             The path to the CIDAN roi_list .json file.
-        mat_file_path: str or Path
-            The path to the CIDAN df/f traces .mat file.
-        sampling_frequency: float
-            The sampling frequency of the fluorescence traces
-        image_size: list
+        mat_file_path : str or Path
+            The path to the CIDAN DF/F traces .mat file.
+        sampling_frequency : float
+            The sampling frequency of the traces.
+        image_size : list
             The frame dimension.
-        plane_segmentation_name: str, optional
-            The name of the plane segmentation to be added.
+        metadata_key : str, default: "cidan"
+            The key of this segmentation in metadata["Ophys"]["PlaneSegmentations"] and ["RoiResponses"].
         """
-
         super().__init__(
             parameters_file_path=parameters_file_path,
             roi_list_file_path=roi_list_file_path,
             mat_file_path=mat_file_path,
             sampling_frequency=sampling_frequency,
             image_size=image_size,
+            metadata_key=metadata_key,
+            verbose=verbose,
         )
-
-        plane_segmentation_name = plane_segmentation_name or "PlaneSegmentation"
-
-        self.plane_segmentation_name = plane_segmentation_name
-        self.verbose = verbose
 
     def get_metadata(self) -> DeepDict:
         metadata = super().get_metadata()
-
-        # No need to update the metadata links for the default plane segmentation name
-        default_plane_segmentation_name = metadata["Ophys"]["ImageSegmentation"]["plane_segmentations"][0]["name"]
-        if self.plane_segmentation_name == default_plane_segmentation_name:
-            return metadata
-
-        plane_segmentation_metadata = metadata["Ophys"]["ImageSegmentation"]["plane_segmentations"][0]
-        default_plane_segmentation_name = plane_segmentation_metadata["name"]
-        default_plane_suffix = default_plane_segmentation_name.replace("PlaneSegmentation", "")
-        new_plane_name_suffix = self.plane_segmentation_name.replace("PlaneSegmentation", "")
-        plane_segmentation_metadata.update(
-            name=self.plane_segmentation_name,
-        )
-
-        fluorescence_metadata_per_plane = metadata["Ophys"]["Fluorescence"].pop(default_plane_segmentation_name)
-        # override the default name of the plane segmentation
-        metadata["Ophys"]["Fluorescence"][self.plane_segmentation_name] = fluorescence_metadata_per_plane
-        trace_names = [
-            property_name for property_name in fluorescence_metadata_per_plane.keys() if property_name != "name"
-        ]
         comments = format_string_for_parameters_dict(dict_obj=self.segmentation_extractor.parameters_dict)
-        for trace_name in trace_names:
-            default_traces_name = fluorescence_metadata_per_plane[trace_name]["name"].replace(default_plane_suffix, "")
-            fluorescence_metadata_per_plane[trace_name].update(
-                name=default_traces_name + new_plane_name_suffix,
-                description="Fluorescence traces extracted with CIDAN software",
-                comments=comments,
-            )
-
+        metadata["Ophys"]["RoiResponses"][self.metadata_key]["denoised"] = dict(
+            name="RoiResponseSeriesCIDAN",
+            description="Fluorescence traces extracted with the CIDAN software.",
+            comments=comments,
+            unit="n.a.",
+        )
         return metadata

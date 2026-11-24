@@ -1,99 +1,74 @@
-"""A segmentation extractor for Higley Lab parcellation output.
+"""A segmentation extractor for the Higley Lab parcellation output."""
 
-Classes
--------
-ParcellsSegmentationExtractor
-    A segmentation extractor for Higley Lab parcellation output.
-"""
+from pathlib import Path
 
-from scipy.io import loadmat
 import numpy as np
-from neuroconv.utils import FilePathType
-from roiextractors.extraction_tools import _image_mask_extractor
-from roiextractors.segmentationextractor import SegmentationExtractor
+from roiextractors.segmentationextractor import SegmentationExtractor, _ROIMasks, _RoiResponse
+from scipy.io import loadmat
 
 
-def _get_pixel_coordinate(pixel_num, n_cols: int, n_rows: int) -> np.ndarray:
-    # pixel_num is a 1-based MATLAB (column-major) linear index. The coordinate follows the orientation of
-    # ProcessedImagingExtractor.get_video, so that the masks overlay the DF/F frames.
+def _get_pixel_coordinate(pixel_num, n_cols: int, n_rows: int) -> list:
+    """(row, column, weight) of a 1-based MATLAB (column-major) linear pixel index.
+
+    The coordinate follows the orientation of ProcessedImagingExtractor.get_series, so that the masks overlay the
+    DF/F frames.
+    """
+    pixel_num = np.asarray(pixel_num).reshape(-1)[0]
     row = (pixel_num - 1) % n_rows
     col = (pixel_num - 1) // n_rows
-    return [n_rows - 1 - col[0], n_cols - 1 - row[0], 1]
+    return [n_rows - 1 - col, n_cols - 1 - row, 1]
 
 
 class ParcellsSegmentationExtractor(SegmentationExtractor):
-    """A segmentation extractor for Higley Lab parcellation output."""
+    """The functional parcellation of the lab's code: ROI pixel lists and the mean DF/F over each ROI."""
 
     extractor_name = "ParcellsSegmentationExtractor"
 
-    def __init__(
-        self,
-        file_path: FilePathType,
-        sampling_frequency: float,
-        image_size: list,
-    ):
-        """Create SegmentationExtractor object out of CIDAN data type.
-
+    def __init__(self, file_path: str | Path, sampling_frequency: float, image_size: list):
+        """
         Parameters
         ----------
-        file_path: str or Path
+        file_path : str or Path
             The path to the parcellation output .mat file.
-        sampling_frequency: float
-            The sampling frequency for the df/f traces.
-        image_size: list
+        sampling_frequency : float
+            The sampling frequency of the traces.
+        image_size : list
             The frame dimension, [n_rows, n_cols].
         """
-        self.file_path = file_path
         super().__init__()
-
+        self.file_path = file_path
         self._sampling_frequency = sampling_frequency
+        self._image_shape = tuple(image_size)
+        n_rows, n_cols = self._image_shape
 
-        parcels_time_trace = loadmat(file_path, variable_names=["parcels_time_trace"])
-        self._roi_response_raw = parcels_time_trace["parcels_time_trace"].T
-
-        self._image_size = image_size
-
-        parcels_gal = loadmat(file_path, variable_names=["parcels_gal"])
-        self._pixel_list_per_roi = np.array(parcels_gal["parcels_gal"][0]["ROI_list"][0]["pixel_list"][0])
-
-        assert len(self._pixel_list_per_roi) == self._roi_response_raw.shape[1], (
-            f"Number of ROIs in 'parcels_gal' ({len(self._pixel_list_per_roi)}) must match the number of fluorescent "
-            f"traces in 'parcels_time_trace' ({self._roi_response_raw.shape[1]})"
-        )
-
-        self.pixel_masks = []
-        for pixel_list in self._pixel_list_per_roi:
-            self.pixel_masks.append(
-                [
-                    _get_pixel_coordinate(pixel_num=pixel_num, n_cols=self._image_size[1], n_rows=self._image_size[0])
-                    for pixel_num in pixel_list
-                ]
+        traces = loadmat(file_path, variable_names=["parcels_time_trace"])["parcels_time_trace"].T
+        parcels_gal = loadmat(file_path, variable_names=["parcels_gal"])["parcels_gal"]
+        pixel_list_per_roi = parcels_gal[0]["ROI_list"][0]["pixel_list"][0]
+        if len(pixel_list_per_roi) != traces.shape[1]:
+            raise ValueError(
+                f"Number of ROIs in 'parcels_gal' ({len(pixel_list_per_roi)}) does not match the number of traces in "
+                f"'parcels_time_trace' ({traces.shape[1]})."
             )
 
-        self._image_masks = _image_mask_extractor(
-            self.get_roi_pixel_masks(),
-            self.get_roi_ids(),
-            self.get_image_size(),
+        roi_ids = list(range(traces.shape[1]))
+        pixel_masks = [
+            np.array([_get_pixel_coordinate(pixel_num, n_cols=n_cols, n_rows=n_rows) for pixel_num in pixel_list])
+            for pixel_list in pixel_list_per_roi
+        ]
+        self._roi_ids = roi_ids
+        self._roi_masks = _ROIMasks(
+            data=pixel_masks,
+            mask_tpe="nwb-pixel_mask",
+            field_of_view_shape=self._image_shape,
+            roi_id_map={roi_id: index for index, roi_id in enumerate(roi_ids)},
         )
+        self._roi_responses.append(_RoiResponse("dff", traces, roi_ids))
 
-    def get_roi_pixel_masks(self, roi_ids=None):
-        if roi_ids is None:
-            roi_idx_ = range(self.get_num_rois())
-        else:
-            roi_idx = [np.where(np.array(i) == self.get_roi_ids())[0] for i in roi_ids]
-            ele = [i for i, j in enumerate(roi_idx) if j.size == 0]
-            roi_idx_ = [j[0] for i, j in enumerate(roi_idx) if i not in ele]
-        return [self.pixel_masks[i] for i in roi_idx_]
-
-    def get_accepted_list(self):
-        return self.get_roi_ids()
-
-    def get_rejected_list(self):
-        roi_list = self.get_roi_ids()
-        return np.zeros((len(roi_list)))
+    def get_frame_shape(self) -> tuple[int, int]:
+        return self._image_shape
 
     def get_sampling_frequency(self) -> float:
         return self._sampling_frequency
 
-    def get_image_size(self):
-        return self._image_size
+    def get_native_timestamps(self, start_sample: int | None = None, end_sample: int | None = None) -> None:
+        return None

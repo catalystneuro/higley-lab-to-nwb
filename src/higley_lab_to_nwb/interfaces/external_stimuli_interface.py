@@ -1,9 +1,12 @@
 import pandas as pd
 from typing import Literal
+from ndx_hed import HedTags, HedValueVector
 from neuroconv import BaseDataInterface
-from neuroconv.utils import FilePathType
+from pathlib import Path
 from pynwb import NWBFile
 from pynwb.epoch import TimeIntervals
+
+from .hed import AIRPUFF_HED, VISUAL_STIMULUS_HED, add_hed_schema
 
 
 class ExternalStimuliInterface(BaseDataInterface):
@@ -20,9 +23,9 @@ class ExternalStimuliInterface(BaseDataInterface):
         stimulus_name: Literal["Airpuff", "VisualStimulus"],
         start_times: list,
         stop_times: list,
-        csv_file_path: FilePathType = None,
+        csv_file_path: str | Path | None = None,
         without_locomotion: list = None,
-        verbose: bool = True,
+        verbose: bool = False,
     ):
         """
          Parameters
@@ -33,11 +36,11 @@ class ExternalStimuliInterface(BaseDataInterface):
             External stimulus start times in seconds.
         stop_times : list
             External stimulus stop times in seconds.
-        csv_file_path : FilePathType, default: None
+        csv_file_path : str or Path, optional
             Path to .csv file for visual stimulus characterization.
         without_locomotion : list, default: None
             For air puffs, whether each puff has no locomotion onset from 2 s before to 5 s after it.
-        verbose : bool, default: True
+        verbose : bool, default: False
         """
         accepted_stimulus_name = ["Airpuff", "VisualStimulus"]
         assert (
@@ -68,13 +71,27 @@ class ExternalStimuliInterface(BaseDataInterface):
             description=f"Intervals for each visual stimulus presentation",
         )
 
-        intervals_table.add_column(name="contrast", description="Contrast of the visual stimulus image.")
+        intervals_table.add_column(name="HED", description="HED annotation of each presentation.", col_cls=HedTags)
+        intervals_table.add_column(
+            name="contrast",
+            description="Contrast of the visual stimulus image.",
+            col_cls=HedValueVector,
+            hed="Luminance-contrast/#",
+        )
         contrasts = self.get_stimulus_feature(column_index=[0])
         intervals_table.add_column(
-            name="orientation", description="Orientation of the visual stimulus image, in degree."
+            name="orientation",
+            description="Orientation of the visual stimulus image, in degree.",
+            col_cls=HedValueVector,
+            hed="Angle/# degree",
         )
         orientations = self.get_stimulus_feature(column_index=[1])
-        intervals_table.add_column(name="stimulus_frequency", description="Temporal frequency of the stimulus, in Hz.")
+        intervals_table.add_column(
+            name="stimulus_frequency",
+            description="Temporal frequency of the stimulus, in Hz.",
+            col_cls=HedValueVector,
+            hed="Temporal-rate/# Hz",
+        )
         stimulus_frequencies = self.get_stimulus_feature(column_index=[2])
         intervals_table.add_column(
             name="spatial_frequency", description="Spatial frequency of the stimulus, in cycles per degrees."
@@ -112,6 +129,7 @@ class ExternalStimuliInterface(BaseDataInterface):
             intervals_table.add_row(
                 start_time=start_times[frame],
                 stop_time=stop_times[frame],
+                HED=VISUAL_STIMULUS_HED,
                 contrast=contrasts[frame][0],
                 orientation=orientations[frame][0],
                 stimulus_frequency=stimulus_frequencies[frame][0],
@@ -122,6 +140,7 @@ class ExternalStimuliInterface(BaseDataInterface):
                 check_ragged=False,
             )
 
+        add_hed_schema(nwbfile)
         nwbfile.add_time_intervals(intervals_table)
 
     def add_airpuff(self, nwbfile: NWBFile, metadata: dict, stub_test: bool = False):
@@ -134,6 +153,7 @@ class ExternalStimuliInterface(BaseDataInterface):
         start_times = self.source_data["start_times"]
         stop_times = self.source_data["stop_times"]
         without_locomotion = self.source_data["without_locomotion"]
+        intervals_table.add_column(name="HED", description="HED annotation of each air puff.", col_cls=HedTags)
         if without_locomotion is not None:
             intervals_table.add_column(
                 name="without_locomotion",
@@ -144,11 +164,12 @@ class ExternalStimuliInterface(BaseDataInterface):
         n_frames = 100 if stub_test and len(start_times) > 100 else len(start_times)
 
         for frame in range(n_frames):
-            row = dict(start_time=start_times[frame], stop_time=stop_times[frame])
+            row = dict(start_time=start_times[frame], stop_time=stop_times[frame], HED=AIRPUFF_HED)
             if without_locomotion is not None:
                 row.update(without_locomotion=without_locomotion[frame])
             intervals_table.add_row(**row, check_ragged=False)
 
+        add_hed_schema(nwbfile)
         nwbfile.add_time_intervals(intervals_table)
 
     def add_to_nwbfile(self, nwbfile: NWBFile, metadata: dict, stub_test: bool = False) -> None:

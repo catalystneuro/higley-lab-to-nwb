@@ -9,4 +9,4 @@ from .processing_imaging_interface import ProcessedImagingInterface
 from .parcells_segmentation_interface import ParcellsSegmentationInterface
 from .allen_parcels_interface import AllenParcelsInterface
 from .processed_behavior_interface import ProcessedBehaviorInterface
-from .facemapdatainterface import FacemapInterface, FacemapPythonInterface
+from .facemap_python_interface import FacemapPythonInterface

@@ -1,43 +1,44 @@
-from neuroconv.datainterfaces.ophys.baseimagingextractorinterface import BaseImagingExtractorInterface
+from pathlib import Path
 from typing import Literal
-from neuroconv.utils.dict import DeepDict
-from roiextractors.extraction_tools import PathType
+
+from neuroconv.datainterfaces.ophys.baseimagingextractorinterface import BaseImagingExtractorInterface
 
 from ..extractors import ProcessedImagingExtractor
 
 
 class ProcessedImagingInterface(BaseImagingExtractorInterface):
-    """
-    Data Interface for writing processed imaging data using ProcessedImagingExtractor.
-    """
+    """Processed (DF/F) imaging data saved by the lab's MATLAB code, read with ProcessedImagingExtractor."""
 
-    Extractor = ProcessedImagingExtractor
+    @classmethod
+    def get_extractor_class(cls):
+        return ProcessedImagingExtractor
 
     def __init__(
         self,
-        file_path: PathType,
+        file_path: str | Path,
         process_type: Literal["dff_final", "dff_blue", "dff_uv", "blue", "uv", "green"],
         sampling_frequency: float,
-        verbose: bool = True,
-        photon_series_type: str = "OnePhotonSeries",
+        metadata_key: str | None = None,
+        photon_series_type: Literal["OnePhotonSeries", "TwoPhotonSeries"] = "OnePhotonSeries",
+        verbose: bool = False,
     ) -> None:
-        """Create a MesoscopicImagingTiffStackExtractor instance from a folder of TIFF files.
-
+        """
         Parameters
         ----------
-        file_path : PathType
-            Path to the MATLab file.
+        file_path : str or Path
+            Path to the MATLAB file.
         process_type : str
-            The type of processed imaging data to extract.
-            Accepted values: "dff_final", "dff_blue", "dff_uv", "blue", "uv",  "green".
+            The variable to read: "dff_final", "dff_blue", "dff_uv", "blue", "uv" or "green".
         sampling_frequency : float
-            The frequency at which the frames were sampled, in Hz.
+            The frame rate, in Hz.
+        metadata_key : str, optional
+            The key of this series in metadata["Ophys"]["MicroscopySeries"].
         """
         super().__init__(
             file_path=file_path,
             process_type=process_type,
             sampling_frequency=sampling_frequency,
-            verbose=verbose,
+            metadata_key=metadata_key,
             photon_series_type=photon_series_type,
+            verbose=verbose,
         )
-

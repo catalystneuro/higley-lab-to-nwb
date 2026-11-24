@@ -1,21 +1,41 @@
+# Keyed ophys metadata (NeuroConv >= 0.11). The keys are handles that link the entries; `name` is the name in the file.
+DeviceModels:
+  two_photon_microscope_model:
+    name: TwoPhotonMicroscopeModel
+    manufacturer: Sutter Instruments
+Devices:
+  two_photon_microscope:
+    name: TwoPhotonMicroscope
+    description: MOM microscope (Sutter Instruments) coupled to a 16x, 0.8 NA objective (Nikon). Excitation was driven by
+      a Titanium-Sapphire Laser (Mai-Tai eHP DeepSee, Spectra-Physics).
+    device_model_metadata_key: two_photon_microscope_model
 Ophys:
-  Device:
-    - name: TwoPhotonMicroscope
-      description: MOM microscope (Sutter Instruments) coupled to a 16x, 0.8 NA objective (Nikon). Excitation was driven by a Titanium-Sapphire Laser (Mai-Tai eHP DeepSee, Spectra-Physics).
-      manufacturer: Sutter Instruments
-  TwoPhotonSeries:
-    - name: TwoPhotonSeries
-      description: Imaging data from Green channel recorded with 2p microscope. Images were acquired at 512x512 resolution at 30 Hz using a galvo-resonant scan system controlled by ScanImage software (Vidrio).
-      imaging_plane: ImagingPlane
-      unit: n.a.
-  ImagingPlane:
-    - name: ImagingPlane
+  ImagingPlanes:
+    two_photon:
+      name: ImagingPlane
       description: Imaging plane for the Green channel recorded with 2p microscope.
-      excitation_lambda: 920.0  # in nm
+      excitation_lambda: 920.0
       location: Whole Brain
-      device: TwoPhotonMicroscope
       optical_channel:
-        - name: Green
-          description: Emitted light was collected through a 525/50 filter and a gallium arsenide phosphide photomultiplier tube (Hamamatsu).
-          emission_lambda: 525.0
+      - name: Green
+        description: Emitted light was collected through a 525/50 filter and a gallium arsenide phosphide photomultiplier
+          tube (Hamamatsu).
+        emission_lambda: 525.0
       indicator: GCaMP6s
+      device_metadata_key: two_photon_microscope
+  MicroscopySeries:
+    two_photon:
+      name: TwoPhotonSeries
+      description: Imaging data from Green channel recorded with 2p microscope. Images were acquired at 512x512 resolution
+        at 30 Hz using a galvo-resonant scan system controlled by ScanImage software (Vidrio).
+      unit: n.a.
+      imaging_plane_metadata_key: two_photon
+  PlaneSegmentations:
+    suite2p:
+      name: Suite2pPlaneSegmentation
+      description: ROIs segmented with Suite2p.
+      imaging_plane_metadata_key: two_photon
+    cidan:
+      name: CIDANPlaneSegmentation
+      description: ROIs segmented with CIDAN.
+      imaging_plane_metadata_key: two_photon

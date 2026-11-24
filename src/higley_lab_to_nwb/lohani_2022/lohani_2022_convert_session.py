@@ -1,296 +1,268 @@
-"""Primary script to run to convert an entire session for of data using the NWBConverter."""
+"""Convert one Lohani 2022 session to NWB."""
 
 from pathlib import Path
-from typing import Union
+
 import numpy as np
-from neuroconv.utils import load_dict_from_file, dict_deep_update
-from higley_lab_to_nwb.lohani_2022 import Lohani2022NWBConverter
-from higley_lab_to_nwb.interfaces.spike2signals_interface import get_streams
-from higley_lab_to_nwb.lohani_2022.utils import (
-    read_session_start_time,
-    get_event_times_from_mat,
-    get_channel_trace_from_mat,
+from neuroconv.datainterfaces import ExternalVideoInterface, FacemapInterface
+from neuroconv.tools.nwb_helpers import configure_and_write_nwbfile
+from neuroconv.utils import dict_deep_update, load_dict_from_file
+
+from higley_lab_to_nwb.interfaces import (
+    AllenParcelsInterface,
+    ExternalStimuliInterface,
+    MesoscopicImagingMultiTiffSingleFrameInterface,
+    ParcellsSegmentationInterface,
+    ProcessedBehaviorInterface,
+    ProcessedImagingInterface,
+    Spike2SignalsInterface,
 )
+from higley_lab_to_nwb.interfaces.spike2signals_interface import get_streams
+from higley_lab_to_nwb.lohani_2022 import Lohani2022NWBConverter
+from higley_lab_to_nwb.lohani_2022.utils import (
+    get_channel_trace_from_mat,
+    get_event_times_from_mat,
+    read_session_start_time,
+)
+
+SAMPLING_FREQUENCY = 10.0  # frame rate of each excitation channel, in Hz
+# Excitation -> (camera, index of its first frame in the acquisition cycle, its channel in final_dFoF.mat)
+EXCITATIONS = dict(Blue=("Green", 0, "blue"), Violet=("Green", 1, "uv"), Green=("Red", 2, "green"))
+# Camera -> the half of the dual-camera frame it occupies
+CAMERA_TO_FRAME_SIDE = dict(Green="right", Red="left")
 
 
 def session_to_nwb(
-    folder_path: Union[str, Path],
-    parcellation_folder_path: Union[str, Path],
-    output_dir_path: Union[str, Path],
+    folder_path: str | Path,
+    parcellation_folder_path: str | Path,
+    output_dir_path: str | Path,
     session_id: str,
-    allen_parcels_file_path: Union[str, Path],
+    allen_parcels_file_path: str | Path,
     stub_test: bool = False,
-    verbose: bool = True,
+    verbose: bool = False,
 ):
     """Convert one session.
 
-    allen_parcels_file_path is parcells_updated121519.mat from the lab's code (cardin-higley-lab/
-    Lohani_Moberly_et_al_2022 at commit c337686, Figure3ExtractStatesCorrelation/Functions/), the Allen CCFv3 parcels
-    that final_dFoF_parcels.mat is averaged over.
+    Parameters
+    ----------
+    folder_path : str or Path
+        The session folder of the raw data (TIFF, .smrx, .avi, FaceMap _proc.mat, visual stimulus .csv).
+    parcellation_folder_path : str or Path
+        The session folder of the lab's processed data (smrx_signals.mat, final_dFoF.mat, final_dFoF_parcels.mat
+        and the parcellation .mat).
+    output_dir_path : str or Path
+        Where to write the NWB file.
+    session_id : str
+        "{date}_{subject_id}_{session_type}", for example "11232019_grabAM07_spont".
+    allen_parcels_file_path : str or Path
+        parcells_updated121519.mat from the lab's code (cardin-higley-lab/Lohani_Moberly_et_al_2022 at commit
+        c337686, Figure3ExtractStatesCorrelation/Functions/), the Allen CCFv3 parcels that final_dFoF_parcels.mat is
+        averaged over.
+    stub_test : bool, default: False
+        Write only the first 100 samples of each series, for testing.
     """
+    folder_path = Path(folder_path)
+    parcellation_folder_path = Path(parcellation_folder_path)
     output_dir_path = Path(output_dir_path)
     if stub_test:
         output_dir_path = output_dir_path / "nwb_stub"
     output_dir_path.mkdir(parents=True, exist_ok=True)
-
     nwbfile_path = output_dir_path / f"{session_id}.nwb"
 
-    source_data = dict()
+    date, subject_id, session_type = session_id.split("_", 2)
+    search_pattern = f"{date}_{subject_id}"
+    interfaces = dict()
     conversion_options = dict()
 
-    search_pattern = "_".join(session_id.split("_")[:2])
-
-    # Add Analog signals from Spike2
-    file_path = list(folder_path.glob(f"{search_pattern}*.smrx"))[0]
-    stream_ids, stream_names = get_streams(file_path=file_path)
-
-    # Define each smrx signal name
-    TTLsignals_name_map = {
-        stream_ids[stream_names == "BL_LED"][0]: "TTLSignalBlueLED",
-        stream_ids[stream_names == "UV_LED"][0]: "TTLSignalVioletLED",
-        stream_ids[stream_names == "Green LED"][0]: "TTLSignalGreenLED",
-        # stream_ids[stream_names == "MesoCam"][0]: "TTLSignalMesoscopicCamera",
-        # stream_ids[stream_names == "R_mesocam"][0]: "TTLSignalRedMesoscopicCamera",
-        stream_ids[stream_names == "pupilcam"][0]: "TTLSignalPupilCamera",
+    # Spike2: TTL pulses and the raw wheel signal
+    smrx_file_path = next(folder_path.glob(f"{search_pattern}*.smrx"))
+    stream_ids, stream_names = get_streams(file_path=smrx_file_path)
+    ttl_stream_names = {
+        "BL_LED": "TTLSignalBlueLED",
+        "UV_LED": "TTLSignalVioletLED",
+        "Green LED": "TTLSignalGreenLED",
+        "pupilcam": "TTLSignalPupilCamera",
     }
-    behavioral_name_map = {
-        stream_ids[stream_names == "wheel"][0]: "WheelSignal",
-    }
-
-    source_data.update(
-        dict(
-            Spike2Signals=dict(
-                file_path=str(file_path),
-                ttl_stream_ids_to_names_map=TTLsignals_name_map,
-                behavioral_stream_ids_to_names_map=behavioral_name_map,
-            )
-        )
+    interfaces["Spike2Signals"] = Spike2SignalsInterface(
+        file_path=smrx_file_path,
+        ttl_stream_ids_to_names_map={
+            stream_ids[stream_names == stream_name][0]: name for stream_name, name in ttl_stream_names.items()
+        },
+        behavioral_stream_ids_to_names_map={stream_ids[stream_names == "wheel"][0]: "WheelSignal"},
     )
-    conversion_options.update(dict(Spike2Signals=dict(stub_test=stub_test)))
+    conversion_options["Spike2Signals"] = dict(stub_test=stub_test)
 
-    # Add Processed Behavioral Signals
-    mat_file_path = parcellation_folder_path / "smrx_signals.mat"
-    wheel_speed_data, sampling_frequency = get_channel_trace_from_mat(
-        file_path=mat_file_path, variable_name="wheelspeed"
+    # Processed wheel signals
+    signals_file_path = parcellation_folder_path / "smrx_signals.mat"
+    wheel_speed_data, wheel_sampling_frequency = get_channel_trace_from_mat(
+        file_path=signals_file_path, variable_name="wheelspeed"
     )
     wheel_on_times, wheel_off_times = get_event_times_from_mat(
-        file_path=str(mat_file_path), start_time_variable_name="wheelOn", end_time_variable_name="wheelOff"
+        file_path=signals_file_path, start_time_variable_name="wheelOn", end_time_variable_name="wheelOff"
     )
-    source_data.update(
-        dict(
-            ProcessedWheelSignalInterface=dict(
-                wheel_speed_data=wheel_speed_data,
-                sampling_frequency=sampling_frequency,
-                wheel_on_times=wheel_on_times,
-                wheel_off_times=wheel_off_times,
-                wheel_speed_unit="m/s",
-                wheel_speed_description="Wheel speed, computed by the lab's preprocessing code (wheel_changepoints.m) "
-                "as the differential of the unwrapped wheel distance, smoothed with a Gaussian window 0.5 s long. "
-                "The speed is signed: negative values are backward turns of the wheel.",
-            )
-        )
+    interfaces["ProcessedWheelSignal"] = ProcessedBehaviorInterface(
+        wheel_speed_data=wheel_speed_data,
+        sampling_frequency=wheel_sampling_frequency,
+        wheel_on_times=wheel_on_times,
+        wheel_off_times=wheel_off_times,
+        wheel_speed_unit="m/s",
+        wheel_speed_description="Wheel speed, computed by the lab's preprocessing code (wheel_changepoints.m) "
+        "as the differential of the unwrapped wheel distance, smoothed with a Gaussian window 0.5 s long. "
+        "The speed is signed: negative values are backward turns of the wheel. The wheel position was read by a "
+        "magnetic angle sensor (Digikey). The paper reports speed in cm/s; the lab's code computes it in m/s.",
+        wheel_activation_description="Locomotion epochs (wheelOn and wheelOff in the lab's smrx_signals.mat). The "
+        "Methods detect locomotion as change points of the wheel speed, from a moving standard deviation in 2 s "
+        "windows with a threshold of 0.005, and remove epochs shorter than 1 s or with a mean speed below 2 cm/s.",
     )
-    conversion_options.update(dict(ProcessedWheelSignalInterface=dict(stub_test=stub_test)))
+    conversion_options["ProcessedWheelSignal"] = dict(stub_test=stub_test)
 
-    # Add Visual Stimulus
-    if "vis_stim" in session_id:
-        csv_file_path = list(folder_path.glob(f"{search_pattern}*.csv"))[0]
+    # Visual stimuli
+    if session_type == "vis_stim":
         start_times, stop_times = get_event_times_from_mat(
-            file_path=str(mat_file_path), start_time_variable_name="stimstart", end_time_variable_name="stimend"
+            file_path=signals_file_path, start_time_variable_name="stimstart", end_time_variable_name="stimend"
         )
-        source_data.update(
-            dict(
-                VisualStimulusInterface=dict(
-                    stimulus_name="VisualStimulus",
-                    csv_file_path=csv_file_path,
-                    start_times=start_times,
-                    stop_times=stop_times,
-                )
-            )
+        interfaces["VisualStimulus"] = ExternalStimuliInterface(
+            stimulus_name="VisualStimulus",
+            csv_file_path=next(folder_path.glob(f"{search_pattern}*.csv")),
+            start_times=start_times,
+            stop_times=stop_times,
         )
-        conversion_options.update(dict(VisualStimulusInterface=dict(stub_test=stub_test)))
+        conversion_options["VisualStimulus"] = dict(stub_test=stub_test)
 
-    # Add Airpuff Stimulus
-    if "airpuff" in session_id:
-        # All air puffs; "airpuffstart" holds only those without a locomotion onset from 2 s before to 5 s after
+    # Air puffs: all of them; "airpuffstart" holds only those without a locomotion onset from 2 s before to 5 s after
+    if session_type == "airpuffs":
         start_times, stop_times = get_event_times_from_mat(
-            file_path=str(mat_file_path),
+            file_path=signals_file_path,
             start_time_variable_name="allairpuffstart",
             end_time_variable_name="allairpuffend",
         )
         start_times_without_locomotion, _ = get_event_times_from_mat(
-            file_path=str(mat_file_path), start_time_variable_name="airpuffstart", end_time_variable_name="airpuffend"
+            file_path=signals_file_path, start_time_variable_name="airpuffstart", end_time_variable_name="airpuffend"
         )
         without_locomotion = np.isin(np.atleast_1d(start_times), np.atleast_1d(start_times_without_locomotion))
-        source_data.update(
-            dict(
-                AirpuffInterface=dict(
-                    stimulus_name="Airpuff",
-                    start_times=np.atleast_1d(start_times),
-                    stop_times=np.atleast_1d(stop_times),
-                    without_locomotion=without_locomotion.tolist(),
-                )
-            )
+        interfaces["Airpuff"] = ExternalStimuliInterface(
+            stimulus_name="Airpuff",
+            start_times=np.atleast_1d(start_times),
+            stop_times=np.atleast_1d(stop_times),
+            without_locomotion=without_locomotion.tolist(),
         )
-        conversion_options.update(dict(AirpuffInterface=dict(stub_test=stub_test)))
+        conversion_options["Airpuff"] = dict(stub_test=stub_test)
 
-    # Add Imaging
-    sampling_frequency = 10.0
-    photon_series_index = 0
-
-    # Define a dictionary that for each excitation type associate the starting frame index
-    excitation_type_to_start_frame_index_mapping = dict(Blue=0, Violet=1, Green=2)
-    # Define a dictionary that for each optical channel/filter associate the frame side
-    channel_to_frame_side_mapping = dict(Green="right", Red="left")
-    # Define the excitation-channel combinations
-    excitation_type_channel_combination = dict(Blue="Green", Violet="Green", Green="Red")
-
-    for excitation_type, channel in excitation_type_channel_combination.items():
-
-        suffix = f"{excitation_type}Excitation{channel}Channel"
-        interface_name = f"Imaging{suffix}"
-        source_data[interface_name] = {
-            "folder_path": folder_path,
-            "file_pattern": session_id,
-            "frame_side": channel_to_frame_side_mapping[channel],
-            "number_of_channels": 3,
-            "channel_first_frame_index": excitation_type_to_start_frame_index_mapping[excitation_type],
-            "sampling_frequency": sampling_frequency,
-            "photon_series_type": "OnePhotonSeries",
-        }
-        conversion_options[interface_name] = {
-            "stub_test": stub_test,
-            "photon_series_index": photon_series_index,
-            "photon_series_type": "OnePhotonSeries",
-        }
-        photon_series_index += 1
-
-    # Add processed imaging data
-    processed_imaging_path = parcellation_folder_path / "final_dFoF.mat"
-    for excitation_type, channel in excitation_type_channel_combination.items():
-        process_type = excitation_type.lower() if not excitation_type == "Violet" else "uv"
-        suffix = f"{excitation_type}Excitation{channel}Channel"
-        interface_name = f"DFFImaging{suffix}"
-        source_data[interface_name] = {
-            "file_path": processed_imaging_path,
-            "sampling_frequency": sampling_frequency,
-            "photon_series_type": "OnePhotonSeries",
-            "process_type": process_type,
-        }
-        conversion_options[interface_name] = {
-            "stub_test": stub_test,
-            "photon_series_index": photon_series_index,
-            "photon_series_type": "OnePhotonSeries",
-            "parent_container": "processing/ophys",
-        }
-        photon_series_index += 1
-
-    # Add parcellation output data
-    mat_file_path = list(parcellation_folder_path.glob(f"green_{session_id}*.mat"))[0]
-    plane_segmentation_name = "ParcellatedPlaneSegmentation"
-    source_data.update(
-        dict(
-            ParcellsSegmentationInterface=dict(
-                file_path=mat_file_path,
-                sampling_frequency=sampling_frequency,
-                image_size=[256, 256],
-                plane_segmentation_name=plane_segmentation_name,
-            )
+    # Raw imaging, then the DF/F, of each excitation channel
+    for excitation, (camera, first_frame_index, _) in EXCITATIONS.items():
+        interfaces[f"Imaging{excitation}"] = MesoscopicImagingMultiTiffSingleFrameInterface(
+            folder_path=folder_path,
+            file_pattern=session_id,
+            frame_side=CAMERA_TO_FRAME_SIDE[camera],
+            number_of_channels=len(EXCITATIONS),
+            channel_first_frame_index=first_frame_index,
+            sampling_frequency=SAMPLING_FREQUENCY,
+            metadata_key=f"raw_{excitation.lower()}",
         )
-    )
-    conversion_options.update(
-        dict(
-            ParcellsSegmentationInterface=dict(
-                include_roi_acceptance=False,
-                plane_segmentation_name=plane_segmentation_name,
-                stub_test=stub_test,
-            )
+        conversion_options[f"Imaging{excitation}"] = dict(stub_test=stub_test, photon_series_type="OnePhotonSeries")
+    for excitation, (_, _, dff_channel) in EXCITATIONS.items():
+        interfaces[f"DFFImaging{excitation}"] = ProcessedImagingInterface(
+            file_path=parcellation_folder_path / "final_dFoF.mat",
+            process_type=dff_channel,
+            sampling_frequency=SAMPLING_FREQUENCY,
+            metadata_key=f"dff_{excitation.lower()}",
         )
-    )
-    # Add the Allen CCFv3 parcel traces, as one more plane segmentation
-    source_data.update(
-        dict(
-            AllenParcels=dict(
-                file_path=parcellation_folder_path / "final_dFoF_parcels.mat",
-                parcels_file_path=allen_parcels_file_path,
-                sampling_frequency=sampling_frequency,
-                image_size=[256, 256],
-            )
+        conversion_options[f"DFFImaging{excitation}"] = dict(
+            stub_test=stub_test, photon_series_type="OnePhotonSeries", parent_container="processing/ophys"
         )
+
+    # The functional parcellation of the calcium DF/F, then the Allen CCFv3 parcels (after the imaging planes exist)
+    interfaces["ParcellsSegmentation"] = ParcellsSegmentationInterface(
+        file_path=next(parcellation_folder_path.glob(f"green_{session_id}*.mat")),
+        sampling_frequency=SAMPLING_FREQUENCY,
+        image_size=[256, 256],
+        metadata_key="parcellation",
     )
-    conversion_options.update(dict(AllenParcels=dict(stub_test=stub_test)))
-
-    # Add Behavioral Video Recording
-    avi_files = list(folder_path.glob(f"{search_pattern}*.avi"))
-    video_file_path = avi_files[0].resolve()
-    source_data.update(dict(Video=dict(file_paths=[video_file_path], verbose=False)))
-    conversion_options.update(dict(Video=dict(stub_test=stub_test)))
-
-    # Add Facemap output
-    mat_files = list(folder_path.glob(f"{search_pattern}*_proc.mat"))
-    mat_file_path = mat_files[0]
-    source_data.update(
-        dict(
-            FacemapInterface=dict(
-                mat_file_path=str(mat_file_path),
-                video_file_path=str(video_file_path),
-                svd_mask_names=["Face", "Whiskers"],
-                first_n_components=10 if stub_test else 500,
-                verbose=False,
-            )
-        )
+    conversion_options["ParcellsSegmentation"] = dict(stub_test=stub_test)
+    interfaces["AllenParcels"] = AllenParcelsInterface(
+        file_path=parcellation_folder_path / "final_dFoF_parcels.mat",
+        parcels_file_path=allen_parcels_file_path,
+        sampling_frequency=SAMPLING_FREQUENCY,
+        image_size=[256, 256],
     )
+    conversion_options["AllenParcels"] = dict(stub_test=stub_test)
 
-    ophys_metadata_path = Path(__file__).parent / "metadata" / "lohani_2022_ophys_metadata.yaml"
-    ophys_metadata = load_dict_from_file(ophys_metadata_path)
-
-    if verbose:
-        print("Start conversion")
-    converter = Lohani2022NWBConverter(
-        source_data=source_data,
-        excitation_type_channel_combination=excitation_type_channel_combination,
-        ophys_metadata=ophys_metadata,
-        verbose=verbose,
+    # Face video and its FaceMap output
+    video_file_path = next(folder_path.glob(f"{search_pattern}*.avi")).resolve()
+    interfaces["Video"] = ExternalVideoInterface(file_paths=[video_file_path], metadata_key="face_video")
+    interfaces["Facemap"] = FacemapInterface(
+        file_path=next(folder_path.glob(f"{search_pattern}*_proc.mat")),
+        video_file_path=video_file_path,
+        metadata_key="facemap",
     )
+    conversion_options["Facemap"] = dict(first_n_components=10 if stub_test else 500)
 
-    # Add datetime to conversion
+    converter = Lohani2022NWBConverter(data_interfaces=interfaces, verbose=verbose)
+
     metadata = converter.get_metadata()
-    date = read_session_start_time(folder_path=folder_path)
-    metadata["NWBFile"]["session_start_time"] = date
-    subject_id = session_id.split("_")[1]
-    metadata["Subject"].update(subject_id=subject_id)
-    metadata["NWBFile"].update(session_id=session_id.replace(f"_{subject_id}", ""))
-
-    # Update default metadata with the editable in the corresponding yaml file
-    editable_metadata_path = Path(__file__).parent / "lohani_2022_metadata.yaml"
-    editable_metadata = load_dict_from_file(editable_metadata_path)
+    metadata["NWBFile"]["session_start_time"] = read_session_start_time(folder_path=folder_path)
+    metadata["NWBFile"]["session_id"] = f"{date}_{session_type}"
+    metadata["Subject"]["subject_id"] = subject_id
+    metadata_dir_path = Path(__file__).parent
+    editable_metadata = load_dict_from_file(metadata_dir_path / "lohani_2022_metadata.yaml")
+    session_descriptions = editable_metadata.pop("SessionDescriptions")
+    metadata["NWBFile"]["session_description"] = session_descriptions[session_type]
     metadata = dict_deep_update(metadata, editable_metadata)
-
-    # Run conversion
-    converter.run_conversion(
-        metadata=metadata, nwbfile_path=nwbfile_path, conversion_options=conversion_options, overwrite=True
+    metadata = dict_deep_update(
+        metadata, load_dict_from_file(metadata_dir_path / "metadata" / "lohani_2022_ophys_metadata.yaml")
     )
+    metadata["Behavior"]["ExternalVideos"]["face_video"].update(
+        name="FaceVideo",
+        description="Video of the face, pupil and whiskers, taken with a CMOS camera (Blackfly S USB3, FLIR) at 10 Hz "
+        "under infrared illumination. FaceMap computed the pupil and motion signals from it.",
+    )
+    facemap_metadata = metadata["Behavior"]["Facemap"]
+    for region_metadata_key, region_name in (("facemap_multivideo", "Face"), ("facemap_roi1", "Whiskers")):
+        if region_metadata_key in facemap_metadata["MotionSVDMasks"]:
+            facemap_metadata["MotionSVDMasks"][region_metadata_key].update(
+                name=f"MotionSVDMasks{region_name}",
+                description=f"Motion SVD masks of the {region_name.lower()} region.",
+                source_video_metadata_key="face_video",
+            )
+            facemap_metadata["MotionSVDSeries"][region_metadata_key].update(
+                name=f"MotionSVDSeries{region_name}",
+                description=f"Motion SVD components of the {region_name.lower()} region.",
+            )
+
+    converter.validate_metadata(metadata=metadata)
+    converter.validate_conversion_options(conversion_options=conversion_options)
+    converter.temporally_align_data_interfaces(metadata=metadata, conversion_options=conversion_options)
+    nwbfile = converter.create_nwbfile(metadata=metadata, conversion_options=conversion_options)
+    nwbfile.processing["ophys"].description = (
+        "Processed optical physiology: DF/F images, and the parcellations of them."
+    )
+
+    # Shuffle before gzip for the raw (uint16) and DF/F (float32) images
+    backend_configuration = converter.get_default_backend_configuration(nwbfile=nwbfile, backend="hdf5")
+    for location, dataset_configuration in backend_configuration.dataset_configurations.items():
+        if "OnePhotonSeries" in location and location.endswith("/data"):
+            dataset_configuration.compressors = ["shuffle", "gzip"]
+    configure_and_write_nwbfile(
+        nwbfile=nwbfile, nwbfile_path=nwbfile_path, backend_configuration=backend_configuration, metadata=metadata
+    )
+    return nwbfile_path
 
 
 if __name__ == "__main__":
-    # Parameters for conversion
     root_path = Path("F:")
     data_dir_path = root_path / "Higley-CN-data-share"
     output_dir_path = root_path / "Higley-conversion_nwb"
-    stub_test = True
-    date = "11232019"
-    animal_number = "05"
-    behavior = "airpuffs"
-    session_id = f"{date}_grabAM{animal_number}_{behavior}"
-    folder_path = data_dir_path / "Lohani22 Meso Data" / session_id
-    parcellation_folder_path = (
-        data_dir_path / "Lohani22 Parcellated data" / f"grab{animal_number}" / "imaging with 575 excitation" / session_id
-    )
+    session_id = "11232019_grabAM05_airpuffs"
+    date, subject_id, _ = session_id.split("_", 2)
     session_to_nwb(
-        folder_path=folder_path,
-        parcellation_folder_path=parcellation_folder_path,
+        folder_path=data_dir_path / "Lohani22 Meso Data" / session_id,
+        parcellation_folder_path=data_dir_path
+        / "Lohani22 Parcellated data"
+        / subject_id.replace("AM", "")
+        / "imaging with 575 excitation"
+        / session_id,
         output_dir_path=output_dir_path,
         session_id=session_id,
         allen_parcels_file_path=data_dir_path / "parcells_updated121519.mat",
-        stub_test=stub_test,
+        stub_test=True,
+        verbose=True,
     )

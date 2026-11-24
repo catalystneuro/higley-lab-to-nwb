@@ -1,9 +1,9 @@
-name: higley_lab_to_nwb_env
+name: higley-lab-to-nwb-env
 channels:
 - conda-forge
 - defaults
 dependencies:
-- python==3.9
+- python==3.12
 - pip
 - pip:
   - -e .  # This calls the setup and therefore requirements minimal

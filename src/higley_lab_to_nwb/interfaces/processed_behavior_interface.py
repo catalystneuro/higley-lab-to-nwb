@@ -1,9 +1,10 @@
-import pandas as pd
-from typing import Optional, Literal
+import numpy as np
+from ndx_hed import HedTags
 from neuroconv import BaseDataInterface
-from neuroconv.utils import FilePathType
 from pynwb import NWBFile, TimeSeries
 from pynwb.epoch import TimeIntervals
+
+from .hed import WHEEL_ACTIVATION_HED, add_hed_schema
 
 
 class ProcessedBehaviorInterface(BaseDataInterface):
@@ -22,7 +23,8 @@ class ProcessedBehaviorInterface(BaseDataInterface):
         sampling_frequency: float = None,
         wheel_speed_unit: str = "unknown",
         wheel_speed_description: str = "Wheel speed",
-        verbose: bool = True,
+        wheel_activation_description: str = "Intervals for each wheel on-off signal",
+        verbose: bool = False,
     ):
         """
          Parameters
@@ -39,6 +41,8 @@ class ProcessedBehaviorInterface(BaseDataInterface):
                 Unit of the wheel speed trace.
             wheel_speed_description: str, default: "Wheel speed"
                 Description of the wheel speed trace.
+            wheel_activation_description: str, default: "Intervals for each wheel on-off signal"
+                Description of the WheelActivation intervals table.
         """
 
         super().__init__(verbose=verbose)
@@ -48,6 +52,7 @@ class ProcessedBehaviorInterface(BaseDataInterface):
         self.sampling_frequency = sampling_frequency
         self.wheel_speed_unit = wheel_speed_unit
         self.wheel_speed_description = wheel_speed_description
+        self.wheel_activation_description = wheel_activation_description
 
     def add_wheel_speed(self, nwbfile: NWBFile, metadata: dict, stub_test: bool = False) -> None:
 
@@ -58,7 +63,7 @@ class ProcessedBehaviorInterface(BaseDataInterface):
             TimeSeries(
                 name="WheelSpeed",
                 description=self.wheel_speed_description,
-                data=self.wheel_speed_data[:100] if stub_test else self.wheel_speed_data,
+                data=np.asarray(self.wheel_speed_data[:100] if stub_test else self.wheel_speed_data, dtype="float32"),
                 starting_time=0.0,
                 rate=self.sampling_frequency if self.sampling_frequency is not None else 5000.0,
                 unit=self.wheel_speed_unit,
@@ -68,17 +73,20 @@ class ProcessedBehaviorInterface(BaseDataInterface):
     def add_wheel_activation(self, nwbfile: NWBFile, metadata: dict, stub_test: bool = False) -> None:
         intervals_table = TimeIntervals(
             name="WheelActivation",
-            description="Intervals for each wheel on-off signal",
+            description=self.wheel_activation_description,
         )
+        intervals_table.add_column(name="HED", description="HED annotation of each interval.", col_cls=HedTags)
         n_frames = 100 if stub_test and len(self.wheel_on_times) > 100 else len(self.wheel_on_times)
 
         for frame in range(n_frames):
             intervals_table.add_row(
                 start_time=self.wheel_on_times[frame],
                 stop_time=self.wheel_off_times[frame],
+                HED=WHEEL_ACTIVATION_HED,
                 check_ragged=False,
             )
 
+        add_hed_schema(nwbfile)
         nwbfile.add_time_intervals(intervals_table)
 
     def add_to_nwbfile(self, nwbfile: NWBFile, metadata: dict, stub_test: bool = False) -> None:
